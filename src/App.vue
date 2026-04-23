@@ -2,7 +2,7 @@
   <v-app>
     <!-- APP BAR -->
     <v-app-bar
-  v-if="logged"
+  v-if="logged && route.name !== 'home'"
   color="primary"
   elevation="1"
 >
@@ -46,7 +46,7 @@
 
     <!-- SIDEBAR (ÚNICO, RESPONSIVE) -->
     <v-navigation-drawer
-      v-if="logged"
+      v-if="logged && route.name !== 'home'"
       v-model="drawer"
       :permanent="lgAndUp"
       :temporary="mdAndDown"
@@ -100,8 +100,8 @@
     </v-navigation-drawer>
 
     <!-- MAIN -->
-    <v-main class="bg-grey-lighten-5">
-      <div class="main-header" v-if="logged">
+    <v-main :class="route.name === 'home' ? '' : 'bg-grey-lighten-5'">
+      <div class="main-header" v-if="logged && route.name !== 'home'">
         <!-- Toggle rail solo desktop -->
         <v-btn
           icon
@@ -118,9 +118,10 @@
         <h4>{{ pageTitle }}</h4>
       </div>
 
-      <v-container>
+      <v-container v-if="route.name !== 'home'">
         <router-view />
       </v-container>
+      <router-view v-else />
     </v-main>
   </v-app>
 </template>
