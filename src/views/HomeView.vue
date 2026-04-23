@@ -328,7 +328,7 @@ function goToLogin() {
   position: relative;
   width: 100%;
   overflow: hidden;
-  height: 420px;
+  height: 500px;
 }
 .hero-bg {
   width: 100%;
@@ -339,7 +339,7 @@ function goToLogin() {
 .hero-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to bottom, rgba(0,0,0,0.15) 0%, rgba(255,151,151,0.55) 65%, rgba(255,151,151,0.88) 100%);
+  background: linear-gradient(to bottom, rgba(255,151,151,0) 0%, rgba(255,151,151,0.2) 40%, rgba(255,151,151,0.95) 100%);
 }
 .hero-content {
   position: absolute;
@@ -348,27 +348,28 @@ function goToLogin() {
   flex-direction: column;
   align-items: center;
   justify-content: flex-end;
-  padding-bottom: 2.5rem;
+  padding-bottom: 3.5rem;
   padding-left: 1.5rem;
   padding-right: 1.5rem;
   text-align: center;
 }
 .hero-title {
   color: white;
-  filter: drop-shadow(0 4px 3px rgba(0,0,0,0.07));
-  font-size: 36px;
+  text-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  font-size: 48px;
   font-weight: 700;
-  line-height: 1.2;
-  max-width: 600px;
+  line-height: 1.15;
+  max-width: 800px;
   margin-bottom: 0;
 }
 .hero-subtitle {
-  margin-top: 0.75rem;
+  margin-top: 1rem;
   color: white;
-  font-size: 0.875rem;
-  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.1));
-  max-width: 520px;
-  opacity: 0.95;
+  font-size: 1.125rem;
+  font-weight: 500;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  max-width: 700px;
+  opacity: 1;
 }
 .font-bold {
   font-weight: 600;

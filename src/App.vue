@@ -1,8 +1,8 @@
 <template>
   <v-app>
     <!-- APP BAR -->
-    <v-app-bar
-  v-if="logged && route.name !== 'home'"
+  <v-app-bar
+    v-if="logged && !isPublicRoute"
   color="primary"
   elevation="1"
 >
@@ -46,7 +46,7 @@
 
     <!-- SIDEBAR (ÚNICO, RESPONSIVE) -->
     <v-navigation-drawer
-      v-if="logged && route.name !== 'home'"
+      v-if="logged && !isPublicRoute"
       v-model="drawer"
       :permanent="lgAndUp"
       :temporary="mdAndDown"
@@ -100,8 +100,8 @@
     </v-navigation-drawer>
 
     <!-- MAIN -->
-    <v-main :class="route.name === 'home' ? '' : 'bg-grey-lighten-5'">
-      <div class="main-header" v-if="logged && route.name !== 'home'">
+    <v-main :class="isPublicRoute ? '' : 'bg-grey-lighten-5'">
+      <div class="main-header" v-if="logged && !isPublicRoute">
         <!-- Toggle rail solo desktop -->
         <v-btn
           icon
@@ -118,7 +118,7 @@
         <h4>{{ pageTitle }}</h4>
       </div>
 
-      <v-container v-if="route.name !== 'home'">
+      <v-container v-if="!isPublicRoute">
         <router-view />
       </v-container>
       <router-view v-else />
@@ -137,6 +137,8 @@ const auth = useAuthStore()
 const logged = computed(() => auth.loggedIn)
 const router = useRouter()
 const route = useRoute()
+
+const isPublicRoute = computed(() => ['home', 'seguimiento'].includes(route.name))
 
 function logout() {
   auth.logout()
