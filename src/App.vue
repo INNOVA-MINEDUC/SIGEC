@@ -138,7 +138,7 @@ const logged = computed(() => auth.loggedIn)
 const router = useRouter()
 const route = useRoute()
 
-const isPublicRoute = computed(() => ['home', 'seguimiento', 'complains', 'dashboard'].includes(route.name))
+const isPublicRoute = computed(() => ['home', 'seguimiento', 'complains', 'dashboard', 'users'].includes(route.name))
 
 function logout() {
   auth.logout()

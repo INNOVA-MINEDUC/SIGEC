@@ -184,15 +184,15 @@ import heroImage from '@/assets/ninas embarazadas -37.png'
 
 // Stat icons (Pink)
 import iconPink16 from '@/assets/ninas_embarazadas_-20.png'
-import iconPink15 from '@/assets/ninas_embarazadas_-19.png'
-import iconPink14 from '@/assets/ninas_embarazadas_-18.png'
-import iconPink13 from '@/assets/ninas_embarazadas_-17.png'
+import iconPink15 from '@/assets/ninas embarazadas -31.png'
+import iconPink14 from '@/assets/ninas embarazadas -30.png'
+import iconPink13 from '@/assets/ninas embarazadas -32.png'
 
 // Stat icons (White)
 import iconWhite16 from '@/assets/ninas_embarazadas_-13.png'
-import iconWhite15 from '@/assets/ninas_embarazadas_-14.png'
-import iconWhite14 from '@/assets/ninas_embarazadas_-15.png'
-import iconWhite13 from '@/assets/ninas_embarazadas_-16.png'
+import iconWhite15 from '@/assets/ninas embarazadas -34.png'
+import iconWhite14 from '@/assets/ninas embarazadas -35.png'
+import iconWhite13 from '@/assets/ninas embarazadas -33.png'
 
 
 const router = useRouter()
