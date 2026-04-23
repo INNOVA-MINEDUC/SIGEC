@@ -185,9 +185,9 @@ import iconGraduationWhite from '@/assets/ninas_embarazadas_-15.png'
 import iconBuildingPink from '@/assets/ninas_embarazadas_-17.png'
 import iconBuildingWhite from '@/assets/ninas_embarazadas_-16.png'
 
-import logoMineduc from '@/assets/mineduc.png'
-import logoDigikal from '@/assets/DIGIKAL_LOGO.png'
-import logoDigecade from '@/assets/logo_DCE.png'
+import logoMineduc from '@/assets/Portada Niñas Embarazadas -41.png'
+import logoDigikal from '@/assets/Portada Niñas Embarazadas -42.png'
+import logoDigecade from '@/assets/Portada Niñas Embarazadas -43.png'
 import logoDigecade1 from '@/assets/LOGOS_DCE1.png'
 import logoSisec from '@/assets/LOGO_SISEC.png'
 
@@ -405,7 +405,7 @@ function goToLogin() {
   flex-shrink: 0;
 }
 .generic-logo {
-  height: 150px;
+  height: 100px;
   width: auto;
   object-fit: contain;
   border-radius: 8px;
@@ -413,11 +413,11 @@ function goToLogin() {
 }
 
 .generic-logo1 {
-  height: 80px;
+  height: 60px;
   width: auto;
   object-fit: contain;
   border-radius: 8px;
-  padding: 4px;
+  padding: 2px;
 }
 .v-divider {
   width: 1px;

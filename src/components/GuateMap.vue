@@ -204,6 +204,6 @@ onBeforeUnmount(() => {
 <style scoped>
 #chartdivmap {
   width: 100%; 
-  height: 600px;
+  height: 350px;
 }
 </style>
