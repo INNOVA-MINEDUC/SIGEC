@@ -42,11 +42,11 @@ onMounted(() => {
   departamentosSeries.mapPolygons.template.setAll({
     tooltipText: "{NAME_1}",
     interactive: true,
-    fill: am5.color("#6794DC")
+    fill: am5.color("#ffb3b3")
   })
 
   departamentosSeries.mapPolygons.template.states.create("hover", {
-    fill: am5.color("#2883D1")
+    fill: am5.color("#ff7b7b")
   })
 
   // Serie secundaria: Municipios
@@ -57,11 +57,11 @@ onMounted(() => {
   municipiosSeries.mapPolygons.template.setAll({
     tooltipText: "{NAME_2}",
     interactive: true,
-    fill: am5.color("#6794DC")
+    fill: am5.color("#ffb3b3")
   })
 
   municipiosSeries.mapPolygons.template.states.create("hover", {
-    fill: am5.color("#2883D1")
+    fill: am5.color("#ff7b7b")
   })
 
   // Serie terciaria: Municipio seleccionado
@@ -72,11 +72,11 @@ onMounted(() => {
   municipioSeleccionadoSeries.mapPolygons.template.setAll({
     tooltipText: "{NAME_2}",
     interactive: true,
-    fill: am5.color("#6794DC")
+    fill: am5.color("#ffb3b3")
   })
 
   municipioSeleccionadoSeries.mapPolygons.template.states.create("hover", {
-    fill: am5.color("#2883D1")
+    fill: am5.color("#ff7b7b")
   })
 
   // Botón “Regresar”
@@ -205,6 +205,5 @@ onBeforeUnmount(() => {
 #chartdivmap {
   width: 100%; 
   height: 600px;
-  filter: drop-shadow(2px 20px 12px);
 }
 </style>

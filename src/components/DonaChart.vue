@@ -38,7 +38,7 @@ onMounted(() => {
     categoryField: "casos"
   }))
 
-  // Desactivar labels y ticks PERMANENTEMENTE
+  // Etiquetas internas ocultas
   series.labels.template.setAll({
     forceHidden: true,
     visible: false
@@ -50,14 +50,11 @@ onMounted(() => {
   })
 
 
-  // 🎨 COLORES PERSONALIZADOS
+  // 🎨 COLORES PERSONALIZADOS (Tema Rosa para igualar el resto de la app)
   series.get("colors").set("colors", [
-    am5.color("#6794DC"),
-    // am5.color("#4F7CC4"),
-    am5.color("#3A64A8"),
-    // am5.color("#3A64A8"),
-    // am5.color("#2883D1"),
-    am5.color("#CCCCCC"),
+    am5.color("#ff9797"), // Rosa principal
+    am5.color("#ffb3b3"), // Rosa claro
+    am5.color("#e8e8e8"), // Gris claro / Neutro
   ])
 
   // Asignar datos
@@ -71,18 +68,11 @@ onMounted(() => {
 
 
 
-  // Añadir degradado
+  // Bordes blancos entre slices, sin degradado
   series.slices.template.setAll({
-    strokeOpacity: 0,
-    fillGradient: am5.RadialGradient.new(root, {
-      stops: [
-        { brighten: -0.8 },
-        { brighten: -0.8 },
-        { brighten: -0.5 },
-        { brighten: 0 },
-        { brighten: -0.6 }
-      ]
-    })
+    stroke: am5.color(0xffffff),
+    strokeWidth: 3,
+    strokeOpacity: 1
   })
 
   // Crear leyenda
@@ -92,11 +82,13 @@ onMounted(() => {
     layout: root.verticalLayout
   }))
 
-  legend.valueLabels.template.setAll({ textAlign: "end" })
+  legend.valueLabels.template.setAll({ 
+    textAlign: "right",
+    text: "{valuePercentTotal.formatNumber('0')}%"
+  })
   legend.labels.template.setAll({
-    maxWidth: 140,
     width: 140,
-    oversizedBehavior: "wrap"
+    oversizedBehavior: "truncate"
   })
 
   legend.data.setAll(series.dataItems)
@@ -113,8 +105,7 @@ onBeforeUnmount(() => {
 
 <style scoped>
 #chartdivdona {
-  width: 80%;
-  height: 400px;
-  filter: drop-shadow(2px 20px 12px);
+  width: 100%;
+  height: 300px;
 }
 </style>

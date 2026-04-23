@@ -87,8 +87,9 @@ onMounted(() => {
     cornerRadiusTL: 5,
     cornerRadiusTR: 5,
     strokeOpacity: 0,
-    fill: am5.color("#6794DC"),   // 🎨 COLOR CELESTE
-    stroke: am5.color("#6794DC")
+    width: am5.percent(40),
+    fill: am5.color("#ff9797"),   // COLOR ROSA
+    stroke: am5.color("#ff9797")
   });
 
 
@@ -127,7 +128,6 @@ onBeforeUnmount(() => {
 <style scoped>
 #chartdivline {
   width: 100%;
-  height: 400px;
-  filter: drop-shadow(2px 6px 12px);
+  height: 300px;
 }
 </style>
