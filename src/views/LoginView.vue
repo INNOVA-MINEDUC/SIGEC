@@ -1,34 +1,11 @@
 <template>
-  <v-container class="container" >
-    <img src="/logo.png" alt="Logo" class="logo" />
-
-    <div class="card">
-      <h2>Iniciar sesión</h2>
-
-      <div class="input-group">
-        <span class="material-icons">mail</span>
-        <input type="email" v-model="email" placeholder="Correo electrónico" />
-      </div>
-
-      <div class="input-group">
-        <span class="material-icons">lock</span>
-        <input :type="showPassword ? 'text' : 'password'" v-model="password" placeholder="Contraseña" />
-        <span class="material-icons eye" @click="showPassword = !showPassword">
-          {{ showPassword ? 'visibility_off' : 'visibility' }}
-        </span>
-      </div>
-
-      <button class="btn" @click="submitLogin">Ingresar</button>
-
-      <a href="#" class="forgot">¿Olvidó su contraseña?</a>
-    </div>
-
+  <div class="login-wrapper">
     <!-- ALERTA SUPERIOR DERECHA -->
     <transition name="slide-fade">
       <v-alert
         v-if="errorMessage"
         class="alert-box"
-        type="error"
+        type="error"3
         elevation="6"
         border="start"
         closable
@@ -38,13 +15,39 @@
       </v-alert>
     </transition>
 
-  </v-container>
+    <div class="login-content">
+      <img :src="logoMineduc" alt="Ministerio de Educación" class="logo" />
+
+      <div class="card">
+        <h2 class="card-title">Iniciar sesión</h2>
+
+        <div class="input-group">
+          <v-icon size="20" class="input-icon">mdi-email-outline</v-icon>
+          <input type="email" v-model="email" placeholder="Correo electrónico" @keyup.enter="submitLogin" />
+        </div>
+
+        <div class="input-group">
+          <v-icon size="20" class="input-icon">mdi-lock-outline</v-icon>
+          <input :type="showPassword ? 'text' : 'password'" v-model="password" placeholder="Contraseña" @keyup.enter="submitLogin" />
+          <v-icon size="20" class="eye-icon" @click="showPassword = !showPassword">
+            {{ showPassword ? 'mdi-eye-off-outline' : 'mdi-eye-outline' }}
+          </v-icon>
+        </div>
+
+        <button class="btn" @click="submitLogin">Iniciar Sesión</button>
+
+        <a href="#" class="forgot">¿Olvidó su contraseña?</a>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+
+import logoMineduc from '@/assets/mineduc.png'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -72,8 +75,6 @@ function submitLogin() {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/icon?family=Material+Icons');
-
 /* ALERTA TOP RIGHT */
 .alert-box {
   position: fixed;
@@ -96,87 +97,123 @@ function submitLogin() {
 
 /* ========================================================== */
 
-.container {
-  min-height: 90svh;
+.login-wrapper {
+  position: relative;
+  min-height: 100vh;
   display: flex;
-  flex-direction: column;
   justify-content: center;
   align-items: center;
-  /* background-image: url("/login/img.png");
-  background-repeat: no-repeat;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  
+  /* The background image */
+  background: url("@/assets/Portada Niñas Embarazadas -46.jpg");
   background-size: cover;
-  background-position: center; */
+  background-position: center;
+  background-repeat: no-repeat;
+}
 
-  padding: 20px;
-  font-family: 'Segoe UI', sans-serif;
+.login-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 440px;
+  padding: 0 20px;
+  z-index: 10;
 }
 
 .logo {
-  width: 200px;
-  margin-bottom: 10px;
+  width: 220px;
+  object-fit: contain;
+  margin-bottom: 20px;
 }
 
 .card {
-  background: #fff;
+  background: #ffffff;
   width: 100%;
-  max-width: 500px;
-  padding: 35px;
-  border-radius: 15px;
-  border: 1px solid #eaeaea;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  padding: 40px 35px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
   text-align: center;
+}
+
+.card-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 24px;
 }
 
 .input-group {
   display: flex;
   align-items: center;
-  background: #f3f3f3;
-  border-radius: 12px;
-  padding: 10px 14px;
-  margin-bottom: 25px;
-  border: 1px solid #e5e5e5;
+  background: #f8f8f8;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  border: 1px solid #f0f0f0;
+  transition: border-color 0.2s, background-color 0.2s;
+}
+
+.input-group:focus-within {
+  border-color: #ff9797;
+  background: #ffffff;
+}
+
+.input-icon {
+  color: #a0a0a0;
+  margin-right: 12px;
 }
 
 .input-group input {
   border: none;
   background: transparent;
   outline: none;
-  font-size: 15px;
+  font-size: 14px;
   width: 100%;
   color: #333;
 }
 
-.material-icons {
-  color: #777;
-  margin-right: 10px;
+.input-group input::placeholder {
+  color: #a0a0a0;
 }
 
-.eye {
+.eye-icon {
+  color: #a0a0a0;
   cursor: pointer;
+  margin-left: 8px;
+}
+.eye-icon:hover {
+  color: #666;
 }
 
 .btn {
   width: 100%;
   padding: 12px;
-  background: #a9c5ff;
+  background: #ff9797;
   border: none;
-  border-radius: 12px;
-  font-size: 16px;
+  border-radius: 8px;
+  font-size: 15px;
   color: white;
   font-weight: 600;
   cursor: pointer;
-  transition: 0.2s;
+  transition: opacity 0.2s;
+  margin-top: 8px;
 }
 
 .btn:hover {
-  background: #8cb3ff;
+  opacity: 0.9;
 }
 
 .forgot {
-  font-size: 14px;
-  color: #2c63ff;
+  font-size: 12px;
+  color: #728fb5;
   text-decoration: none;
   display: inline-block;
-  margin-top: 12px;
+  margin-top: 16px;
+  font-weight: 500;
+}
+.forgot:hover {
+  color: #557294;
 }
 </style>
