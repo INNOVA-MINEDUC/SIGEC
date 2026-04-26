@@ -1,189 +1,171 @@
 <template>
-  <v-container>
-    <div style="display: flex; justify-content: space-between; align-items: center;">
-          <h1 class="text-h5 mb-4">📥 Importar Excel – Datos del Ministerio de Salud</h1>
+  <div class="charge-page">
+    <AppNavbar />
 
-<v-card
-  v-if="lastUpload"
-  class="mb-6"
-  elevation="5"
-  width="50%"
->
-  <v-card-text>
+    <!-- ── HERO ── -->
+    <section class="hero">
+      <img src="@/assets/hero_charge_data.jpg" alt="Hero background" class="hero-bg" />
+      <div class="hero-overlay"></div>
+      <div class="hero-content">
+        <h1 class="hero-title">Importar Datos</h1>
+        <p class="hero-subtitle">Sube y Administra tus archivos web</p>
+      </div>
+    </section>
 
-    <div class="d-flex align-center mb-4">
-      <v-icon size="22" color="primary" class="mr-2">
-        mdi-database-clock-outline
-      </v-icon>
+    <!-- ── MAIN CONTENT ── -->
+    <section class="content-section">
+      <div class="content-container">
+        <div class="main-card">
+          <div class="card-row">
 
-      <span class="text-subtitle-1 font-weight-medium">
-        Última carga
-      </span>
-    </div>
+            <!-- Left Column -->
+            <div class="card-left">
+              <div class="section-label">IMPORTAR EXCEL</div>
+              <h2 class="section-heading">Datos del Ministerio<br />de Salud</h2>
 
-    <v-row dense>
-      <v-col cols="12" md="4">
-        <div class="text-caption text-grey">Archivo</div>
-        <div class="text-body-2">{{ lastUpload.fileName }}</div>
-      </v-col>
+              <div v-if="lastUpload" class="last-upload-card">
+                <div class="last-upload-header">
+                  <v-icon size="18" color="#ff9797">mdi-circle</v-icon>
+                  <span class="last-upload-title">Última carga</span>
+                </div>
+                <div class="last-upload-grid">
+                  <div v-for="field in lastUploadFields" :key="field.label" class="last-upload-field">
+                    <div class="field-label">{{ field.label }}</div>
+                    <div class="field-value">{{ field.value }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
 
-      <v-col cols="12" md="4">
-        <div class="text-caption text-grey">Registros</div>
-        <div class="text-body-2">{{ lastUpload.totalRows }}</div>
-      </v-col>
+            <!-- Right Column -->
+            <div class="card-right">
+              <div class="upload-zone">
+                <img src="@/assets/upload_icon.png" alt="Upload icon" class="upload-img" />
+                <div class="upload-text">Arrastre y suelte su archivo</div>
+                <div class="upload-or">o</div>
+                <input type="file" ref="fileInput" accept=".xlsx,.xls" class="file-input" @change="onFileChange" />
+                <button class="upload-btn" @click="fileInput.click()">Subir Archivos</button>
+                <div class="upload-hint">Tamaño hasta 100 MB</div>
+              </div>
+            </div>
+          </div>
 
-      <v-col cols="12" md="4">
-        <div class="text-caption text-grey">Fecha</div>
-        <div class="text-body-2">{{ lastUpload.date }}</div>
-      </v-col>
-    </v-row>
+          <!-- Resumen -->
+          <v-alert v-if="rows.length" type="success" variant="tonal" class="result-alert" icon="mdi-check-circle" color="success">
+            Se cargaron {{ rows.length }} registros correctamente
+          </v-alert>
 
-  </v-card-text>
-</v-card>
-    </div>
+          <!-- Tabla -->
+          <v-data-table
+            v-if="rows.length"
+            :headers="tableHeaders"
+            :items="rows"
+            class="data-table"
+            density="comfortable"
+          />
 
+          <!-- Botón limpiar -->
+          <button v-if="rows.length" class="clear-btn" @click="clearData">LIMPIAR DATOS</button>
+        </div>
 
+        <!-- Historial -->
+        <div class="history-header">
+          <v-icon size="28" color="green-darken-3">mdi-bookshelf</v-icon>
+          <h2 class="history-title">Historial de cargas</h2>
+        </div>
 
-    <!-- Input -->
-    <v-file-input
-      label="Selecciona un archivo Excel"
-      accept=".xlsx,.xls"
-      prepend-icon="mdi-upload"
-      @change="onFileChange"
-      clearable
-    />
+        <div class="history-card">
+          <v-data-table
+            v-if="uploadHistory.length"
+            :headers="historyHeaders"
+            :items="uploadHistory"
+            density="comfortable"
+          />
+          <div v-else class="empty-state">No hay cargas registradas aún</div>
+        </div>
+      </div>
+    </section>
 
-    <!-- Resumen -->
-    <v-alert
-      v-if="rows.length"
-      type="success"
-      variant="tonal"
-      class="mt-3"
-    >
-      ✅ Se cargaron {{ rows.length }} niños correctamente
-    </v-alert>
-
-    <!-- Tabla -->
-    <v-data-table
-      v-if="rows.length"
-      :headers="headers.map(h => ({ title: h, key: h }))"
-      :items="rows"
-      class="mt-4 elevation-2"
-      density="comfortable"
-    />
-
-    <!-- Botón limpiar -->
-    <v-btn
-      v-if="rows.length"
-      class="mt-4"
-      color="error"
-      variant="outlined"
-      @click="clearData"
-    >
-      Limpiar datos
-    </v-btn>
-
-    <!-- Historial -->
-    <h2 class="text-h6 mt-8">📚 Historial de cargas</h2>
-
-    <v-data-table
-      v-if="uploadHistory.length"
-      :headers="historyHeaders"
-      :items="uploadHistory"
-      density="compact"
-    />
-
-    <p v-else class="text-caption mt-2">No hay cargas registradas aún</p>
-  </v-container>
+    <AppFooter />
+  </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import * as XLSX from 'xlsx'
+import AppNavbar from '@/components/AppNavbar.vue'
+import AppFooter from '@/components/AppFooter.vue'
 
-const headers = ref([])
-const rows = ref([])
-
-const lastUpload = ref(null)
+// ── State ──────────────────────────────────────────────
+const fileInput     = ref(null)
+const headers       = ref([])
+const rows          = ref([])
+const lastUpload    = ref(null)
 const uploadHistory = ref([])
 
+// ── Constants ──────────────────────────────────────────
 const historyHeaders = [
-  { title: 'Archivo', key: 'fileName' },
+  { title: 'Archivo',   key: 'fileName' },
   { title: 'Registros', key: 'totalRows' },
-  { title: 'Fecha', key: 'date' }
+  { title: 'Fecha',     key: 'date' }
 ]
 
-// cargar historial al iniciar
+// ── Computed ───────────────────────────────────────────
+const tableHeaders = computed(() =>
+  headers.value.map(h => ({ title: h, key: h }))
+)
+
+const lastUploadFields = computed(() => [
+  { label: 'Archivo',   value: lastUpload.value?.fileName },
+  { label: 'Registros', value: lastUpload.value?.totalRows },
+  { label: 'Fecha',     value: lastUpload.value?.date }
+])
+
+// ── Lifecycle ──────────────────────────────────────────
 onMounted(() => {
   const stored = localStorage.getItem('excelUploads')
   if (stored) {
     uploadHistory.value = JSON.parse(stored)
-    lastUpload.value = uploadHistory.value[0] || null
+    lastUpload.value = uploadHistory.value[0] ?? null
   }
 })
 
+// ── Methods ────────────────────────────────────────────
 function onFileChange(payload) {
-  let file = null
-
-  if (payload?.target?.files) file = payload.target.files[0]
-  else if (payload instanceof File) file = payload
-  else if (Array.isArray(payload)) file = payload[0]
+  const file = payload?.target?.files?.[0]
+              ?? (payload instanceof File ? payload : null)
+              ?? (Array.isArray(payload) ? payload[0] : null)
 
   if (!file) return
-
-  if (!file.name.match(/\.(xls|xlsx)$/)) {
-    alert('Archivo no válido')
-    return
-  }
+  if (!file.name.match(/\.(xls|xlsx)$/)) return alert('Archivo no válido')
 
   const reader = new FileReader()
-
-  reader.onload = (evt) => {
+  reader.onload = ({ target }) => {
     try {
-      const data = new Uint8Array(evt.target.result)
-      const workbook = XLSX.read(data, { type: 'array' })
-      const sheet = workbook.Sheets[workbook.SheetNames[0]]
-      const json = XLSX.utils.sheet_to_json(sheet, { header: 1 })
-
-      if (json.length <= 1) {
-        alert('El Excel no tiene datos')
-        return
-      }
+      const workbook = XLSX.read(new Uint8Array(target.result), { type: 'array' })
+      const json = XLSX.utils.sheet_to_json(
+        workbook.Sheets[workbook.SheetNames[0]], { header: 1 }
+      )
+      if (json.length <= 1) return alert('El Excel no tiene datos')
 
       headers.value = json[0]
-      rows.value = json.slice(1).map(row => {
-        const obj = {}
-        headers.value.forEach((h, i) => {
-          obj[h] = row[i] ?? ''
-        })
-        return obj
-      })
-
+      rows.value = json.slice(1).map(row =>
+        Object.fromEntries(headers.value.map((h, i) => [h, row[i] ?? '']))
+      )
       saveUpload(file.name, rows.value.length)
-
     } catch (err) {
       console.error(err)
       alert('Error leyendo el archivo')
     }
   }
-
   reader.readAsArrayBuffer(file)
 }
 
 function saveUpload(fileName, totalRows) {
-  const record = {
-    fileName,
-    totalRows,
-    date: new Date().toLocaleString()
-  }
-
+  const record = { fileName, totalRows, date: new Date().toLocaleString() }
   uploadHistory.value.unshift(record)
   lastUpload.value = record
-
-  localStorage.setItem(
-    'excelUploads',
-    JSON.stringify(uploadHistory.value)
-  )
+  localStorage.setItem('excelUploads', JSON.stringify(uploadHistory.value))
 }
 
 function clearData() {
@@ -191,3 +173,188 @@ function clearData() {
   headers.value = []
 }
 </script>
+
+<style scoped>
+/* ── BASE ── */
+.charge-page {
+  background-color: #ffffff;
+  color: #6d6d6d;
+  font-family: system-ui, -apple-system, sans-serif;
+  min-height: 100vh;
+}
+
+/* ── HERO ── */
+.hero             { position: relative; width: 100%; overflow: hidden; height: 500px; }
+.hero-bg          { width: 100%; height: 100%; object-fit: cover; object-position: center; }
+.hero-overlay     { position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(255,151,151,0) 0%, rgba(255,151,151,0.2) 40%, rgba(255,151,151,0.95) 100%); }
+.hero-content     { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 3.5rem; padding-inline: 1.5rem; text-align: center; }
+.hero-title       { color: white; text-shadow: 0 4px 12px rgba(0,0,0,0.3); font-size: 64px; font-weight: 700; line-height: 1.15; max-width: 900px; margin-bottom: 0; }
+.hero-subtitle    { margin-top: 0.5rem; color: white; font-size: 1.5rem; font-weight: 700; text-shadow: 0 2px 8px rgba(0,0,0,0.3); max-width: 700px; }
+
+/* ── CONTENT SECTION ── */
+.content-section  { background-color: #ffffff; padding: 3rem 1.5rem 0; }
+.content-container { max-width: 1000px; margin: 0 auto; }
+
+/* ── MAIN CARD ── */
+.main-card {
+  background-color: #f5f5f5;
+  border-radius: 1rem;
+  padding: 2rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+.card-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+@media (max-width: 768px) {
+  .card-row { grid-template-columns: 1fr; }
+}
+
+/* ── LEFT COLUMN ── */
+.section-label {
+  color: #ff9797;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 0.25rem;
+}
+.section-heading {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #333;
+  line-height: 1.25;
+  margin-bottom: 1.5rem;
+}
+
+/* ── LAST UPLOAD CARD ── */
+.last-upload-card {
+  background-color: #ffffff;
+  border-radius: 0.2rem;
+  padding: 1rem 1.25rem;
+  margin-top: 1rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+.last-upload-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+.last-upload-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #333;
+}
+.last-upload-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+}
+.field-label { font-size: 0.75rem; color: #9e9e9e; }
+.field-value { font-size: 0.875rem; font-weight: 700; color: #333; }
+
+/* ── UPLOAD ZONE ── */
+.card-right {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  background-color: #ffffff;
+  padding: 1rem;
+  border-radius: 1rem;
+}
+.upload-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 1.5rem 1.5rem;
+  border: 2px dashed #a8cce8;
+  border-radius: 0.5rem;
+  background-color: #ffffff;
+  width: 100%;
+  transition: all 0.2s ease;
+}
+.upload-zone:hover {
+  background-color: #f8fbff;
+  border-color: #7bb3d8;
+}
+.upload-img  { width: 70px; height: 70px; object-fit: contain; margin-bottom: 0.5rem; }
+.upload-text { color: #6d6d6d; font-size: 0.875rem; font-weight: 500; margin-bottom: 0.25rem; }
+.upload-or {
+  color: #b0b0b0;
+  font-size: 0.8rem;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 80%;
+}
+.upload-or::before,
+.upload-or::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background-color: #97a9ff;
+}
+.file-input  { display: none; }
+.upload-btn {
+  background-color: #ff9797;
+  color: white;
+  border-radius: 0.5rem;
+  border: none;
+  padding: 0.625rem 2.5rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.upload-btn:hover { opacity: 0.9; }
+.upload-hint { margin-top: 0.5rem; font-size: 0.7rem; color: #9e9e9e; }
+
+/* ── RESULTS ── */
+.result-alert { margin-top: 2rem; border-radius: 0.5rem; }
+.data-table   { margin-top: 1rem; border-radius: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+.clear-btn {
+  margin-top: 1.5rem;
+  background-color: #ff9797;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  padding: 0.625rem 1.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.clear-btn:hover { opacity: 0.9; }
+
+/* ── HISTORY ── */
+.history-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 3rem 0 1rem;
+}
+.history-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #333;
+}
+.history-card {
+  background-color: #ffffff;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  overflow: hidden;
+  margin-bottom: 2.5rem;
+}
+.empty-state {
+  padding: 1rem;
+  text-align: center;
+  font-size: 0.875rem;
+  color: #9e9e9e;
+}
+</style>
