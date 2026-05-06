@@ -4,7 +4,7 @@
 
     <!-- ── HERO ── -->
     <section class="hero">
-      <img src="@/assets/ninas_embarazadas_-09.png" alt="Niña embarazada" class="hero-bg" />
+      <img src="@/assets/ninas_embarazadas_-09.webp" alt="Niña embarazada" class="hero-bg" loading="lazy" />
       <div class="hero-overlay"></div>
       <div class="hero-content">
         <p class="hero-top-text">Buscar por</p>

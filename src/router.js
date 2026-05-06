@@ -1,15 +1,18 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import HomeView from './views/HomeView.vue'
-import LoginView from './views/LoginView.vue'
-import DashboardView from './views/DashboardView.vue'
-// ... otras vistas
 import { useAuthStore } from './stores/auth'
-import ComplainView from './views/ComplainView.vue'
-import ShowDataView from './views/ShowDataView.vue'
-import ChargeData from './views/ChargeData.vue'
-import UsersView from './views/UsersView.vue'
-import ProfileView from './views/ProfileView.vue'
-import Seguimiento from './views/Seguimiento.vue'
+
+// Login se carga eager (es la primera página que ve el usuario)
+import LoginView from './views/LoginView.vue'
+
+// Las demás vistas se cargan lazy (code splitting)
+const HomeView      = () => import('./views/HomeView.vue')
+const DashboardView = () => import('./views/DashboardView.vue')
+const ComplainView  = () => import('./views/ComplainView.vue')
+const ShowDataView  = () => import('./views/ShowDataView.vue')
+const ChargeData    = () => import('./views/ChargeData.vue')
+const UsersView     = () => import('./views/UsersView.vue')
+const ProfileView   = () => import('./views/ProfileView.vue')
+const Seguimiento   = () => import('./views/Seguimiento.vue')
 
 const routes = [
   { path: '/login', name: 'login', component: LoginView },

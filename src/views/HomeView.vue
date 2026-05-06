@@ -4,7 +4,7 @@
 
     <!-- ── HERO ── -->
     <section class="hero">
-      <img src="@/assets/ninas_embarazadas_-07.png" alt="Madre con recién nacido" class="hero-bg" />
+      <img src="@/assets/ninas_embarazadas_-07.webp" alt="Madre con recién nacido" class="hero-bg" loading="lazy" />
       <div class="hero-overlay"></div>
       <div class="hero-content">
         <h1 class="hero-title">
@@ -49,7 +49,7 @@
           <button class="primary-btn" @click="router.push('/login')">Iniciar Sesión</button>
         </div>
         <div class="about-image">
-          <img src="@/assets/ninas_embarazadas_-10.png" alt="Niña embarazada" />
+          <img src="@/assets/ninas_embarazadas_-10.webp" alt="Niña embarazada" loading="lazy" />
         </div>
       </div>
     </section>
@@ -72,7 +72,7 @@
 
     <!-- ── SCHOOL IMAGE ── -->
     <section class="school-img">
-      <img src="@/assets/ninas_embarazadas_-12.png" alt="Aula escolar" />
+      <img src="@/assets/ninas_embarazadas_-12.webp" alt="Aula escolar" loading="lazy" />
     </section>
 
     <!-- ── SEARCH SECTION ── -->

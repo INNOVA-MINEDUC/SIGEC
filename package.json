@@ -26,6 +26,7 @@
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.1",
+    "sharp": "^0.34.5",
     "vite": "^7.1.11",
     "vite-plugin-vue-devtools": "^8.0.3"
   }

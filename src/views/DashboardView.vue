@@ -97,7 +97,7 @@ import LineChart  from '@/components/LineChart.vue'
 import DonaChart  from '@/components/DonaChart.vue'
 import { useCasosStore } from '@/stores/casos'
 
-import heroImage   from '@/assets/ninas embarazadas -37.png'
+import heroImage   from '@/assets/ninas embarazadas -37.webp'
 import iconPink16  from '@/assets/ninas_embarazadas_-20.png'
 import iconPink15  from '@/assets/ninas embarazadas -31.png'
 import iconPink14  from '@/assets/ninas embarazadas -30.png'

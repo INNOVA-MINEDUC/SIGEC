@@ -155,7 +155,7 @@ import { ref, computed, nextTick } from 'vue'
 import AppNavbar from '@/components/AppNavbar.vue'
 import AppFooter from '@/components/AppFooter.vue'
 import { useUserStore } from '@/stores/users'
-import heroImage from '@/assets/ninas embarazadas -39.png'
+import heroImage from '@/assets/ninas embarazadas -39.webp'
 
 const userStore = useUserStore()
 
