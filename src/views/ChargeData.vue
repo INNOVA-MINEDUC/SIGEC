@@ -91,113 +91,36 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import * as XLSX from 'xlsx'
 import AppNavbar from '@/components/AppNavbar.vue'
 import AppFooter from '@/components/AppFooter.vue'
+import { useExcelUpload } from '@/composables/useExcelUpload'
 
-// ── State ──────────────────────────────────────────────
-const fileInput     = ref(null)
-const headers       = ref([])
-const rows          = ref([])
-const lastUpload    = ref(null)
-const uploadHistory = ref([])
-
-// ── Constants ──────────────────────────────────────────
-const historyHeaders = [
-  { title: 'Archivo',   key: 'fileName' },
-  { title: 'Registros', key: 'totalRows' },
-  { title: 'Fecha',     key: 'date' }
-]
-
-// ── Computed ───────────────────────────────────────────
-const tableHeaders = computed(() =>
-  headers.value.map(h => ({ title: h, key: h }))
-)
-
-const lastUploadFields = computed(() => [
-  { label: 'Archivo',   value: lastUpload.value?.fileName },
-  { label: 'Registros', value: lastUpload.value?.totalRows },
-  { label: 'Fecha',     value: lastUpload.value?.date }
-])
-
-// ── Lifecycle ──────────────────────────────────────────
-onMounted(() => {
-  const stored = localStorage.getItem('excelUploads')
-  if (stored) {
-    uploadHistory.value = JSON.parse(stored)
-    lastUpload.value = uploadHistory.value[0] ?? null
-  }
-})
-
-// ── Methods ────────────────────────────────────────────
-function onFileChange(payload) {
-  const file = payload?.target?.files?.[0]
-              ?? (payload instanceof File ? payload : null)
-              ?? (Array.isArray(payload) ? payload[0] : null)
-
-  if (!file) return
-  if (!file.name.match(/\.(xls|xlsx)$/)) return alert('Archivo no válido')
-
-  const reader = new FileReader()
-  reader.onload = ({ target }) => {
-    try {
-      const workbook = XLSX.read(new Uint8Array(target.result), { type: 'array' })
-      const json = XLSX.utils.sheet_to_json(
-        workbook.Sheets[workbook.SheetNames[0]], { header: 1 }
-      )
-      if (json.length <= 1) return alert('El Excel no tiene datos')
-
-      headers.value = json[0]
-      rows.value = json.slice(1).map(row =>
-        Object.fromEntries(headers.value.map((h, i) => [h, row[i] ?? '']))
-      )
-      saveUpload(file.name, rows.value.length)
-    } catch (err) {
-      console.error(err)
-      alert('Error leyendo el archivo')
-    }
-  }
-  reader.readAsArrayBuffer(file)
-}
-
-function saveUpload(fileName, totalRows) {
-  const record = { fileName, totalRows, date: new Date().toLocaleString() }
-  uploadHistory.value.unshift(record)
-  lastUpload.value = record
-  localStorage.setItem('excelUploads', JSON.stringify(uploadHistory.value))
-}
-
-function clearData() {
-  rows.value = []
-  headers.value = []
-}
+const {
+  fileInput, rows, lastUpload, uploadHistory,
+  historyHeaders, tableHeaders, lastUploadFields,
+  onFileChange, clearData
+} = useExcelUpload()
 </script>
 
 <style scoped>
 /* ── BASE ── */
 .charge-page {
-  background-color: #ffffff;
-  color: #6d6d6d;
-  font-family: system-ui, -apple-system, sans-serif;
+  background-color: var(--sigec-bg);
+  color: var(--sigec-text);
+  font-family: var(--sigec-font);
   min-height: 100vh;
 }
 
-/* ── HERO ── */
-.hero             { position: relative; width: 100%; overflow: hidden; height: 500px; }
-.hero-bg          { width: 100%; height: 100%; object-fit: cover; object-position: center; }
-.hero-overlay     { position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(255,151,151,0) 0%, rgba(255,151,151,0.2) 40%, rgba(255,151,151,0.95) 100%); }
-.hero-content     { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 3.5rem; padding-inline: 1.5rem; text-align: center; }
-.hero-title       { color: white; text-shadow: 0 4px 12px rgba(0,0,0,0.3); font-size: 64px; font-weight: 700; line-height: 1.15; max-width: 900px; margin-bottom: 0; }
-.hero-subtitle    { margin-top: 0.5rem; color: white; font-size: 1.5rem; font-weight: 700; text-shadow: 0 2px 8px rgba(0,0,0,0.3); max-width: 700px; }
+/* ── HERO override ── */
+.hero-subtitle { font-size: 1.5rem; font-weight: 700; }
 
 /* ── CONTENT SECTION ── */
-.content-section  { background-color: #ffffff; padding: 3rem 1.5rem 0; }
+.content-section  { background-color: var(--sigec-bg); padding: 3rem 1.5rem 0; }
 .content-container { max-width: 1000px; margin: 0 auto; }
 
 /* ── MAIN CARD ── */
 .main-card {
-  background-color: #f5f5f5;
+  background-color: var(--sigec-bg-muted);
   border-radius: 1rem;
   padding: 2rem;
   box-shadow: 0 4px 12px rgba(0,0,0,0.08);
@@ -214,7 +137,7 @@ function clearData() {
 
 /* ── LEFT COLUMN ── */
 .section-label {
-  color: #ff9797;
+  color: var(--sigec-primary);
   font-size: 20px;
   font-weight: 700;
   letter-spacing: 1px;
@@ -231,7 +154,7 @@ function clearData() {
 
 /* ── LAST UPLOAD CARD ── */
 .last-upload-card {
-  background-color: #ffffff;
+  background-color: var(--sigec-bg);
   border-radius: 0.2rem;
   padding: 1rem 1.25rem;
   margin-top: 1rem;
@@ -261,7 +184,7 @@ function clearData() {
   display: flex;
   align-items: stretch;
   justify-content: center;
-  background-color: #ffffff;
+  background-color: var(--sigec-bg);
   padding: 1rem;
   border-radius: 1rem;
 }
@@ -274,7 +197,7 @@ function clearData() {
   padding: 1.5rem 1.5rem;
   border: 2px dashed #a8cce8;
   border-radius: 0.5rem;
-  background-color: #ffffff;
+  background-color: var(--sigec-bg);
   width: 100%;
   transition: all 0.2s ease;
 }
@@ -283,9 +206,9 @@ function clearData() {
   border-color: #7bb3d8;
 }
 .upload-img  { width: 70px; height: 70px; object-fit: contain; margin-bottom: 0.5rem; }
-.upload-text { color: #6d6d6d; font-size: 0.875rem; font-weight: 500; margin-bottom: 0.25rem; }
+.upload-text { color: var(--sigec-text); font-size: 0.875rem; font-weight: 500; margin-bottom: 0.25rem; }
 .upload-or {
-  color: #b0b0b0;
+  color: var(--sigec-text-muted);
   font-size: 0.8rem;
   margin-bottom: 0.5rem;
   display: flex;
@@ -302,7 +225,7 @@ function clearData() {
 }
 .file-input  { display: none; }
 .upload-btn {
-  background-color: #ff9797;
+  background-color: var(--sigec-primary);
   color: white;
   border-radius: 0.5rem;
   border: none;
@@ -320,7 +243,7 @@ function clearData() {
 .data-table   { margin-top: 1rem; border-radius: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
 .clear-btn {
   margin-top: 1.5rem;
-  background-color: #ff9797;
+  background-color: var(--sigec-primary);
   color: white;
   border: none;
   border-radius: 0.5rem;
@@ -345,7 +268,7 @@ function clearData() {
   color: #333;
 }
 .history-card {
-  background-color: #ffffff;
+  background-color: var(--sigec-bg);
   border-radius: 0.5rem;
   box-shadow: 0 1px 3px rgba(0,0,0,0.06);
   overflow: hidden;

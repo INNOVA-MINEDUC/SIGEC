@@ -94,7 +94,6 @@ onMounted(() => {
       type: "FeatureCollection",
       features: guatemalaMunicipios.features.filter(
         (f) => {
-          console.log(name)
           return f.properties.NAME_1 === name
         } 
       )

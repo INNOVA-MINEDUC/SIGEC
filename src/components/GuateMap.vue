@@ -117,7 +117,6 @@ onMounted(() => {
     lastDepartamentoName = name
     lastDepartamentoDataItem = dataItem
 
-    console.log(name)
     // click departamento
 filtros.setDepartamento(name)
 
@@ -146,7 +145,6 @@ filtros.setDepartamento(name)
     const municipioDepto = dataItem.dataContext.NAME_1
     lastDepartamentoName = municipioDepto
 
-    console.log(municipioName)
     // click municipio
 filtros.setMunicipio(municipioDepto, municipioName)
 
@@ -173,7 +171,6 @@ filtros.setMunicipio(municipioDepto, municipioName)
       // 🔁 Regresar al nivel de municipios del departamento
       municipioSeleccionadoSeries.hide()
       municipiosSeries.show()
-      console.log("regreso del municipio")
       // click regresar
 filtros.clear()
 
@@ -191,7 +188,7 @@ filtros.clear()
       departamentosSeries.show()
       municipiosSeries.hide()
       backContainer.hide()
-      console.log("regreso del departamento")
+
     }
   })
 })

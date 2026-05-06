@@ -119,8 +119,6 @@ const authStore = useAuthStore()
 // usuario logueado
 const user = computed(() => authStore.user)
 
-console.log(user)
-
 </script>
 
 

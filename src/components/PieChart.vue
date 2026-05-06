@@ -42,8 +42,6 @@ onMounted(() => {
   // Variable para saber qué categoría está seleccionada
   let selected
 
-console.log(series.get("colors").getIndex(0))
-
   // Datos base
   const types = [
     {

@@ -19,7 +19,7 @@
     <!-- ── STAT CARDS ── -->
     <section class="py-8 bg-white">
       <div class="container-max">
-        <div class="stats-grid">
+        <div class="stats-grid-dash">
           <div
             v-for="(card, i) in statCards" :key="i"
             class="stat-card-custom"
@@ -28,8 +28,8 @@
             :class="{ hovered: card.hovered }"
           >
             <img :src="card.hovered ? card.white : card.pink" :alt="card.label" class="stat-img" />
-            <div class="stat-label">{{ card.label }}</div>
-            <div class="stat-value">{{ card.value }}</div>
+            <div class="stat-label-dash">{{ card.label }}</div>
+            <div class="stat-value-dash">{{ card.value }}</div>
           </div>
         </div>
       </div>
@@ -133,13 +133,13 @@ const maxAge  = computed(() => { const m = Math.max(...ageData.value.map(d => d.
 
 <style scoped>
 .dashboard-page {
-  background-color: #f5f5f5;
-  color: #6d6d6d;
-  font-family: system-ui, -apple-system, sans-serif;
+  background-color: var(--sigec-bg-muted);
+  color: var(--sigec-text);
+  font-family: var(--sigec-font);
   min-height: 100vh;
 }
 .container-max { max-width: 60rem; margin: 0 auto; padding: 0 1.5rem; }
-.bg-white  { background-color: #ffffff; }
+.bg-white  { background-color: var(--sigec-bg); }
 .py-8      { padding-top: 2rem; padding-bottom: 2rem; }
 .py-6      { padding-top: 1.5rem; padding-bottom: 1.5rem; }
 .pb-12     { padding-bottom: 3rem; }
@@ -147,39 +147,23 @@ const maxAge  = computed(() => { const m = Math.max(...ageData.value.map(d => d.
 .text-center { text-align: center; }
 .gap-5     { gap: 1.25rem; }
 
-/* HERO */
-.hero-dash { position: relative; width: 100%; overflow: hidden; height: 500px; }
-.hero-bg   { width: 100%; height: 100%; object-fit: cover; object-position: center; }
-.hero-overlay {
-  position: absolute; inset: 0;
-  background: linear-gradient(to bottom, rgba(255,151,151,0) 0%, rgba(255,151,151,0.2) 40%, rgba(255,151,151,0.95) 100%);
-}
-.hero-content {
-  position: absolute; inset: 0;
-  display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
-  padding-bottom: 3.5rem; padding-inline: 1.5rem; text-align: center;
-}
-.hero-top-text { color: white; font-size: 32px; font-weight: 700; text-shadow: 0 4px 10px rgba(0,0,0,0.3); margin-bottom: -0.25rem; line-height: 1.1; }
-.hero-title    { color: white; text-shadow: 0 4px 12px rgba(0,0,0,0.3); font-size: 64px; font-weight: 700; line-height: 1.15; max-width: 900px; margin-bottom: 0; }
-.hero-subtitle { margin-top: 1rem; color: white; font-size: 1.125rem; font-weight: 500; text-shadow: 0 2px 8px rgba(0,0,0,0.3); max-width: 700px; }
-
-/* STAT CARDS */
-.stats-grid { display: flex; gap: 1.5rem; }
+/* STAT CARDS — Dashboard uses its own class names to avoid conflicts with global stat-card */
+.stats-grid-dash { display: flex; gap: 1.5rem; }
 .stat-card-custom {
   flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
   padding: 2.5rem 1rem 2rem; border-radius: 1rem; cursor: pointer;
   transition: all 0.2s; background-color: #f7f7f7;
 }
-.stat-card-custom.hovered { background-color: #ff9797; }
+.stat-card-custom.hovered { background-color: var(--sigec-primary); }
 .stat-img   { width: 4rem; height: 4rem; object-fit: contain; margin-bottom: 1.25rem; }
-.stat-label { font-size: 0.875rem; font-weight: 700; margin-bottom: 0.5rem; text-align: center; color: #1a1a1a; }
-.stat-card-custom.hovered .stat-label { color: #ffffff; }
-.stat-value { color: #ff9797; font-size: 2.5rem; font-weight: 700; line-height: 1; }
-.stat-card-custom.hovered .stat-value { color: #ffffff; }
+.stat-label-dash { font-size: 0.875rem; font-weight: 700; margin-bottom: 0.5rem; text-align: center; color: var(--sigec-text-dark); }
+.stat-card-custom.hovered .stat-label-dash { color: #ffffff; }
+.stat-value-dash { color: var(--sigec-primary); font-size: 2.5rem; font-weight: 700; line-height: 1; }
+.stat-card-custom.hovered .stat-value-dash { color: #ffffff; }
 
 /* GRID & CARDS */
 .grid-2-col { display: grid; grid-template-columns: 1fr 1fr; }
-.card-box { background-color: #ffffff; border: none; border-radius: 0.75rem; padding: 1.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+.card-box { background-color: var(--sigec-bg); border: none; border-radius: 0.75rem; padding: 1.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
 .unified-card  { padding: 0; }
 .unified-left  { padding: 1.5rem; }
 .unified-right { padding: 2.5rem 1.5rem 1.5rem; }
@@ -189,16 +173,16 @@ const maxAge  = computed(() => { const m = Math.max(...ageData.value.map(d => d.
 .age-container    { display: flex; flex-direction: column; justify-content: center; }
 .age-chart-wrapper { display: flex; flex-direction: column; gap: 0.75rem; height: 100%; justify-content: center; }
 .age-bar-row { display: flex; align-items: center; gap: 0.75rem; }
-.age-label   { font-size: 0.75rem; width: 6rem; text-align: right; flex-shrink: 0; color: #6d6d6d; }
-.age-track   { flex: 1; height: 1rem; border-radius: 0.25rem; background-color: #f0f0f0; overflow: hidden; }
-.age-fill    { height: 100%; background-color: #ff9797; border-radius: 0.25rem; transition: width 0.5s ease; }
-.age-value   { font-size: 0.75rem; width: 1rem; flex-shrink: 0; color: #6d6d6d; }
+.age-label   { font-size: 0.75rem; width: 6rem; text-align: right; flex-shrink: 0; color: var(--sigec-text); }
+.age-track   { flex: 1; height: 1rem; border-radius: 0.25rem; background-color: var(--sigec-border); overflow: hidden; }
+.age-fill    { height: 100%; background-color: var(--sigec-primary); border-radius: 0.25rem; transition: width 0.5s ease; }
+.age-value   { font-size: 0.75rem; width: 1rem; flex-shrink: 0; color: var(--sigec-text); }
 .age-x-axis  { display: flex; justify-content: space-between; padding-left: 6.75rem; padding-right: 1.75rem; margin-top: 0.25rem; }
-.age-x-axis span { font-size: 0.75rem; color: #b0b0b0; }
+.age-x-axis span { font-size: 0.75rem; color: var(--sigec-text-muted); }
 
 /* CHART TITLE */
-.chart-title    { color: #6d6d6d; font-size: 1.25rem; font-weight: 600; }
-.chart-subtitle { margin-top: 0.25rem; font-size: 0.875rem; color: #ff9797; }
+.chart-title    { color: var(--sigec-text); font-size: 1.25rem; font-weight: 600; }
+.chart-subtitle { margin-top: 0.25rem; font-size: 0.875rem; color: var(--sigec-primary); }
 
 /* CHART WRAPPERS */
 .chart-container { display: flex; align-items: center; justify-content: center; }

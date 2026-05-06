@@ -96,84 +96,27 @@
 import { useRouter } from 'vue-router'
 import AppNavbar from '@/components/AppNavbar.vue'
 import AppFooter from '@/components/AppFooter.vue'
+import { useStatCards } from '@/composables/useStatCards'
 
 import logoMineduc  from '@/assets/logo_mineduc.png'
 import logoDigikal  from '@/assets/logo_digikal.png'
 import logoDigecade from '@/assets/logo_digecade.png'
 
-import iconFootprintsPink  from '@/assets/ninas_embarazadas_-20.png'
-import iconFootprintsWhite from '@/assets/ninas_embarazadas_-13.png'
-import iconClipboardPink   from '@/assets/ninas_embarazadas_-19.png'
-import iconClipboardWhite  from '@/assets/ninas_embarazadas_-14.png'
-import iconGraduationPink  from '@/assets/ninas_embarazadas_-18.png'
-import iconGraduationWhite from '@/assets/ninas_embarazadas_-15.png'
-import iconBuildingPink    from '@/assets/ninas_embarazadas_-17.png'
-import iconBuildingWhite   from '@/assets/ninas_embarazadas_-16.png'
-
 const router = useRouter()
-
-const statCards = [
-  { label: 'Casos totales',     value: '17', pink: iconFootprintsPink,  white: iconFootprintsWhite },
-  { label: 'En seguimiento',    value: '06', pink: iconClipboardPink,   white: iconClipboardWhite },
-  { label: 'Aún estudiando',    value: '06', pink: iconGraduationPink,  white: iconGraduationWhite },
-  { label: 'Fuera del sistema', value: '05', pink: iconBuildingPink,    white: iconBuildingWhite }
-]
+const { statCards } = useStatCards()
 </script>
 
 <style scoped>
 .landing-page {
-  background-color: #ffffff;
-  color: #6d6d6d;
-  font-family: system-ui, -apple-system, sans-serif;
+  background-color: var(--sigec-bg);
+  color: var(--sigec-text);
+  font-family: var(--sigec-font);
   min-height: 100vh;
 }
 
-/* HERO */
-.hero {
-  position: relative;
-  width: 100%;
-  overflow: hidden;
-  height: 500px;
-}
-.hero-bg {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center;
-}
-.hero-overlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(to bottom, rgba(255,151,151,0) 0%, rgba(255,151,151,0.2) 40%, rgba(255,151,151,0.95) 100%);
-}
-.hero-content {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-end;
-  padding-bottom: 3.5rem;
-  padding-inline: 1.5rem;
-  text-align: center;
-}
-.hero-title {
-  color: white;
-  text-shadow: 0 4px 12px rgba(0,0,0,0.3);
-  font-size: 48px;
-  font-weight: 700;
-  line-height: 1.15;
-  max-width: 800px;
-  margin-bottom: 0;
-}
-.hero-subtitle {
-  margin-top: 1rem;
-  color: white;
-  font-size: 1.125rem;
-  font-weight: 500;
-  text-shadow: 0 2px 8px rgba(0,0,0,0.3);
-  max-width: 700px;
-}
+/* HERO — override: HomeView usa 48px en vez de 64px global */
+.hero-title { font-size: 48px; max-width: 800px; }
+
 .font-bold { font-weight: 600; }
 
 /* INSTITUTIONS */
@@ -205,7 +148,7 @@ const statCards = [
 .generic-logo1 { height: 60px;  width: auto; object-fit: contain; border-radius: 8px; padding: 2px; }
 
 /* ABOUT */
-.about { padding: 5rem 0; background-color: #f8f8f8; }
+.about { padding: 5rem 0; background-color: var(--sigec-bg-soft); }
 .about-container {
   max-width: 75rem;
   margin: 0 auto;
@@ -219,16 +162,16 @@ const statCards = [
   .about-container { flex-direction: row; justify-content: space-between; }
 }
 .about-text { flex: 1; max-width: 32rem; }
-.about-text h2 { color: #6d6d6d; font-size: 32px; font-weight: 700; line-height: 1.2; margin-bottom: 1.5rem; }
-.about-text span { color: #ff9797; }
-.about-text p { font-size: 1rem; line-height: 1.6; color: #6d6d6d; margin-bottom: 2rem; }
+.about-text h2 { color: var(--sigec-text); font-size: 32px; font-weight: 700; line-height: 1.2; margin-bottom: 1.5rem; }
+.about-text span { color: var(--sigec-primary); }
+.about-text p { font-size: 1rem; line-height: 1.6; color: var(--sigec-text); margin-bottom: 2rem; }
 .primary-btn {
   padding: 0.875rem 2.5rem;
   border-radius: 50px;
   color: white;
   font-size: 1rem;
   font-weight: 500;
-  background-color: #ff9797;
+  background-color: var(--sigec-primary);
   border: none;
   cursor: pointer;
   transition: all 0.2s;
@@ -241,39 +184,10 @@ const statCards = [
 /* STATS */
 .stats { padding: 5rem 0; background-color: white; }
 .stats-container { max-width: 75rem; margin: 0 auto; padding: 0 1.5rem; }
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1.5rem;
-}
-@media (min-width: 768px) {
-  .stats-grid { grid-template-columns: repeat(4, 1fr); gap: 2rem; }
-}
-.stat-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 3rem 1.5rem;
-  border-radius: 1.25rem;
-  cursor: pointer;
-  transition: all 0.2s ease-in-out;
-  background-color: #f8f8f8;
-}
-.stat-card:hover { background-color: #ff9797; transform: translateY(-4px); box-shadow: 0 10px 20px -5px rgba(255,151,151,0.4); }
-.stat-icon-wrapper { margin-bottom: 1.5rem; }
-.stat-icon { width: 4.5rem; height: 4.5rem; object-fit: contain; }
-.stat-card .white-icon         { display: none; }
-.stat-card:hover .pink-icon    { display: none; }
-.stat-card:hover .white-icon   { display: block; }
-.stat-label { font-size: 1.125rem; font-weight: 700; margin-bottom: 0.5rem; text-align: center; color: #1a1a1a; transition: color 0.2s; }
-.stat-card:hover .stat-label   { color: #ffffff; }
-.stat-value { color: #ff9797; font-size: 48px; font-weight: 800; line-height: 1; transition: color 0.2s; }
-.stat-card:hover .stat-value   { color: #ffffff; }
 
 /* SCHOOL IMAGE */
 .school-img { height: 350px; padding: 0 10rem; }
-.school-img img { width: 100%; height: 100%; object-fit: cover; object-position: center; border-bottom: 10px solid #ff9797; }
+.school-img img { width: 100%; height: 100%; object-fit: cover; object-position: center; border-bottom: 10px solid var(--sigec-primary); }
 
 /* SEARCH SECTION */
 .search-section { padding: 0 0 5rem 0; background-color: white; }
@@ -293,8 +207,8 @@ const statCards = [
   .search-container { flex-direction: row; justify-content: space-between; text-align: left; }
   .search-box { width: auto; }
 }
-.search-text h3 { font-size: 32px; font-weight: 700; color: #6d6d6d; margin-bottom: 0.5rem; }
-.search-text p  { color: #ff9797; font-size: 1.125rem; font-weight: 600; margin-top: 0; }
+.search-text h3 { font-size: 32px; font-weight: 700; color: var(--sigec-text); margin-bottom: 0.5rem; }
+.search-text p  { color: var(--sigec-primary); font-size: 1.125rem; font-weight: 600; margin-top: 0; }
 .search-box { display: flex; justify-content: flex-end; width: 100%; }
 .search-btn { padding: 1rem 3rem; font-size: 1.125rem; }
 </style>

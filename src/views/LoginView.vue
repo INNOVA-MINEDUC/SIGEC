@@ -5,7 +5,7 @@
       <v-alert
         v-if="errorMessage"
         class="alert-box"
-        type="error"3
+        type="error"
         elevation="6"
         border="start"
         closable

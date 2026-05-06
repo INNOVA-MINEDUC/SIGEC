@@ -58,3 +58,5 @@ cypress/screenshots/
 # Archivos de producción
 dist-ssr/
 *.local
+
+Aplicación web administrativa
