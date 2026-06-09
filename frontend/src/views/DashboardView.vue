@@ -264,7 +264,7 @@
 
 <script setup>
 import { ref, computed, reactive, onMounted, watch, nextTick } from 'vue'
-import axios from 'axios'
+import api from '@/helpers/api'
 
 import AppNavbar from '@/components/AppNavbar.vue'
 import AppFooter from '@/components/AppFooter.vue'
@@ -285,7 +285,6 @@ import iconWhite15 from '@/assets/ninas embarazadas -34.png'
 import iconWhite14 from '@/assets/ninas embarazadas -35.png'
 import iconWhite13 from '@/assets/ninas embarazadas -33.png'
 
-const API = 'http://localhost:3000/api/v1'
 
 const casosStore = useCasosStore()
 
@@ -339,8 +338,8 @@ const filters = reactive(initialFilters())
 // ── Carga de datos de referencia ──────────────────────────────────────────────
 onMounted(async () => {
   const [rDept, rDeptales] = await Promise.all([
-    axios.get(`${API}/dept`),
-    axios.get(`${API}/dept/departamentales`),
+    api.get('/dept'),
+    api.get('/dept/departamentales'),
   ])
   departamentos.value   = rDept.data.data    || []
   departamentales.value = rDeptales.data.data || []
@@ -355,7 +354,7 @@ const onDepartamentoChange = async () => {
   if (!filters.departamento) return
   const dept = departamentos.value.find(d => d.nombre === filters.departamento)
   if (!dept) return
-  const r = await axios.get(`${API}/dept/municipios`, { params: { departamento_id: dept.id } })
+  const r = await api.get('/dept/municipios', { params: { departamento_id: dept.id } })
   municipios.value = r.data.data || []
 }
 

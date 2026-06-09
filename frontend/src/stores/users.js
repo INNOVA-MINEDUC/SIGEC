@@ -13,6 +13,7 @@ users: [],
   }),
 
   getters: {
+    
 
     // usuario autenticado
     currentUser: (state) => {

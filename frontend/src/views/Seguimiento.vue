@@ -231,7 +231,7 @@ class="status-badge"
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import axios from 'axios'
+import api from '@/helpers/api'
 
 import AppNavbar from '@/components/AppNavbar.vue'
 import AppFooter from '@/components/AppFooter.vue'
@@ -247,7 +247,6 @@ import iconBuildingWhite from '@/assets/ninas_embarazadas_-16.png'
 
 const router = useRouter()
 
-const API_BASE = 'http://localhost:3000/api/v1'
 
 const casos = ref([])
 const departamentos = ref([])

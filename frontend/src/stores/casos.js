@@ -1,9 +1,7 @@
 // src/stores/casos.js
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import axios from 'axios'
-
-const API_URL = 'http://localhost:3000/api/v1/caso'
+import api from '@/helpers/api'
 
 export const useCasosStore = defineStore('casos', () => {
 
@@ -28,7 +26,7 @@ export const useCasosStore = defineStore('casos', () => {
       Object.entries(params).filter(([, v]) => v !== '' && v !== null && v !== undefined)
     )
     try {
-      const { data } = await axios.get(API_URL, { params: limpio })
+      const { data } = await api.get('/caso', { params: limpio })
       casos.value = data.data ?? []
       filtrosActivos.value = limpio
     } catch (e) {
