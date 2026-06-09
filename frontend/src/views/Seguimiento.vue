@@ -318,7 +318,7 @@ const extractCasos = (response) => {
 
 const cargarDepartamentos = async () => {
   try {
-    const response = await axios.get(`${API_BASE}/dept`)
+    const response = await api.get(`/dept`)
     departamentos.value = extractCasos(response)
   } catch (error) {
     console.error('Error cargando departamentos:', error)
@@ -329,7 +329,7 @@ const cargarDepartamentos = async () => {
 const cargarTodosLosCasos = async () => {
   try {
     loading.value = true
-    const response = await axios.get(`${API_BASE}/caso`)
+    const response = await api.get(`/caso`)
     casos.value = extractCasos(response)
   } catch (error) {
     console.error('Error cargando casos:', error)
@@ -353,7 +353,7 @@ const cargarCasosFiltrados = async () => {
     }
 
     console.log(payload)
-    const response = await axios.post(`${API_BASE}/caso`, payload)
+    const response = await api.post(`}/caso`, payload)
     casos.value = extractCasos(response)
     page.value = 1
   } catch (error) {
