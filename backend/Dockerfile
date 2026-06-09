@@ -27,4 +27,4 @@ USER node
 EXPOSE 3000
 
 # Usar node de manera explícita (npm no maneja tan bien las señales de cierre de contenedores SIGTERM)
-CMD ["node", "app.js"]
+CMD ["node", "server.js"]
