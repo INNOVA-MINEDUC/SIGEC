@@ -1,135 +1,101 @@
 // src/stores/casos.js
 import { defineStore } from 'pinia'
-import { ref, reactive, computed } from 'vue'
+import { ref, computed } from 'vue'
 import axios from 'axios'
 
+const API_URL = 'http://localhost:3000/api/v1/caso'
+
 export const useCasosStore = defineStore('casos', () => {
+
   const casos = ref([])
   const loading = ref(false)
   const error = ref(null)
 
-  const filtros = reactive({
-    codigoEstudiante: '',
-    edad: '',
-    edadMin: '',
-    edadMax: '',
-    grado: '',
-    nivel: '',
-    lengua: '',
-    pueblo: '',
-    centroEducativo: '',
-    fechaCaso: '',
-    departamento: '',
-    municipio: '',
-    estado: '',
-    tieneQueja: '',
-    dideduc: '',
-    statusActual: '',
-    resultado: '',
-    area: ''
+  const seleccion = ref({
+    tipo: 'all',
+    departamentoNombre: null,
+    municipioNombre: null
   })
 
-  const fetchCasos = async () => {
-    try {
-      loading.value = true
-      error.value = null
+  // Parámetros actualmente aplicados (para que el mapa y otros componentes sepan)
+  const filtrosActivos = ref({})
 
-      const { data } = await axios.get('http://localhost:3000/api/v1/caso')
-      casos.value = data.data || []
+  const fetchCasos = async (params = {}) => {
+    loading.value = true
+    error.value = null
+    // Limpiar params vacíos
+    const limpio = Object.fromEntries(
+      Object.entries(params).filter(([, v]) => v !== '' && v !== null && v !== undefined)
+    )
+    try {
+      const { data } = await axios.get(API_URL, { params: limpio })
+      casos.value = data.data ?? []
+      filtrosActivos.value = limpio
     } catch (e) {
-      error.value = e.message || 'Error cargando casos'
+      error.value = e.message ?? 'Error cargando casos'
+      casos.value = []
     } finally {
       loading.value = false
     }
   }
 
-  const casosFiltrados = computed(() => {
-    return casos.value.filter((caso) => {
-      const nina = caso.nina
-      const historial = nina?.historialEducativo || []
+  const fetchTodos = () => {
+    seleccion.value = { tipo: 'all', departamentoNombre: null, municipioNombre: null }
+    filtrosActivos.value = {}
+    return fetchCasos()
+  }
 
-      if (filtros.departamento && String(nina?.municipio?.departamento?.id) !== String(filtros.departamento)) return false
-      if (filtros.municipio && String(nina?.municipio?.id) !== String(filtros.municipio)) return false
-      if (filtros.estado && String(caso.estado) !== String(filtros.estado)) return false
-      if (filtros.dideduc && String(caso.direccion_departamental_educacion) !== String(filtros.dideduc)) return false
-      if (filtros.fechaCaso && String(caso.fecha_ingreso) !== String(filtros.fechaCaso)) return false
+  const fetchPorDepartamento = (nombre) => {
+    seleccion.value = { tipo: 'departamento', departamentoNombre: nombre, municipioNombre: null }
+    return fetchCasos({ departamento: nombre })
+  }
 
-      if (filtros.tieneQueja === 'si' && !(caso.queja && caso.queja.trim() !== '')) return false
-      if (filtros.tieneQueja === 'no' && (caso.queja && caso.queja.trim() !== '')) return false
+  const fetchPorMunicipio = (munNombre, deptNombre) => {
+    seleccion.value = { tipo: 'municipio', departamentoNombre: deptNombre, municipioNombre: munNombre }
+    return fetchCasos({ departamento: deptNombre, municipio: munNombre })
+  }
 
-      if (filtros.codigoEstudiante) {
-        const existe = historial.some(h =>
-          String(h.codigo_personal ?? '') === String(filtros.codigoEstudiante)
-        )
-        if (!existe) return false
-      }
+  // Carga con todos los filtros del dashboard
+  const fetchConFiltros = (filtros = {}) => {
+    seleccion.value = { tipo: 'filtros', departamentoNombre: null, municipioNombre: null }
+    return fetchCasos(filtros)
+  }
 
-      if (filtros.edad && String(nina?.edad) !== String(filtros.edad)) return false
-      if (filtros.edadMin && Number(nina?.edad) < Number(filtros.edadMin)) return false
-      if (filtros.edadMax && Number(nina?.edad) > Number(filtros.edadMax)) return false
+  const total = computed(() => casos.value.length)
 
-      if (filtros.grado) {
-        const existe = historial.some(h => String(h.grado) === String(filtros.grado))
-        if (!existe) return false
-      }
-
-      if (filtros.nivel) {
-        const existe = historial.some(h => String(h.nivel) === String(filtros.nivel))
-        if (!existe) return false
-      }
-
-      if (filtros.statusActual) {
-        const existe = historial.some(h => String(h.status_actual) === String(filtros.statusActual))
-        if (!existe) return false
-      }
-
-      if (filtros.resultado) {
-        const existe = historial.some(h => String(h.resultado) === String(filtros.resultado))
-        if (!existe) return false
-      }
-
-      if (filtros.area) {
-        const existe = historial.some(h => String(h.centroEducativo?.area) === String(filtros.area))
-        if (!existe) return false
-      }
-
-      if (filtros.centroEducativo) {
-        const existe = historial.some(h =>
-          String(h.centroEducativo?.nombre ?? '').toLowerCase().includes(filtros.centroEducativo.toLowerCase())
-        )
-        if (!existe) return false
-      }
-
-      if (filtros.lengua && String(nina?.comunidadLinguistica?.id) !== String(filtros.lengua)) return false
-      if (filtros.pueblo && String(nina?.pueblo?.id) !== String(filtros.pueblo)) return false
-
-      return true
-    })
+  const tituloSeleccion = computed(() => {
+    const s = seleccion.value
+    if (s.tipo === 'departamento') return `Depto. ${s.departamentoNombre}`
+    if (s.tipo === 'municipio')    return `${s.municipioNombre}, ${s.departamentoNombre}`
+    if (s.tipo === 'filtros')      return 'Filtros del dashboard'
+    return 'Todo Guatemala'
   })
 
-  const totalCasos = computed(() => casosFiltrados.value.length)
-  const casosConQueja = computed(() => casosFiltrados.value.filter(c => c.queja && c.queja.trim() !== '').length)
-  const casosPendientes = computed(() => casosFiltrados.value.filter(c => c.estado === 'pendiente').length)
+  // Casos filtrados por mes (1=Enero ... 12=Diciembre)
+  const casosPorMes = (mes) =>
+    casos.value.filter(c =>
+      c.fecha_ingreso
+        ? new Date(c.fecha_ingreso).getMonth() + 1 === mes
+        : false
+    )
 
-  const casosPorEdad = (edad) => {
-    return casosFiltrados.value.filter(c => Number(c.nina?.edad) === Number(edad))
-  }
-
-  const resetFiltros = () => {
-    Object.keys(filtros).forEach((key) => (filtros[key] = ''))
-  }
+  // Casos filtrados por estado: 'pendiente' | 'faltante' | 'completado'
+  const casosPorEstado = (estado) =>
+    casos.value.filter(c => c.estado === estado)
 
   return {
     casos,
     loading,
     error,
-    filtros,
-    fetchCasos,
-    casosFiltrados,
-    totalCasos,
-    casosConQueja,
-    casosPendientes,
-    casosPorEdad,
-    resetFiltros
+    seleccion,
+    filtrosActivos,
+    total,
+    tituloSeleccion,
+    fetchTodos,
+    fetchPorDepartamento,
+    fetchPorMunicipio,
+    fetchConFiltros,
+    casosPorMes,
+    casosPorEstado
   }
 })

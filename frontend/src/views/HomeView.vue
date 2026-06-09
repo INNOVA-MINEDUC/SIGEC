@@ -55,7 +55,7 @@
     </section>
 
     <!-- ── STATS SECTION ── -->
-    <section class="stats">
+    <!-- <section class="stats">
       <div class="stats-container">
         <div class="stats-grid">
           <div class="stat-card" v-for="card in statCards" :key="card.label">
@@ -68,7 +68,7 @@
           </div>
         </div>
       </div>
-    </section>
+    </section> -->
 
     <!-- ── SCHOOL IMAGE ── -->
     <section class="school-img">

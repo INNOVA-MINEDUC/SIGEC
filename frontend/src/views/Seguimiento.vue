@@ -43,8 +43,8 @@
             />
             <button class="pill-btn" @click="handleSearch">Buscar</button>
           </div>
-          <button class="btn btn-outline" @click="resetSearch">Importar EXCEL</button>
-          <button class="btn btn-primary">Importar PDF</button>
+          <!-- <button class="btn btn-outline" @click="resetSearch">Importar EXCEL</button>
+          <button class="btn btn-primary">Importar PDF</button> -->
         </div>
       </div>
     </section>
@@ -166,12 +166,7 @@ class="queja-dot"
 ></div>
 
 <span class="queja-text">
-
-{{ tieneQueja(caso)
-? 'Tiene queja'
-: 'Sin queja'
-}}
-
+  {{ tieneQueja(caso) ? caso.queja : 'Sin queja' }}
 </span>
 
 </div>
@@ -188,7 +183,7 @@ class="status-badge"
 </td>
 
                 <td>
-                  <button class="action-btn">SEGUIMIENTO</button>
+                  <button class="action-btn" @click="irAQueja(caso)">SEGUIMIENTO</button>
                 </td>
               </tr>
 
@@ -235,6 +230,7 @@ class="status-badge"
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import axios from 'axios'
 
 import AppNavbar from '@/components/AppNavbar.vue'
@@ -248,6 +244,8 @@ import iconGraduationPink from '@/assets/ninas_embarazadas_-18.png'
 import iconGraduationWhite from '@/assets/ninas_embarazadas_-15.png'
 import iconBuildingPink from '@/assets/ninas_embarazadas_-17.png'
 import iconBuildingWhite from '@/assets/ninas_embarazadas_-16.png'
+
+const router = useRouter()
 
 const API_BASE = 'http://localhost:3000/api/v1'
 
@@ -277,18 +275,9 @@ const normalizeText = (value) => {
 const padZero = (num) => String(num).padStart(2, '0')
 
 const STATUS_STYLES = {
-  pendiente: {
-    backgroundColor: '#ffd6d6',
-    color: '#c05050'
-  },
-  completado: {
-    backgroundColor: '#e6f4ea',
-    color: '#137333'
-  },
-  faltantes: {
-    backgroundColor: '#fef7e0',
-    color: '#b06000'
-  }
+  pendiente:  { backgroundColor: '#ffd6d6',  color: '#c05050' },
+  faltante:   { backgroundColor: '#fef7e0',  color: '#b06000' },
+  completado: { backgroundColor: '#e6f4ea',  color: '#137333' }
 }
 
 const getStatusStyle = (estado) => {
@@ -394,6 +383,10 @@ const statCards = computed(() => {
     c => normalizeText(c.estado) === 'completado'
   ).length
 
+    const faltante = casos.value.filter(
+    c => normalizeText(c.estado) === 'faltante'
+  ).length
+
   const sinQueja = casos.value.filter(
     c => !c.queja || String(c.queja).trim() === ''
   ).length
@@ -406,7 +399,7 @@ const statCards = computed(() => {
       white: iconFootprintsWhite
     },
     {
-      label: 'Casos pendientes',
+      label: 'Casos incompletos',
       value: padZero(pendientes),
       pink: iconClipboardPink,
       white: iconClipboardWhite
@@ -414,6 +407,12 @@ const statCards = computed(() => {
     {
       label: 'Casos completados',
       value: padZero(completados),
+      pink: iconGraduationPink,
+      white: iconGraduationWhite
+    },
+        {
+      label: 'Casos faltante',
+      value: padZero(faltante),
       pink: iconGraduationPink,
       white: iconGraduationWhite
     },
@@ -466,7 +465,7 @@ const endItem = computed(() => {
 })
 
 const estadoOptions = computed(() => {
-  return ['pendiente', 'completado', 'faltantes']
+  return ['Todos', 'pendiente', 'faltante', 'completado']
 })
 
 const handleSearch = async () => {
@@ -506,6 +505,10 @@ page.value=1
 
 await cargarTodosLosCasos()
 
+}
+
+const irAQueja = (caso) => {
+  router.push({ path: '/complains', query: { caso_id: caso.id } })
 }
 
 </script>

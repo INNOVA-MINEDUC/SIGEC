@@ -27,6 +27,7 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import logoSisec from '@/assets/LOGO_SISEC.png'
@@ -34,14 +35,22 @@ import logoSisec from '@/assets/LOGO_SISEC.png'
 const router = useRouter()
 const auth = useAuthStore()
 
-const navLinks = [
-  { name: 'Inicio',         to: '/' },
-  { name: 'Seguimiento',    to: '/seguimiento' },
-  { name: 'Quejas',         to: '/complains' },
-  { name: 'Dashboard',      to: '/dashboard' },
-  { name: 'Importar Datos', to: '/charge-data' },
-  { name: 'Usuarios',       to: '/users' }
+const BASE_LINKS = [
+  { name: 'Inicio',      to: '/' },
+  { name: 'Seguimiento', to: '/seguimiento' },
+  { name: 'Quejas',      to: '/complains' },
+  { name: 'Dashboard',   to: '/dashboard' },
 ]
+
+const ADMIN_LINKS = [
+  { name: 'Importar Datos', to: '/charge-data' },
+  { name: 'Usuarios',       to: '/users' },
+]
+
+const navLinks = computed(() => {
+  if (auth.user?.role === 'admin') return [...BASE_LINKS, ...ADMIN_LINKS]
+  return BASE_LINKS
+})
 
 function logout() {
   auth.logout()

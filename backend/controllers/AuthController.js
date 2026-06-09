@@ -5,6 +5,10 @@ import Role from "../models/Role.js"
 import dotenv from 'dotenv'
 dotenv.config()
 
+const SECRET = process.env.JWT_SECRET || 'secret'
+
+
+
 export const AuthLogin = async (req, res) => {
   try {
     const { email, password } = req.body
@@ -43,13 +47,10 @@ export const AuthLogin = async (req, res) => {
       })
 
     // 4. Crear token
+    const roleName = user.role?.name ?? null
     const token = jwt.sign(
-      {
-        id: user.id,
-        email: user.email,
-        role: user.role?.nombre 
-      },
-      process.env.JWT_SECRET || "secret",
+      { id: user.id, email: user.email, role: roleName },
+      SECRET,
       { expiresIn: '1d' }
     )
 
@@ -58,10 +59,10 @@ export const AuthLogin = async (req, res) => {
       message: 'Login exitoso',
       token,
       user: {
-        id: user.id,
-        name: user.name,
+        id:    user.id,
+        name:  user.name,
         email: user.email,
-        role: user.role?.nombre 
+        role:  roleName,
       }
     })
 
@@ -71,27 +72,28 @@ export const AuthLogin = async (req, res) => {
   }
 }
 
+// Valida el token y devuelve datos frescos del usuario desde la BD
 export const isAuthenticated = async (req, res) => {
-  const token = req.headers.authorization?.split(' ')[1];
-
-  if (!token) {
-    return res.status(401).json({ error: 'No token' });
-  }
+  const token = req.headers.authorization?.split(' ')[1]
+  if (!token) return res.status(401).json({ error: 'No token' })
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || "secret");
+    const decoded = jwt.verify(token, SECRET)
 
-    console.log({
-      id: decoded.id,
-      role: decoded.role
-    });
+    // Re-leer usuario desde BD para obtener el rol actual (no el del JWT que puede ser viejo)
+    const user = await User.findByPk(decoded.id, {
+      include: { model: Role, as: 'role', attributes: ['name'] }
+    })
+    if (!user) return res.status(401).json({ error: 'Usuario no encontrado' })
+    if (!user.isActive) return res.status(403).json({ error: 'Usuario inactivo' })
 
     return res.json({
-      id: decoded.id,
-      role: decoded.role
-    });
-
-  } catch (error) {
-    res.status(401).json({ error: 'Token inválido' });
+      id:    user.id,
+      name:  user.name,
+      email: user.email,
+      role:  user.role?.name ?? null,
+    })
+  } catch {
+    return res.status(401).json({ error: 'Token inválido' })
   }
-};
+}

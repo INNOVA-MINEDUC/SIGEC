@@ -1,26 +1,24 @@
 <template>
-  <div id="chartdivmap"></div>
+  <div ref="chartdiv" id="chartdivmap"></div>
 </template>
 
 <script setup>
-// import { useMapStore } from "@/stores/mapStore"
-
 import * as am5 from "@amcharts/amcharts5"
 import * as am5map from "@amcharts/amcharts5/map"
 import am5themes_Animated from "@amcharts/amcharts5/themes/Animated"
-import { onMounted, onBeforeUnmount } from "vue"
-// import { useEstablecimientosStore } from '@/stores/escuelasStore'
+import { ref, onMounted, onBeforeUnmount } from "vue"
 
 import guatemalaDepartamentos from "../helpers/Departamentos2.json"
 import guatemalaMunicipios from "../helpers/Municipios2.json"
-import api from '@/helpers/api.js'
 
-// const mapStore = useMapStore()
+import { useCasosStore } from "@/stores/casos"
 
+const casosStore = useCasosStore()
+const chartdiv = ref(null)
 let root
 
 onMounted(() => {
-  root = am5.Root.new("chartdivmap")
+  root = am5.Root.new(chartdiv.value)
   root._logo.dispose()
   root.setThemes([am5themes_Animated.new(root)])
 
@@ -34,75 +32,26 @@ onMounted(() => {
     })
   )
 
-  // const establecimientosStore = useEstablecimientosStore()
-
-const handleSelection = async (type = "all", data = {}) => {
-
-  try {
-
-    establecimientosStore.setLoading(true)
-
-    const payload =
-      type === "all"
-        ? {}
-        : {
-            dept: data.departamen,
-            muni: data.municipio
-          }
-
-    const res = await api.post(
-      `/api/v1/dashboard`,
-      payload
-    )
-
-    establecimientosStore.setData(res.data)
-
-  } catch (error) {
-
-    console.error("Error cargando dashboard:", error)
-
-  } finally {
-
-    establecimientosStore.setLoading(false)
-
-  }
-
-  mapStore.setSelection({
-    type,
-    departamento: data.departamen,
-    municipio: data.municipio
-  })
-}
-  // handleSelection("all")
-
-
   const departamentosSeries = chart.series.push(
-    am5map.MapPolygonSeries.new(root, {
-      geoJSON: guatemalaDepartamentos
-    })
+    am5map.MapPolygonSeries.new(root, { geoJSON: guatemalaDepartamentos })
   )
-
   departamentosSeries.mapPolygons.template.setAll({
     tooltipText: "{departamen}",
     interactive: true,
     fill: am5.color("#ff7b7b")
   })
-
   departamentosSeries.mapPolygons.template.states.create("hover", {
-    
     fill: am5.color("#ffb3b3")
   })
 
   const municipiosSeries = chart.series.push(
-    am5map.MapPolygonSeries.new(root, { visible: false }) 
+    am5map.MapPolygonSeries.new(root, { visible: false })
   )
-
   municipiosSeries.mapPolygons.template.setAll({
     tooltipText: "{municipio}",
     interactive: true,
     fill: am5.color("#ffb3b3")
   })
-
   municipiosSeries.mapPolygons.template.states.create("hover", {
     fill: am5.color("#ff7b7b")
   })
@@ -110,13 +59,11 @@ const handleSelection = async (type = "all", data = {}) => {
   const municipioSeleccionadoSeries = chart.series.push(
     am5map.MapPolygonSeries.new(root, { visible: false })
   )
-
   municipioSeleccionadoSeries.mapPolygons.template.setAll({
     tooltipText: "{municipio}",
     interactive: true,
     fill: am5.color("#ffb3b3")
   })
-
   municipioSeleccionadoSeries.mapPolygons.template.states.create("hover", {
     fill: am5.color("#ff7b7b")
   })
@@ -136,114 +83,110 @@ const handleSelection = async (type = "all", data = {}) => {
       visible: false
     })
   )
-
-
   backContainer.children.push(
-    am5.Label.new(root, {
-      text: "🔙 Regresar",
-      centerY: am5.p50
-    })
+    am5.Label.new(root, { text: "🔙 Regresar", centerY: am5.p50 })
   )
 
   let lastDepartamentoDataItem = null
+  let lastDepartamentoNombre = null
 
+  // ─── Click departamento ────────────────────────────────────────────────────
   departamentosSeries.mapPolygons.template.events.on("click", (ev) => {
     const dataItem = ev.target.dataItem
     const data = dataItem.dataContext
 
-    // handleSelection("departamento", data)
-
+    const deptNombre = data.departamen ?? data.nombre
     lastDepartamentoDataItem = dataItem
+    lastDepartamentoNombre = deptNombre
 
-    const filtered = guatemalaMunicipios.features.filter((f, index) => {
-      const depFeature = f?.properties?.departamen?.trim().toLowerCase()
+    console.log("[MAPA] Departamento:", deptNombre)
 
-      const depData = (
-        data?.departamen ||
-        data?.properties?.departamen ||
-        ""
-      ).trim().toLowerCase()
-
-      return depFeature === depData
+    casosStore.fetchPorDepartamento(deptNombre).then(() => {
+      console.log(`[STORE] Total casos (${deptNombre}):`, casosStore.total)
+      console.log("[STORE] Datos:", casosStore.casos)
     })
 
-    const filteredMunicipios = {
-      type: "FeatureCollection",
-      features: filtered
-    }
-
+    const filtered = guatemalaMunicipios.features.filter((f) => {
+      return f?.properties?.departamen?.trim().toLowerCase() === deptNombre.trim().toLowerCase()
+    })
 
     if (filtered.length === 0) {
-      console.warn(" No se encontraron municipios para este departamento")
+      console.warn("[MAPA] Sin municipios para:", deptNombre)
       return
     }
 
-    const zoomAnimation = departamentosSeries.zoomToDataItem(dataItem)
-
-    Promise.all([zoomAnimation.waitForStop()]).then(() => {
-      municipiosSeries.set("geoJSON", filteredMunicipios)
+    departamentosSeries.zoomToDataItem(dataItem).waitForStop().then(() => {
+      municipiosSeries.set("geoJSON", { type: "FeatureCollection", features: filtered })
       municipiosSeries.show()
       departamentosSeries.hide(100)
       backContainer.show()
     })
   })
 
+  // ─── Click municipio ───────────────────────────────────────────────────────
   municipiosSeries.mapPolygons.template.events.on("click", (ev) => {
     const dataItem = ev.target.dataItem
     const data = dataItem.dataContext
 
-    // handleSelection("municipio", data)
+    const munNombre = data.municipio ?? data.nombre
+    const deptNombre = lastDepartamentoNombre
 
-     const filtered = guatemalaMunicipios.features.filter((f, index) => {
-      const depFeature = f?.properties?.municipio?.trim().toLowerCase()
+    console.log("[MAPA] Municipio:", munNombre, "| Departamento:", deptNombre)
 
-      const depData = (
-        data?.municipio ||
-        data?.properties?.municipio ||
-        ""
-      ).trim().toLowerCase()
-
-      return depFeature === depData
+    casosStore.fetchPorMunicipio(munNombre, deptNombre).then(() => {
+      console.log(`[STORE] Total casos (${munNombre}):`, casosStore.total)
+      console.log("[STORE] Datos:", casosStore.casos)
     })
 
-    const municipioUnico = {
-      type: "FeatureCollection",
-      features: filtered
-    }
+    const filtered = guatemalaMunicipios.features.filter((f) => {
+      return f?.properties?.municipio?.trim().toLowerCase() === munNombre.trim().toLowerCase()
+    })
 
-    const zoomAnimation = municipiosSeries.zoomToDataItem(dataItem)
-
-    Promise.all([zoomAnimation.waitForStop()]).then(() => {
-      municipioSeleccionadoSeries.set("geoJSON", municipioUnico)
+    municipiosSeries.zoomToDataItem(dataItem).waitForStop().then(() => {
+      municipioSeleccionadoSeries.set("geoJSON", { type: "FeatureCollection", features: filtered })
       municipioSeleccionadoSeries.show()
       municipiosSeries.hide(100)
       backContainer.show()
     })
   })
 
-
+  // ─── Botón regresar ────────────────────────────────────────────────────────
   backContainer.events.on("click", () => {
     if (municipioSeleccionadoSeries.get("visible")) {
+      // Municipio → departamento
       municipioSeleccionadoSeries.hide()
       municipiosSeries.show()
 
       if (lastDepartamentoDataItem) {
         departamentosSeries.zoomToDataItem(lastDepartamentoDataItem)
-        // handleSelection("departamento", {
-        //   departamen: lastDepartamentoDataItem.dataContext.departamen
-        // })
       }
+
+      console.log("[MAPA] Regresando a departamento:", lastDepartamentoNombre)
+      casosStore.fetchPorDepartamento(lastDepartamentoNombre).then(() => {
+        console.log(`[STORE] Total casos (${lastDepartamentoNombre}):`, casosStore.total)
+      })
+
     } else {
+      // Departamento → nacional
       chart.goHome()
       departamentosSeries.show()
       municipiosSeries.hide()
       backContainer.hide()
 
-      mapStore.reset()
-  
-      // handleSelection("all")
+      lastDepartamentoDataItem = null
+      lastDepartamentoNombre = null
 
+      console.log("[MAPA] Regresando a vista nacional")
+      casosStore.fetchTodos().then(() => {
+        console.log("[STORE] Total casos (todos):", casosStore.total)
+      })
     }
+  })
+
+  // ─── Carga inicial ─────────────────────────────────────────────────────────
+  casosStore.fetchTodos().then(() => {
+    console.log("[STORE] Carga inicial. Total:", casosStore.total)
+    console.log("[STORE] Datos:", casosStore.casos)
   })
 })
 

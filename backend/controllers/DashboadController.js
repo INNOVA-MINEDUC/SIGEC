@@ -4,7 +4,6 @@ import Municipio from "../models/Municipio.js";
 import Departamento from "../models/Departamento.js";
 import Pueblo from "../models/Pueblo.js";
 import ComunidadLinguistica from "../models/ComunidadLinguistica.js";
-import Institucion from "../models/Institucion.js";
 import HistorialEducativo from "../models/HistorialEducativo.js";
 import CentroEducativo from "../models/CentroEducativo.js";
 import CargaArchivo from "../models/CargaArchivo.js";
@@ -61,10 +60,6 @@ export const ObtenerCasosFiltrados = async (req, res) => {
               as: "historialEducativo",
               include: [
                 {
-                  model: Institucion,
-                  as: "institucion"
-                },
-                {
                   model: CentroEducativo,
                   as: "centroEducativo",
                   include: [
@@ -77,10 +72,6 @@ export const ObtenerCasosFiltrados = async (req, res) => {
               ]
             }
           ]
-        },
-        {
-          model: Institucion,
-          as: "institucion"
         },
         {
           model: CargaArchivo,

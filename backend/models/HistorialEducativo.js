@@ -14,10 +14,6 @@ type:DataTypes.INTEGER,
 allowNull:false
 },
 
-institucion_id:{
-type:DataTypes.INTEGER
-},
-
 centro_educativo_id:{
 type:DataTypes.INTEGER
 },

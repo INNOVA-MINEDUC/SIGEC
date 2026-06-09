@@ -35,6 +35,7 @@
                 <select v-model="roleFilter" class="role-select">
                   <option value="">Todos</option>
                   <option value="admin">Admin</option>
+                  <option value="moderator">Moderador</option>
                   <option value="user">Usuario</option>
                 </select>
                 <v-icon size="16" class="select-icon">mdi-chevron-down</v-icon>
@@ -69,14 +70,13 @@
                     </span>
                   </td>
                   <td>
-                    <div class="status-indicator" @click="toggleStatus(user.id)" style="cursor:pointer">
-                      <span :class="['dot', user.isActive ? 'active' : 'inactive']"></span>
-                      {{ user.isActive ? 'Activo' : 'Inactivo' }}
+                    <div class="status-indicator" @click="openToggleDialog(user)" style="cursor:pointer">
+                      <span :class="['dot', user.active ? 'active' : 'inactive']"></span>
+                      {{ user.active ? 'Activo' : 'Inactivo' }}
                     </div>
                   </td>
                   <td class="text-right actions-cell">
-                    <button class="action-btn edit-btn"   @click="openDialog(user)"       title="Editar"><v-icon size="18">mdi-pencil</v-icon></button>
-                    <button class="action-btn delete-btn" @click="openDeleteDialog(user)"  title="Eliminar"><v-icon size="18">mdi-delete</v-icon></button>
+                    <button class="action-btn edit-btn" @click="openDialog(user)" title="Editar"><v-icon size="18">mdi-pencil</v-icon></button>
                   </td>
                 </tr>
                 <tr v-if="filteredUsers.length === 0">
@@ -101,15 +101,15 @@
             <v-col cols="12"><v-text-field v-model="editedItem.name"     label="Nombre"     variant="outlined" density="comfortable" color="#ff9797" /></v-col>
             <v-col cols="12"><v-text-field v-model="editedItem.email"    label="Correo"     variant="outlined" density="comfortable" color="#ff9797" /></v-col>
             <v-col cols="12">
-              <v-select 
-                v-model="editedItem.roleId" 
-                :items="[{title: 'Admin', value: 1}, {title: 'Usuario', value: 2}]" 
+              <v-select
+                v-model="editedItem.roleId"
+                :items="[{title: 'Admin', value: 1}, {title: 'Usuario', value: 2}, {title: 'Moderador', value: 3}]"
                 item-title="title"
                 item-value="value"
-                label="Rol" 
-                variant="outlined" 
-                density="comfortable" 
-                color="#ff9797" 
+                label="Rol"
+                variant="outlined"
+                density="comfortable"
+                color="#ff9797"
               />
             </v-col>
             <v-col cols="12">
@@ -133,18 +133,31 @@
       </v-card>
     </v-dialog>
 
-    <v-dialog v-model="deleteDialog" max-width="420">
+    <v-dialog v-model="toggleDialog" max-width="420">
       <v-card class="rounded-lg">
         <v-card-title class="text-h6 font-weight-bold px-6 py-4" style="color:#555555; border-bottom:1px solid #f0f0f0;">
-          Confirmar eliminación
+          {{ selectedUser?.active ? 'Inactivar usuario' : 'Activar usuario' }}
         </v-card-title>
         <v-card-text class="px-6 pb-2 text-body-1">
-          ¿Seguro que deseas eliminar al usuario <strong>{{ selectedUser?.name }}</strong>?
+          <span v-if="selectedUser?.active">
+            ¿Deseas inactivar a <strong>{{ selectedUser?.name }}</strong>?
+            El usuario no podrá iniciar sesión mientras esté inactivo.
+          </span>
+          <span v-else>
+            ¿Deseas activar nuevamente a <strong>{{ selectedUser?.name }}</strong>?
+          </span>
         </v-card-text>
         <v-card-actions class="px-6 pb-6">
           <v-spacer />
-          <v-btn variant="text"     color="grey-darken-2" @click="deleteDialog = false" class="text-none font-weight-medium">Cancelar</v-btn>
-          <v-btn color="red-darken-1" variant="flat"      @click="confirmDelete"        class="text-none font-weight-medium px-6">Eliminar</v-btn>
+          <v-btn variant="text" color="grey-darken-2" @click="toggleDialog = false" class="text-none font-weight-medium">Cancelar</v-btn>
+          <v-btn
+            :color="selectedUser?.active ? 'orange-darken-2' : 'green-darken-1'"
+            variant="flat"
+            @click="confirmToggle"
+            class="text-none font-weight-medium px-6"
+          >
+            {{ selectedUser?.active ? 'Inactivar' : 'Activar' }}
+          </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -165,7 +178,7 @@ const search       = ref('')
 const roleFilter   = ref('')
 const dialog       = ref(false)
 const isEditing    = ref(false)
-const deleteDialog = ref(false)
+const toggleDialog = ref(false)
 const selectedUser = ref(null)
 const showPassword = ref(false)
 
@@ -206,18 +219,31 @@ function closeDialog() {
   nextTick(() => { editedItem.value = { ...defaultItem } })
 }
 
-function saveUser() {
-  if (isEditing.value) {
-    userStore.updateUser(editedItem.value)
-  } else {
-    userStore.createUser(editedItem.value)
+async function saveUser() {
+  try {
+    if (isEditing.value) {
+      await userStore.updateUser(editedItem.value)
+    } else {
+      await userStore.createUser(editedItem.value)
+    }
+    closeDialog()
+  } catch {
+    // error ya logueado en el store
   }
-  closeDialog()
 }
 
-function openDeleteDialog(user) { selectedUser.value = user; deleteDialog.value = true }
-function confirmDelete()        { if (selectedUser.value) userStore.deleteUser(selectedUser.value.id); deleteDialog.value = false; selectedUser.value = null }
-function toggleStatus(id)       { userStore.toggleActive(id) }
+function openToggleDialog(user) { selectedUser.value = user; toggleDialog.value = true }
+async function confirmToggle() {
+  if (selectedUser.value) {
+    try {
+      await userStore.toggleActive(selectedUser.value.id)
+    } catch {
+      // error ya logueado en el store
+    }
+  }
+  toggleDialog.value = false
+  selectedUser.value = null
+}
 
 
 

@@ -120,68 +120,49 @@ users: [],
     },
 
     // crear usuario
-    createUser(user) {
-
-      const newUser = {
-        ...user,
-        id: Date.now(),
-        password: user.password || 'Guatemala123',
-        active: true,
-        memberSince: new Date().toISOString().split('T')[0]
+    async createUser(userData) {
+      try {
+        const payload = {
+          name:     userData.name,
+          email:    userData.email,
+          roleId:   userData.roleId,
+          password: userData.password || 'Guatemala123',
+        }
+        await api.post('/users', payload)
+        await this.fetchUsers()
+      } catch (error) {
+        console.error('Error al crear usuario:', error)
+        throw error
       }
-
-      this.users.push(newUser)
-
-      this.saveToLocalStorage()
-
     },
 
     // editar usuario
-    updateUser(updatedUser) {
-
-      const index = this.users.findIndex(
-        user => user.id === updatedUser.id
-      )
-
-      if (index !== -1) {
-
-        this.users[index] = {
-          ...this.users[index],
-          ...updatedUser
+    async updateUser(updatedUser) {
+      try {
+        const payload = {
+          name:   updatedUser.name,
+          email:  updatedUser.email,
+          roleId: updatedUser.roleId,
         }
-
-        this.saveToLocalStorage()
-
+        if (updatedUser.password) payload.password = updatedUser.password
+        await api.put(`/users/${updatedUser.id}`, payload)
+        await this.fetchUsers()
+      } catch (error) {
+        console.error('Error al actualizar usuario:', error)
+        throw error
       }
-
-    },
-
-    // eliminar usuario
-    deleteUser(userId) {
-
-      this.users = this.users.filter(
-        user => user.id !== userId
-      )
-
-      this.saveToLocalStorage()
-
     },
 
     // activar / desactivar
-    toggleActive(userId) {
-
-      const user = this.users.find(
-        user => user.id === userId
-      )
-
-      if (user) {
-
-        user.active = !user.active
-
-        this.saveToLocalStorage()
-
+    async toggleActive(userId) {
+      try {
+        const res = await api.patch(`/users/${userId}/toggle-active`)
+        const updated = this.users.find(u => u.id === userId)
+        if (updated) updated.active = res.data.isActive
+      } catch (error) {
+        console.error('Error al cambiar estado del usuario:', error)
+        throw error
       }
-
     },
 
     // cambiar contraseña

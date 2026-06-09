@@ -41,16 +41,19 @@ forma_deteccion:{
 type:DataTypes.STRING(255)
 },
 
-direccion_departamental_educacion:{
-type:DataTypes.STRING(255)
+departamental_id:{
+type:DataTypes.INTEGER,
+allowNull:true
 },
 
-numero_notificacion:{
-type:DataTypes.STRING(100)
+no_notificacion:{
+type:DataTypes.STRING(100),
+allowNull:true
 },
 
-institucion_id:{
-type:DataTypes.INTEGER
+institucion:{
+type:DataTypes.STRING(255),
+allowNull:true
 },
 
 
@@ -62,8 +65,8 @@ allowNull:true
 estado:{
 type:DataTypes.ENUM(
   'pendiente',
-  'completado',
-  'Faltantes'
+  'faltante',
+  'completado'
   ),
   },
 },

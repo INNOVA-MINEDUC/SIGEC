@@ -30,6 +30,41 @@ export default {
     })
 
     // =====================================================
+    // TABLA: departamentos
+    // =====================================================
+    await queryInterface.createTable('departamentales', {
+      id: {
+        type: Sequelize.INTEGER,
+        autoIncrement: true,
+        primaryKey: true,
+        allowNull: false
+      },
+      nombre: {
+        type: Sequelize.STRING(150),
+        allowNull: false,
+        unique: true
+      },
+      departamento_id: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        references: {
+          model: 'departamentos',
+          key: 'id'
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
+      },
+      createdAt: {
+        type: Sequelize.DATE,
+        defaultValue: Sequelize.fn('NOW')
+      },
+      updatedAt: {
+        type: Sequelize.DATE,
+        defaultValue: Sequelize.fn('NOW')
+      }
+    })
+
+    // =====================================================
     // TABLA: municipios
     // =====================================================
     await queryInterface.createTable('municipios', {
@@ -105,31 +140,6 @@ export default {
       },
       nombre: {
         type: Sequelize.STRING(150),
-        allowNull: false,
-        unique: true
-      },
-      createdAt: {
-        type: Sequelize.DATE,
-        defaultValue: Sequelize.fn('NOW')
-      },
-      updatedAt: {
-        type: Sequelize.DATE,
-        defaultValue: Sequelize.fn('NOW')
-      }
-    })
-
-    // =====================================================
-    // TABLA: instituciones
-    // =====================================================
-    await queryInterface.createTable('instituciones', {
-      id: {
-        type: Sequelize.INTEGER,
-        autoIncrement: true,
-        primaryKey: true,
-        allowNull: false
-      },
-      nombre: {
-        type: Sequelize.STRING(255),
         allowNull: false,
         unique: true
       },
@@ -287,7 +297,7 @@ export default {
       },
       cui: {
         type: Sequelize.STRING(20),
-        allowNull: false,
+        allowNull: true,   // puede venir sin CUI en el archivo; NULL no viola unique
         unique: true
       },
       nombre_completo: {
@@ -316,25 +326,13 @@ export default {
         onUpdate: 'CASCADE',
         onDelete: 'SET NULL'
       },
-      pueblo_id: {
-        type: Sequelize.INTEGER,
+      pueblo: {
+        type: Sequelize.STRING(100),
         allowNull: true,
-        references: {
-          model: 'pueblos',
-          key: 'id'
-        },
-        onUpdate: 'CASCADE',
-        onDelete: 'SET NULL'
       },
-      comunidad_linguistica_id: {
-        type: Sequelize.INTEGER,
+      comunidad_linguistica: {
+        type: Sequelize.STRING(100),
         allowNull: true,
-        references: {
-          model: 'comunidades_linguisticas',
-          key: 'id'
-        },
-        onUpdate: 'CASCADE',
-        onDelete: 'SET NULL'
       },
       createdAt: {
         type: Sequelize.DATE,
@@ -461,12 +459,22 @@ export default {
         type: Sequelize.STRING(255),
         allowNull: true
       },
-      direccion_departamental_educacion: {
-        type: Sequelize.STRING(255),
+      departamental_id: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+        references: {
+          model: 'departamentales',
+          key: 'id'
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'SET NULL'
+      },
+      no_notificacion: {
+        type: Sequelize.STRING(100),
         allowNull: true
       },
-      numero_notificacion: {
-        type: Sequelize.STRING(100),
+      institucion: {
+        type: Sequelize.STRING(255),
         allowNull: true
       },
       queja: {
@@ -477,17 +485,6 @@ export default {
         type: Sequelize.STRING(50),
         allowNull: false,
         defaultValue: 'pendiente'
-      },
-      
-      institucion_id: {
-        type: Sequelize.INTEGER,
-        allowNull: true,
-        references: {
-          model: 'instituciones',
-          key: 'id'
-        },
-        onUpdate: 'CASCADE',
-        onDelete: 'SET NULL'
       },
       createdAt: {
         type: Sequelize.DATE,
@@ -518,16 +515,6 @@ export default {
         },
         onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
-      },
-      institucion_id: {
-        type: Sequelize.INTEGER,
-        allowNull: true,
-        references: {
-          model: 'instituciones',
-          key: 'id'
-        },
-        onUpdate: 'CASCADE',
-        onDelete: 'SET NULL'
       },
       centro_educativo_id: {
         type: Sequelize.INTEGER,
@@ -575,6 +562,7 @@ export default {
   },
 
   async down (queryInterface, Sequelize) {
+    // orden inverso a la creación, respetando dependencias de FK
     await queryInterface.dropTable('historial_educativo')
     await queryInterface.dropTable('casos_embarazo')
     await queryInterface.dropTable('cargas_archivos')
@@ -582,10 +570,10 @@ export default {
     await queryInterface.dropTable('centros_educativos')
     await queryInterface.dropTable('users')
     await queryInterface.dropTable('roles')
-    await queryInterface.dropTable('instituciones')
     await queryInterface.dropTable('comunidades_linguisticas')
     await queryInterface.dropTable('pueblos')
     await queryInterface.dropTable('municipios')
+    await queryInterface.dropTable('departamentales')
     await queryInterface.dropTable('departamentos')
   }
 }

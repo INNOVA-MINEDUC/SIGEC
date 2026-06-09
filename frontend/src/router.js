@@ -70,18 +70,10 @@ const routes = [
     name: 'chargedata',
     component: ChargeData,
     meta: {
-      requiresAuth: true
+      requiresAuth: true,
+      roles: ['admin'],           // solo admin puede subir archivos
     }
   },
-
-  // {
-  //   path: '/profile',
-  //   name: 'profile',
-  //   component: ProfileView,
-  //   meta: {
-  //     requiresAuth: true
-  //   }
-  // },
 
   {
     path: '/seguimiento',
@@ -99,8 +91,16 @@ const routes = [
     component: UsersView,
     meta: {
       requiresAuth: true,
-      // role: 'admin'
+      roles: ['admin'],           // solo admin gestiona usuarios
     }
+  },
+
+  // Ruta de acceso denegado
+  {
+    path: '/unauthorized',
+    name: 'unauthorized',
+    component: () => import('./views/UnauthorizedView.vue'),
+    meta: { requiresAuth: true }
   }
 ]
 
@@ -144,12 +144,9 @@ router.beforeEach(async (to, from, next) => {
 
     auth.user = response.data
 
-    if (
-      to.meta.role &&
-      response.data.role !== to.meta.role
-    ) {
-
-      return next('/')
+    // Verificar roles requeridos por la ruta
+    if (to.meta.roles?.length && !to.meta.roles.includes(response.data.role)) {
+      return next('/unauthorized')
     }
 
     next()

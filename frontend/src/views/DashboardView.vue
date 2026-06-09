@@ -2,6 +2,7 @@
   <div class="dashboard-page">
     <AppNavbar />
 
+    <!-- HERO -->
     <section class="hero-dash">
       <img :src="heroImage" alt="Corredor de escuela" class="hero-bg" />
       <div class="hero-overlay"></div>
@@ -15,41 +16,89 @@
       </div>
     </section>
 
-    <section class="py-6 bg-white border-bottom">
+    <!-- FILTROS -->
+    <section class="filters-section">
       <div class="container-max">
-        <div class="card-box filters-card">
+        <div class="filters-card">
+
           <div class="filters-header">
             <div class="filters-title">
-              <span class="icon-filter">🔍</span>
+              <v-icon size="18" color="#ff9797">mdi-filter-outline</v-icon>
               <span>Filtrar Información</span>
+              <span v-if="casosStore.loading" class="loading-chip">Cargando...</span>
+              <span v-else class="count-chip">{{ casosStore.total }} casos</span>
             </div>
-            <button @click="showAdvanced = !showAdvanced" class="btn-toggle">
-              {{ showAdvanced ? 'Ocultar Filtros Avanzados' : 'Más Filtros' }}
-              <span class="arrow" :class="{ open: showAdvanced }">▼</span>
-            </button>
+            <div class="header-actions">
+              <button @click="showAdvanced = !showAdvanced" class="btn-toggle">
+                {{ showAdvanced ? 'Ocultar avanzados' : 'Más filtros' }}
+                <v-icon size="14" :class="{ rotated: showAdvanced }">mdi-chevron-down</v-icon>
+              </button>
+            </div>
           </div>
 
+          <!-- Filtros principales -->
           <div class="filters-grid">
+            <div class="filter-group">
+              <label>Departamento</label>
+              <select v-model="filters.departamento" @change="onDepartamentoChange">
+                <option value="">Todos</option>
+                <option v-for="d in departamentos" :key="d.id" :value="d.nombre">{{ d.nombre }}</option>
+              </select>
+            </div>
+
+            <div class="filter-group">
+              <label>Municipio</label>
+              <select v-model="filters.municipio" :disabled="!filters.departamento">
+                <option value="">{{ filters.departamento ? 'Todos' : 'Selecciona departamento' }}</option>
+                <option v-for="m in municipios" :key="m.id" :value="m.nombre">{{ m.nombre }}</option>
+              </select>
+            </div>
 
             <div class="filter-group">
               <label>Estado del Caso</label>
               <select v-model="filters.estado">
                 <option value="">Todos</option>
+                <option value="pendiente">Pendiente</option>
+                <option value="faltante">Faltante</option>
+                <option value="completado">Completado</option>
               </select>
             </div>
 
             <div class="filter-group">
-              <label>Código de Estudiante</label>
-              <input type="text" v-model="filters.codigoEstudiante" placeholder="Ej. A123XYZ" />
+              <label>¿Tiene Queja?</label>
+              <select v-model="filters.tieneQueja">
+                <option value="">Todos</option>
+                <option value="si">Con queja</option>
+                <option value="no">Sin queja</option>
+              </select>
             </div>
           </div>
 
-          <div class="filters-advanced-wrapper" :class="{ 'is-open': showAdvanced }">
+          <!-- Filtros avanzados -->
+          <div class="advanced-wrapper" :class="{ open: showAdvanced }">
             <div class="filters-grid advanced-grid">
+
               <div class="filter-group">
-                <label>Edad</label>
-                <select v-model="filters.edad">
+                <label>DIDEDUC (Dir. Departamental)</label>
+                <select v-model="filters.departamental">
                   <option value="">Todas</option>
+                  <option v-for="d in departamentales" :key="d.id" :value="d.id">{{ d.nombre }}</option>
+                </select>
+              </div>
+
+              <div class="filter-group">
+                <label>Pueblo de Pertenencia</label>
+                <select v-model="filters.pueblo">
+                  <option value="">Todos</option>
+                  <option v-for="p in PUEBLOS" :key="p" :value="p">{{ p }}</option>
+                </select>
+              </div>
+
+              <div class="filter-group">
+                <label>Comunidad Lingüística</label>
+                <select v-model="filters.lengua">
+                  <option value="">Todas</option>
+                  <option v-for="c in COMUNIDADES" :key="c" :value="c">{{ c }}</option>
                 </select>
               </div>
 
@@ -57,6 +106,7 @@
                 <label>Grado</label>
                 <select v-model="filters.grado">
                   <option value="">Todos</option>
+                  <option v-for="g in GRADOS" :key="g" :value="g">{{ g }}</option>
                 </select>
               </div>
 
@@ -64,53 +114,15 @@
                 <label>Nivel Educativo</label>
                 <select v-model="filters.nivel">
                   <option value="">Todos</option>
+                  <option v-for="n in NIVELES" :key="n" :value="n">{{ n }}</option>
                 </select>
               </div>
 
               <div class="filter-group">
-                <label>Lengua</label>
-                <select v-model="filters.lengua">
-                  <option value="">Todas</option>
-                </select>
-              </div>
-
-              <div class="filter-group">
-                <label>Pueblo</label>
-                <select v-model="filters.pueblo">
-                  <option value="">Todos</option>
-                </select>
-              </div>
-
-              <div class="filter-group">
-                <label>Centro Educativo</label>
-                <input type="text" v-model="filters.centroEducativo" placeholder="Nombre de escuela..." />
-              </div>
-
-              <div class="filter-group">
-                <label>Fecha de Casos</label>
-                <input type="date" v-model="filters.fechaCaso" />
-              </div>
-
-              <div class="filter-group">
-                <label>¿Tiene Queja?</label>
-                <select v-model="filters.tieneQueja">
-                  <option value="">Todos</option>
-                  <option value="si">Sí</option>
-                  <option value="no">No</option>
-                </select>
-              </div>
-
-              <div class="filter-group">
-                <label>Dirección Departamental (DIDEDUC)</label>
-                <select v-model="filters.dideduc">
-                  <option value="">Todas</option>
-                </select>
-              </div>
-
-              <div class="filter-group">
-                <label>Status Actual</label>
+                <label>Status en Sistema</label>
                 <select v-model="filters.statusActual">
                   <option value="">Todos</option>
+                  <option v-for="s in STATUS_SISTEMA" :key="s" :value="s">{{ s }}</option>
                 </select>
               </div>
 
@@ -118,6 +130,7 @@
                 <label>Resultado</label>
                 <select v-model="filters.resultado">
                   <option value="">Todos</option>
+                  <option v-for="r in RESULTADOS" :key="r" :value="r">{{ r }}</option>
                 </select>
               </div>
 
@@ -125,20 +138,71 @@
                 <label>Área</label>
                 <select v-model="filters.area">
                   <option value="">Todas</option>
-                  <option value="rural">Rural</option>
-                  <option value="urbana">Urbana</option>
+                  <option value="Urbana">Urbana</option>
+                  <option value="Rural">Rural</option>
                 </select>
               </div>
+
+              <div class="filter-group">
+                <label>Edad mínima</label>
+                <input type="number" v-model="filters.edadMin" placeholder="Ej. 10" min="0" max="18" />
+              </div>
+
+              <div class="filter-group">
+                <label>Edad máxima</label>
+                <input type="number" v-model="filters.edadMax" placeholder="Ej. 18" min="0" max="18" />
+              </div>
+
+              <div class="filter-group">
+                <label>Fecha desde</label>
+                <input type="date" v-model="filters.fechaInicio" />
+              </div>
+
+              <div class="filter-group">
+                <label>Fecha hasta</label>
+                <input type="date" v-model="filters.fechaFin" />
+              </div>
+
+              <div class="filter-group span-2">
+                <label>Centro Educativo (nombre)</label>
+                <input type="text" v-model="filters.centroEducativo" placeholder="Buscar por nombre de escuela..." />
+              </div>
+
+              <div class="filter-group span-2">
+                <label>Código Personal del Estudiante</label>
+                <input type="text" v-model="filters.codigoEstudiante" placeholder="Ej. A123XYZ" />
+              </div>
+
             </div>
           </div>
 
+          <!-- Footer de filtros -->
           <div class="filters-footer">
-            <button @click="clearFilters" class="btn-clear">Limpiar Filtros</button>
+            <button @click="limpiar" class="btn-clear">
+              <v-icon size="15">mdi-close-circle-outline</v-icon>
+              Limpiar filtros
+            </button>
+            <div class="footer-right">
+              <button @click="exportarExcelClick" class="btn-export excel" :disabled="casosStore.loading || exporting || casosStore.total === 0">
+                <v-icon size="15">mdi-microsoft-excel</v-icon>
+                {{ exporting ? 'Generando...' : 'Excel' }}
+              </button>
+              <button @click="exportarPDFClick" class="btn-export pdf" :disabled="casosStore.loading || exporting || casosStore.total === 0">
+                <v-icon size="15">mdi-file-pdf-box</v-icon>
+                {{ exporting ? 'Generando...' : 'PDF' }}
+              </button>
+              <button @click="aplicarFiltros" class="btn-apply" :disabled="casosStore.loading">
+                <v-icon size="15">mdi-magnify</v-icon>
+                {{ casosStore.loading ? 'Buscando...' : 'Aplicar filtros' }}
+              </button>
+            </div>
           </div>
+
         </div>
       </div>
     </section>
 
+    <!-- STAT CARDS -->
     <section class="py-8 bg-white">
       <div class="container-max">
         <div class="stats-grid">
@@ -157,6 +221,7 @@
       </div>
     </section>
 
+    <!-- MAPA + BAR CHART -->
     <section class="py-8">
       <div class="container-max">
         <div class="card-box unified-card">
@@ -165,28 +230,18 @@
               <GuateMap />
             </div>
             <div class="age-container unified-right">
-              <div class="age-chart-wrapper">
-                <div v-for="item in ageData" :key="item.label" class="age-bar-row">
-                  <span class="age-label">{{ item.label }}</span>
-                  <div class="age-track">
-                    <div class="age-fill" :style="{ width: ((item.value / maxAge) * 100) + '%' }"></div>
-                  </div>
-                  <span class="age-value">{{ item.value }}</span>
-                </div>
-                <div class="age-x-axis">
-                  <span v-for="n in [0, 5, 10, 15]" :key="n">{{ n }}</span>
-                </div>
-              </div>
+              <BarChart />
             </div>
           </div>
         </div>
       </div>
     </section>
 
+    <!-- CHARTS -->
     <section class="pb-2 text-center">
       <div class="container-max">
-        <h2 class="chart-title">Graficas por Mes y Estado de Casos</h2>
-        <p class="chart-subtitle">Muestra la distribución de casos por mes y estado, facilitando su análisis y seguimiento.</p>
+        <h2 class="chart-title">Gráficas por Mes y Estado de Casos</h2>
+        <p class="chart-subtitle">Distribución de casos por mes y estado según los filtros aplicados.</p>
       </div>
     </section>
 
@@ -208,13 +263,17 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive } from 'vue'
-import AppNavbar  from '@/components/AppNavbar.vue'
-import AppFooter  from '@/components/AppFooter.vue'
-import GuateMap   from '@/components/GuateMap.vue'
-import LineChart  from '@/components/LineChart.vue'
-import DonaChart  from '@/components/DonaChart.vue'
+import { ref, computed, reactive, onMounted, watch, nextTick } from 'vue'
+import axios from 'axios'
+
+import AppNavbar from '@/components/AppNavbar.vue'
+import AppFooter from '@/components/AppFooter.vue'
+import GuateMap  from '@/components/GuateMap.vue'
+import LineChart from '@/components/LineChart.vue'
+import DonaChart from '@/components/DonaChart.vue'
+import BarChart  from '@/components/BarChart.vue'
 import { useCasosStore } from '@/stores/casos'
+import { exportarExcel, exportarPDF } from '@/composables/useExport'
 
 import heroImage   from '@/assets/ninas embarazadas -37.png'
 import iconPink16  from '@/assets/ninas_embarazadas_-20.png'
@@ -226,57 +285,198 @@ import iconWhite15 from '@/assets/ninas embarazadas -34.png'
 import iconWhite14 from '@/assets/ninas embarazadas -35.png'
 import iconWhite13 from '@/assets/ninas embarazadas -33.png'
 
+const API = 'http://localhost:3000/api/v1'
+
 const casosStore = useCasosStore()
 
-// ── Control de Visibilidad de Filtros Avanzados ───────
-const showAdvanced = ref(false)
+// ── Lookup data ───────────────────────────────────────────────────────────────
+const departamentos   = ref([])
+const municipios      = ref([])
+const departamentales = ref([])
 
-// ── Estado Reactivo para los Filtros ──────────────────
-const initialFilters = {
-  codigoEstudiante: '',
-  edad: '',
-  grado: '',
-  nivel: '',
-  lengua: '',
-  pueblo: '',
-  centroEducativo: '',
-  fechaCaso: '',
-  departamento: '',
-  municipio: '',
-  estado: '',
-  tieneQueja: '',
-  dideduc: '',
-  statusActual: '',
-  resultado: '',
-  area: ''
-}
-
-const filters = reactive({ ...initialFilters })
-
-const clearFilters = () => {
-  Object.assign(filters, initialFilters)
-}
-
-// ── Stat Cards ─────────────────────────────────────────
-const statCards = ref([
-  { label: 'Total de Casos',            value: '1,000M', pink: iconPink16, white: iconWhite16, hovered: false },
-  { label: 'Estudiantes Inactivos',     value: '500',    pink: iconPink14, white: iconWhite14, hovered: false },
-  { label: 'Estudiantes Activos',       value: '500',    pink: iconPink15, white: iconWhite15, hovered: false },
-  { label: 'Porcentaje de Estudiantes', value: '50%',    pink: iconPink13, white: iconWhite13, hovered: false }
-])
-
-// ── Age Bar Chart ──────────────────────────────────────
-const ageDataRaw = [
-  { label: '17 años',       value: casosStore.casosPorEdad(17).length || 14 },
-  { label: 'Menores de 12', value: casosStore.casosPorEdad(12).length || 12 },
-  { label: '16 años',       value: casosStore.casosPorEdad(16).length || 11 },
-  { label: '15 años',       value: casosStore.casosPorEdad(15).length || 9  },
-  { label: '14 años',       value: casosStore.casosPorEdad(14).length || 6  },
-  { label: '13 años',       value: casosStore.casosPorEdad(13).length || 3  },
+// Pueblos y comunidades lingüísticas — listas fijas (ya no son tablas de BD)
+const PUEBLOS = ['Maya', 'Xinka', 'Garífuna', 'Ladino', 'Otros']
+const COMUNIDADES = [
+  'Kaqchikel', "K'iche'", 'Español', "Achi'", 'Akateko', 'Awakateko',
+  'Chalchiteko', "Ch'orti'", 'Chuj', 'Ixil', "Jakalteko / Popti'",
+  'Mam', 'Mopan', 'Poqomam', "Poqomchi'", "Q'anjob'al", "Q'eqchi'",
+  'Sakapulteko', 'Sipakapense', 'Tektiteko', "Tz'utujil", 'Uspanteko',
+  'Garífuna', 'Xinka', 'Otros',
 ]
 
-const ageData = computed(() => [...ageDataRaw].sort((a, b) => b.value - a.value))
-const maxAge  = computed(() => { const m = Math.max(...ageData.value.map(d => d.value)); return m > 0 ? m : 15 })
+// ── Constantes de valores conocidos ──────────────────────────────────────────
+const GRADOS       = ['1ro', '2do', '3ro', '4to', '5to', '6to']
+const NIVELES      = ['Preprimaria', 'Primaria', 'Media (Básico)', 'Media (Diversificado)']
+const STATUS_SISTEMA = ['Inscrita', 'No Inscrita', 'Deserción / Retiro Temporal', 'Abandono']
+const RESULTADOS   = ['Inscrita', 'No Inscrita', 'Retirada', 'En Proceso']
+
+// ── Estado de filtros ─────────────────────────────────────────────────────────
+const showAdvanced = ref(false)
+
+const initialFilters = () => ({
+  departamento:    '',
+  municipio:       '',
+  estado:          '',
+  tieneQueja:      '',
+  departamental:   '',
+  pueblo:          '',
+  lengua:          '',
+  grado:           '',
+  nivel:           '',
+  statusActual:    '',
+  resultado:       '',
+  area:            '',
+  edadMin:         '',
+  edadMax:         '',
+  fechaInicio:     '',
+  fechaFin:        '',
+  centroEducativo: '',
+  codigoEstudiante:'',
+})
+
+const filters = reactive(initialFilters())
+
+// ── Carga de datos de referencia ──────────────────────────────────────────────
+onMounted(async () => {
+  const [rDept, rDeptales] = await Promise.all([
+    axios.get(`${API}/dept`),
+    axios.get(`${API}/dept/departamentales`),
+  ])
+  departamentos.value   = rDept.data.data    || []
+  departamentales.value = rDeptales.data.data || []
+
+  await casosStore.fetchTodos()
+})
+
+// ── Manejo de dependencia departamento → municipio ────────────────────────────
+const onDepartamentoChange = async () => {
+  filters.municipio = ''
+  municipios.value = []
+  if (!filters.departamento) return
+  const dept = departamentos.value.find(d => d.nombre === filters.departamento)
+  if (!dept) return
+  const r = await axios.get(`${API}/dept/municipios`, { params: { departamento_id: dept.id } })
+  municipios.value = r.data.data || []
+}
+
+// ── Construir params desde filters ───────────────────────────────────────────
+const buildParams = () => {
+  const params = {}
+  if (filters.departamento)     params.departamento      = filters.departamento
+  if (filters.municipio)        params.municipio         = filters.municipio
+  if (filters.estado)           params.estado            = filters.estado
+  if (filters.tieneQueja)       params.tiene_queja       = filters.tieneQueja
+  if (filters.departamental)    params.departamental     = filters.departamental
+  if (filters.pueblo)           params.pueblo            = filters.pueblo
+  if (filters.lengua)           params.lengua            = filters.lengua
+  if (filters.grado)            params.grado             = filters.grado
+  if (filters.nivel)            params.nivel             = filters.nivel
+  if (filters.statusActual)     params.status_actual     = filters.statusActual
+  if (filters.resultado)        params.resultado         = filters.resultado
+  if (filters.area)             params.area              = filters.area
+  if (filters.edadMin !== '')   params.edad_min          = filters.edadMin
+  if (filters.edadMax !== '')   params.edad_max          = filters.edadMax
+  if (filters.fechaInicio)      params.fecha_inicio      = filters.fechaInicio
+  if (filters.fechaFin)         params.fecha_fin         = filters.fechaFin
+  if (filters.centroEducativo)  params.centro_educativo  = filters.centroEducativo
+  if (filters.codigoEstudiante) params.codigo_estudiante = filters.codigoEstudiante
+  return params
+}
+
+// ── Aplicar filtros (retorna promesa para que export pueda awaitar) ────────────
+const aplicarFiltros = () => {
+  return casosStore.fetchConFiltros(buildParams())
+}
+
+// ── Auto-aplicar cuando cambian selects (debounced 350ms) ─────────────────────
+let _autoTimer = null
+const _autoApply = () => {
+  clearTimeout(_autoTimer)
+  _autoTimer = setTimeout(aplicarFiltros, 350)
+}
+
+watch(
+  () => [
+    filters.departamento, filters.municipio, filters.estado, filters.tieneQueja,
+    filters.departamental, filters.pueblo,   filters.lengua, filters.grado,
+    filters.nivel, filters.statusActual,     filters.resultado, filters.area,
+    filters.edadMin, filters.edadMax,        filters.fechaInicio, filters.fechaFin,
+  ],
+  _autoApply
+)
+
+const limpiar = () => {
+  clearTimeout(_autoTimer)
+  Object.assign(filters, initialFilters())
+  municipios.value = []
+  casosStore.fetchTodos()
+}
+
+// ── Resumen de filtros para el PDF ────────────────────────────────────────────
+const resumenFiltros = computed(() => {
+  const partes = []
+  if (filters.departamento)    partes.push(`Depto: ${filters.departamento}`)
+  if (filters.municipio)       partes.push(`Municipio: ${filters.municipio}`)
+  if (filters.estado)          partes.push(`Estado: ${filters.estado}`)
+  if (filters.tieneQueja)      partes.push(`Queja: ${filters.tieneQueja === 'si' ? 'Con queja' : 'Sin queja'}`)
+  if (filters.grado)           partes.push(`Grado: ${filters.grado}`)
+  if (filters.nivel)           partes.push(`Nivel: ${filters.nivel}`)
+  if (filters.area)            partes.push(`Área: ${filters.area}`)
+  if (filters.fechaInicio)     partes.push(`Desde: ${filters.fechaInicio}`)
+  if (filters.fechaFin)        partes.push(`Hasta: ${filters.fechaFin}`)
+  return partes.join('  ·  ')
+})
+
+// ── Exportar (siempre aplica filtros antes de exportar) ───────────────────────
+const exporting = ref(false)
+
+const exportarExcelClick = async () => {
+  if (exporting.value) return
+  exporting.value = true
+  try {
+    await aplicarFiltros()
+    await nextTick()
+    exportarExcel(casosStore.casos, 'SIGEC_Casos')
+  } finally {
+    exporting.value = false
+  }
+}
+
+const exportarPDFClick = async () => {
+  if (exporting.value) return
+  exporting.value = true
+  try {
+    await aplicarFiltros()
+    await nextTick()
+    exportarPDF(casosStore.casos, 'SIGEC_Casos', resumenFiltros.value)
+  } finally {
+    exporting.value = false
+  }
+}
+
+// ── Stat Cards ────────────────────────────────────────────────────────────────
+const statCards = computed(() => [
+  {
+    label: 'Total de Casos',
+    value: casosStore.total,
+    pink: iconPink16, white: iconWhite16, hovered: false
+  },
+  {
+    label: 'Pendientes',
+    value: casosStore.casosPorEstado('pendiente').length,
+    pink: iconPink15, white: iconWhite15, hovered: false
+  },
+  {
+    label: 'Faltantes',
+    value: casosStore.casosPorEstado('faltante').length,
+    pink: iconPink14, white: iconWhite14, hovered: false
+  },
+  {
+    label: 'Completados',
+    value: casosStore.casosPorEstado('completado').length,
+    pink: iconPink13, white: iconWhite13, hovered: false
+  }
+])
 </script>
 
 <style scoped>
@@ -287,14 +487,13 @@ const maxAge  = computed(() => { const m = Math.max(...ageData.value.map(d => d.
   min-height: 100vh;
 }
 .container-max { max-width: 60rem; margin: 0 auto; padding: 0 1.5rem; }
-.bg-white  { background-color: #ffffff; }
-.border-bottom { border-bottom: 1px solid #eaeaea; }
-.py-8      { padding-top: 2rem; padding-bottom: 2rem; }
-.py-6      { padding-top: 1.5rem; padding-bottom: 1.5rem; }
-.pb-12     { padding-bottom: 3rem; }
-.pb-2      { padding-bottom: 0.5rem; }
-.text-center { text-align: center; }
-.gap-5     { gap: 1.25rem; }
+.bg-white      { background-color: #ffffff; }
+.py-8          { padding-top: 2rem; padding-bottom: 2rem; }
+.py-6          { padding-top: 1.5rem; padding-bottom: 1.5rem; }
+.pb-12         { padding-bottom: 3rem; }
+.pb-2          { padding-bottom: 0.5rem; }
+.text-center   { text-align: center; }
+.gap-5         { gap: 1.25rem; }
 
 /* HERO */
 .hero-dash { position: relative; width: 100%; overflow: hidden; height: 500px; }
@@ -312,131 +511,124 @@ const maxAge  = computed(() => { const m = Math.max(...ageData.value.map(d => d.
 .hero-title    { color: white; text-shadow: 0 4px 12px rgba(0,0,0,0.3); font-size: 64px; font-weight: 700; line-height: 1.15; max-width: 900px; margin-bottom: 0; }
 .hero-subtitle { margin-top: 1rem; color: white; font-size: 1.125rem; font-weight: 500; text-shadow: 0 2px 8px rgba(0,0,0,0.3); max-width: 700px; }
 
-/* FILTERS STYLES */
+/* FILTERS */
+.filters-section { background: #fff; border-bottom: 1px solid #eaeaea; padding: 1.5rem 0; }
+
 .filters-card {
-  padding: 1.5rem;
   background: #ffffff;
   border: 1px solid #f0f0f0;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+  border-radius: 0.75rem;
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.04);
 }
+
 .filters-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.25rem;
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 1rem;
 }
 .filters-title {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #1a1a1a;
+  display: flex; align-items: center; gap: 0.5rem;
+  font-size: 1rem; font-weight: 600; color: #1a1a1a;
 }
-.icon-filter {
-  font-size: 1.2rem;
+.count-chip {
+  background: #fff0f0; color: #ff9797; border: 1px solid #ffd6d6;
+  border-radius: 999px; padding: 0.1rem 0.6rem; font-size: 0.75rem; font-weight: 600;
 }
+.loading-chip {
+  background: #f0f0f0; color: #6d6d6d;
+  border-radius: 999px; padding: 0.1rem 0.6rem; font-size: 0.75rem;
+}
+.header-actions { display: flex; align-items: center; gap: 0.5rem; }
 .btn-toggle {
-  background: transparent;
-  border: none;
-  color: #ff9797;
-  font-weight: 600;
-  font-size: 0.875rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
+  background: transparent; border: none; color: #ff9797;
+  font-weight: 600; font-size: 0.8rem; cursor: pointer;
+  display: flex; align-items: center; gap: 0.25rem;
   transition: color 0.2s;
 }
 .btn-toggle:hover { color: #e67e7e; }
-.btn-toggle .arrow {
-  font-size: 0.7rem;
-  transition: transform 0.3s;
-}
-.btn-toggle .arrow.open {
-  transform: rotate(180deg);
-}
+.btn-toggle .v-icon { transition: transform 0.3s; }
+.btn-toggle .v-icon.rotated { transform: rotate(180deg); }
+
 .filters-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(195px, 1fr));
+  gap: 0.75rem;
 }
-.filters-advanced-wrapper {
-  max-height: 0;
-  overflow: hidden;
+.advanced-grid {
+  grid-template-columns: repeat(auto-fill, minmax(195px, 1fr));
+}
+.span-2 { grid-column: span 2; }
+
+.advanced-wrapper {
+  max-height: 0; overflow: hidden;
   transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1), margin-top 0.4s;
 }
-.filters-advanced-wrapper.is-open {
-  max-height: 800px; /* Suficiente espacio para acomodar las filas */
-  margin-top: 1rem;
-  padding-top: 1rem;
+.advanced-wrapper.open {
+  max-height: 1000px; margin-top: 1rem; padding-top: 1rem;
   border-top: 1px dashed #f0f0f0;
 }
-.filter-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
+
+.filter-group { display: flex; flex-direction: column; gap: 0.3rem; }
 .filter-group label {
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: #6d6d6d;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
+  font-size: 0.7rem; font-weight: 700; color: #6d6d6d;
+  text-transform: uppercase; letter-spacing: 0.04em;
 }
 .filter-group select,
 .filter-group input {
-  width: 100%;
-  padding: 0.6rem 0.75rem;
-  font-size: 0.875rem;
-  border: 1px solid #e0e0e0;
-  border-radius: 0.5rem;
-  background-color: #fafafa;
-  color: #1a1a1a;
-  outline: none;
-  transition: all 0.2s;
-  box-sizing: border-box;
+  width: 100%; padding: 0.55rem 0.7rem; font-size: 0.8rem;
+  border: 1px solid #e0e0e0; border-radius: 0.5rem;
+  background-color: #fafafa; color: #1a1a1a; outline: none;
+  transition: all 0.2s; box-sizing: border-box;
 }
 .filter-group select:focus,
 .filter-group input:focus {
-  border-color: #ff9797;
-  background-color: #ffffff;
-  box-shadow: 0 0 0 3px rgba(255, 151, 151, 0.15);
+  border-color: #ff9797; background-color: #fff;
+  box-shadow: 0 0 0 3px rgba(255,151,151,0.15);
 }
-.filter-group select:disabled {
-  background-color: #eeeeee;
-  color: #b0b0b0;
-  cursor: not-allowed;
-}
+.filter-group select:disabled { opacity: 0.5; cursor: not-allowed; }
+
 .filters-footer {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 1.25rem;
-  padding-top: 0.75rem;
-  border-top: 1px solid #f5f5f5;
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 1rem; padding-top: 0.75rem; border-top: 1px solid #f5f5f5;
 }
+.footer-right { display: flex; align-items: center; gap: 0.5rem; }
+
 .btn-clear {
-  background: #f5f5f5;
-  border: 1px solid #e0e0e0;
-  color: #6d6d6d;
-  padding: 0.5rem 1rem;
-  border-radius: 0.5rem;
-  font-size: 0.85rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
+  display: flex; align-items: center; gap: 0.35rem;
+  background: #f5f5f5; border: 1px solid #e0e0e0; color: #6d6d6d;
+  padding: 0.45rem 0.9rem; border-radius: 0.5rem;
+  font-size: 0.8rem; font-weight: 500; cursor: pointer; transition: all 0.2s;
 }
-.btn-clear:hover {
-  background: #eaeaea;
-  color: #1a1a1a;
+.btn-clear:hover { background: #eaeaea; color: #1a1a1a; }
+
+.btn-export {
+  display: flex; align-items: center; gap: 0.35rem;
+  border: none; padding: 0.45rem 0.9rem; border-radius: 0.5rem;
+  font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
 }
+.btn-export:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-export.excel { background: #e6f4ea; color: #137333; }
+.btn-export.excel:hover:not(:disabled) { background: #c8e6c9; }
+.btn-export.pdf   { background: #fce4e4; color: #b71c1c; }
+.btn-export.pdf:hover:not(:disabled) { background: #ffcdd2; }
+
+.btn-apply {
+  display: flex; align-items: center; gap: 0.35rem;
+  background: #ff9797; border: none; color: white;
+  padding: 0.45rem 1.1rem; border-radius: 0.5rem;
+  font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(255,151,151,0.4);
+}
+.btn-apply:hover:not(:disabled) { background: #e67e7e; }
+.btn-apply:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* STAT CARDS */
 .stats-grid { display: flex; gap: 1.5rem; }
 .stat-card-custom {
-  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
-  padding: 2.5rem 1rem 2rem; border-radius: 1rem; cursor: pointer;
-  transition: all 0.2s; background-color: #f7f7f7;
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; padding: 2.5rem 1rem 2rem;
+  border-radius: 1rem; cursor: pointer; transition: all 0.2s;
+  background-color: #f7f7f7;
 }
 .stat-card-custom.hovered { background-color: #ff9797; }
 .stat-img   { width: 4rem; height: 4rem; object-fit: contain; margin-bottom: 1.25rem; }
@@ -445,24 +637,20 @@ const maxAge  = computed(() => { const m = Math.max(...ageData.value.map(d => d.
 .stat-value { color: #ff9797; font-size: 2.5rem; font-weight: 700; line-height: 1; }
 .stat-card-custom.hovered .stat-value { color: #ffffff; }
 
-/* GRID & CARDS */
+/* GRID */
 .grid-2-col { display: grid; grid-template-columns: 1fr 1fr; }
-.card-box { background-color: #ffffff; border: none; border-radius: 0.75rem; padding: 1.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+.card-box {
+  background-color: #ffffff; border: none; border-radius: 0.75rem;
+  padding: 1.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
 .unified-card  { padding: 0; }
 .unified-left  { padding: 1.5rem; }
 .unified-right { padding: 2.5rem 1.5rem 1.5rem; }
-.map-container { min-height: 280px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
-
-/* AGE CHART */
-.age-container    { display: flex; flex-direction: column; justify-content: center; }
-.age-chart-wrapper { display: flex; flex-direction: column; gap: 0.75rem; height: 100%; justify-content: center; }
-.age-bar-row { display: flex; align-items: center; gap: 0.75rem; }
-.age-label   { font-size: 0.75rem; width: 6rem; text-align: right; flex-shrink: 0; color: #6d6d6d; }
-.age-track   { flex: 1; height: 1rem; border-radius: 0.25rem; background-color: #f0f0f0; overflow: hidden; }
-.age-fill    { height: 100%; background-color: #ff9797; border-radius: 0.25rem; transition: width 0.5s ease; }
-.age-value   { font-size: 0.75rem; width: 1rem; flex-shrink: 0; color: #6d6d6d; }
-.age-x-axis  { display: flex; justify-content: space-between; padding-left: 6.75rem; padding-right: 1.75rem; margin-top: 0.25rem; }
-.age-x-axis span { font-size: 0.75rem; color: #b0b0b0; }
+.map-container {
+  min-height: 280px; display: flex; align-items: center;
+  justify-content: center; overflow: hidden;
+}
+.age-container { display: flex; flex-direction: column; justify-content: center; }
 
 /* CHART TITLE */
 .chart-title    { color: #6d6d6d; font-size: 1.25rem; font-weight: 600; }

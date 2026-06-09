@@ -28,7 +28,7 @@
                   <v-icon size="18" color="#ff9797">mdi-circle</v-icon>
                   <span class="last-upload-title">Última carga</span>
                 </div>
-                <div class="last-upload-grid">
+                <div class="last-upload-grid last-upload-grid--wide">
                   <div v-for="field in lastUploadFields" :key="field.label" class="last-upload-field">
                     <div class="field-label">{{ field.label }}</div>
                     <div class="field-value">{{ field.value }}</div>
@@ -50,22 +50,53 @@
             </div>
           </div>
 
-          <!-- Resumen -->
-          <v-alert v-if="rows.length" type="success" variant="tonal" class="result-alert" icon="mdi-check-circle" color="success">
-            Se cargaron {{ rows.length }} registros correctamente
-          </v-alert>
+          <!-- Validando / Cargando -->
+          <div v-if="validando || uploading" class="uploading-state">
+            <v-progress-circular indeterminate color="#ff9797" size="32" />
+            <span>{{ validando ? 'Validando archivo...' : 'Procesando, por favor espere...' }}</span>
+          </div>
 
-          <!-- Tabla -->
-          <v-data-table
-            v-if="rows.length"
-            :headers="tableHeaders"
-            :items="rows"
-            class="data-table"
-            density="comfortable"
-          />
+          <!-- Error de validación -->
+          <div v-if="validacion?.error && !uploading && !validando" class="validacion-error">
+            <v-icon size="20" color="#c62828">mdi-alert-circle</v-icon>
+            <div>
+              <div class="val-title">Archivo rechazado — {{ validacion.nombreArchivo }}</div>
+              <div class="val-msg">{{ validacion.error }}</div>
+              <div class="val-hint">Columnas esperadas: Nombre completo, CUI RENAP, Departamento, Fecha Primer Contacto, Edad Años, Fecha Nacimiento, Dirección, Pueblo, Comunidad Lingüística, Numero de notificación, Institución</div>
+            </div>
+          </div>
 
-          <!-- Botón limpiar -->
-          <button v-if="rows.length" class="clear-btn" @click="clearData">LIMPIAR DATOS</button>
+          <!-- Advertencias (columnas faltantes no bloqueantes) -->
+          <div v-if="validacion?.advertencias?.length && !validacion.error && !uploading && !validando && !resultado" class="validacion-warn">
+            <v-icon size="18" color="#e65100">mdi-alert-outline</v-icon>
+            <div>
+              <div class="val-title">Archivo: {{ validacion.nombreArchivo }}</div>
+              <div v-for="a in validacion.advertencias" :key="a" class="val-msg">{{ a }}</div>
+            </div>
+          </div>
+
+          <!-- Resultado -->
+          <div v-if="resultado && !uploading && !validando" class="resultado-card">
+            <div v-if="validacion?.advertencias?.length" class="resultado-warn-banner">
+              <v-icon size="16" color="#e65100">mdi-alert-outline</v-icon>
+              {{ validacion.advertencias[0] }}
+            </div>
+            <div class="resultado-grid">
+              <div class="resultado-item">
+                <div class="resultado-num">{{ resultado.total }}</div>
+                <div class="resultado-label">Total filas</div>
+              </div>
+              <div class="resultado-item success">
+                <div class="resultado-num">{{ resultado.nuevos }}</div>
+                <div class="resultado-label">Casos registrados</div>
+              </div>
+              <div class="resultado-item warn">
+                <div class="resultado-num">{{ resultado.duplicados }}</div>
+                <div class="resultado-label">Omitidos / duplicados</div>
+              </div>
+            </div>
+            <button class="clear-btn" @click="clearResultado">LIMPIAR</button>
+          </div>
         </div>
 
         <!-- Historial -->
@@ -99,109 +130,185 @@ import api from '@/helpers/api'
 
 // ── State ──────────────────────────────────────────────
 const fileInput     = ref(null)
-const headers       = ref([])
-const rows          = ref([])
+const uploading     = ref(false)
+const validando     = ref(false)
+const resultado     = ref(null)
 const lastUpload    = ref(null)
 const uploadHistory = ref([])
+const validacion    = ref(null)   // { error, advertencias, nombreArchivo }
 
 // ── Constants ──────────────────────────────────────────
 const historyHeaders = [
-  { title: 'Archivo',   key: 'fileName' },
-  { title: 'Registros', key: 'totalRows' },
-  { title: 'Fecha',     key: 'date' }
+  { title: 'Archivo',    key: 'nombre_archivo' },
+  { title: 'Total',      key: 'total_registros' },
+  { title: 'Nuevos',     key: 'registros_nuevos' },
+  { title: 'Duplicados', key: 'registros_duplicados' },
+  { title: 'Subido por', key: 'usuario_nombre' },
+  { title: 'Fecha',      key: 'fecha_fmt' },
+]
+
+// Columnas esperadas en el archivo MSPAS
+const COLS_OBLIGATORIAS = [
+  { patron: 'nombre completo', label: 'Nombre completo' },
+]
+const COLS_IMPORTANTES = [
+  { patron: 'cui renap',             label: 'CUI RENAP' },
+  { patron: 'departamento',          label: 'Departamento' },
+  { patron: 'fecha primer contacto', label: 'Fecha Primer Contacto' },
+  { patron: 'edad',                  label: 'Edad Años' },
+  { patron: 'fecha nacimiento',      label: 'Fecha Nacimiento' },
 ]
 
 // ── Computed ───────────────────────────────────────────
-const tableHeaders = computed(() =>
-  headers.value.map(h => ({ title: h, key: h }))
-)
-
-const lastUploadFields = computed(() => [
-  { label: 'Archivo',   value: lastUpload.value?.fileName },
-  { label: 'Registros', value: lastUpload.value?.totalRows },
-  { label: 'Fecha',     value: lastUpload.value?.date }
-])
-
-// ── Lifecycle ──────────────────────────────────────────
-onMounted(() => {
-  const stored = localStorage.getItem('excelUploads')
-  if (stored) {
-    uploadHistory.value = JSON.parse(stored)
-    lastUpload.value = uploadHistory.value[0] ?? null
-  }
+const lastUploadFields = computed(() => {
+  if (!lastUpload.value) return []
+  return [
+    { label: 'Archivo',    value: lastUpload.value.nombre_archivo },
+    { label: 'Total',      value: lastUpload.value.total_registros },
+    { label: 'Nuevos',     value: lastUpload.value.registros_nuevos },
+    { label: 'Duplicados', value: lastUpload.value.registros_duplicados },
+    { label: 'Fecha',      value: lastUpload.value.fecha_fmt },
+  ]
 })
 
-async function onFileChange(payload) {
+// ── Lifecycle ──────────────────────────────────────────
+onMounted(fetchHistorial)
 
+async function fetchHistorial() {
+  try {
+    const res = await api.get('/upload/historial')
+    uploadHistory.value = res.data.data.map(formatEntry)
+    lastUpload.value    = uploadHistory.value[0] ?? null
+  } catch {
+    uploadHistory.value = []
+  }
+}
+
+function formatEntry(d) {
+  const fecha = new Date(d.fecha_carga)
+  return {
+    ...d,
+    usuario_nombre: d.usuario?.name ?? d.usuario?.email ?? `Usuario #${d.usuario_id ?? '?'}`,
+    fecha_fmt: fecha.toLocaleDateString('es-GT', { day: '2-digit', month: '2-digit', year: 'numeric' })
+              + ' ' + fecha.toLocaleTimeString('es-GT', { hour: '2-digit', minute: '2-digit' }),
+  }
+}
+
+// ── Validación de columnas (client-side, sin enviar al backend) ────────────
+const norm = (s) =>
+  String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim()
+
+async function validarColumnas(file) {
+  const buf  = await file.arrayBuffer()
+  const wb   = XLSX.read(buf, { type: 'array', sheetRows: 8 })
+  const ws   = wb.Sheets[wb.SheetNames[0]]
+  const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null })
+
+  // Detectar fila de cabeceras (primeras 7 filas)
+  let headers = []
+  for (const fila of rows.slice(0, 7)) {
+    const celdas = (fila || []).filter(Boolean).map(c => norm(c))
+    const esHeader = celdas.some(c =>
+      c.includes('nombre completo') || c.includes('cui renap') || c.includes('cui')
+    )
+    if (esHeader) { headers = celdas; break }
+  }
+
+  const tiene = (patron) => headers.some(h => h.includes(patron))
+
+  const faltanObligatorias = COLS_OBLIGATORIAS.filter(c => !tiene(c.patron)).map(c => c.label)
+  const faltanImportantes  = COLS_IMPORTANTES.filter(c => !tiene(c.patron)).map(c => c.label)
+
+  return { headers, faltanObligatorias, faltanImportantes }
+}
+
+// ── Upload ─────────────────────────────────────────────
+async function onFileChange(payload) {
   const file =
     payload?.target?.files?.[0]
     ?? (payload instanceof File ? payload : null)
     ?? (Array.isArray(payload) ? payload[0] : null)
 
   if (!file) return
-
-  // validar extensión
   if (!file.name.match(/\.(xls|xlsx)$/)) {
-
-    return alert('Solo archivos Excel')
+    validacion.value = { error: 'Solo se aceptan archivos Excel (.xlsx / .xls)', advertencias: [], nombreArchivo: file.name }
+    if (fileInput.value) fileInput.value.value = ''
+    return
   }
+
+  // 1. Validar columnas antes de enviar
+  validando.value = true
+  validacion.value = null
+  resultado.value  = null
 
   try {
+    const { faltanObligatorias, faltanImportantes } = await validarColumnas(file)
 
-    // =========================
-    // FORM DATA
-    // =========================
+    if (faltanObligatorias.length > 0) {
+      validacion.value = {
+        error: `El archivo no contiene las columnas obligatorias: ${faltanObligatorias.join(', ')}`,
+        advertencias: [],
+        nombreArchivo: file.name,
+      }
+      if (fileInput.value) fileInput.value.value = ''
+      return
+    }
+
+    validacion.value = {
+      error: null,
+      advertencias: faltanImportantes.length
+        ? [`Columnas no encontradas (los casos quedarán incompletos): ${faltanImportantes.join(', ')}`]
+        : [],
+      nombreArchivo: file.name,
+    }
+  } catch (e) {
+    validacion.value = { error: 'No se pudo leer el archivo: ' + e.message, advertencias: [], nombreArchivo: file.name }
+    if (fileInput.value) fileInput.value.value = ''
+    return
+  } finally {
+    validando.value = false
+  }
+
+  // 2. Enviar al backend
+  uploading.value = true
+  try {
     const formData = new FormData()
-
     formData.append('file', file)
 
-    // =========================
-    // ENVIAR BACKEND
-    // =========================
-    const response = await api.post(
-      '/upload/excel',
-      formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      }
-    )
+    const response = await api.post('/upload/masivo', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
 
-    console.log(response.data)
+    const data = response.data
+    resultado.value = { total: data.total, nuevos: data.nuevos, duplicados: data.duplicados }
 
-    // =========================
-    // DATOS RESPUESTA
-    // =========================
-    headers.value = Object.keys(
-      response.data.data[0] || {}
-    )
+    // Diagnóstico en consola
+    console.group(`%c Carga masiva — ${file.name}`, 'color:#ff9797;font-weight:bold;font-size:14px')
+    console.log('Respuesta:', data)
+    console.log(`Fila cabecera: ${data._debug?.fila_cabecera}`)
+    console.log('Columnas:', data._debug?.columnas_detectadas)
+    if (data._debug?.omitidos_muestra?.length) {
+      console.group('%c Filas omitidas', 'color:orange')
+      data._debug.omitidos_muestra.forEach(r => console.warn(r))
+      console.groupEnd()
+    }
+    if (data.nuevos === 0) console.warn('%c 0 casos registrados — revisa el formato del archivo', 'color:orange;font-weight:bold')
+    console.groupEnd()
 
-    rows.value = response.data.data
-
-    saveUpload(
-      file.name,
-      rows.value.length
-    )
+    await fetchHistorial()
 
   } catch (error) {
-
-    console.error(error)
-
-    alert('Error subiendo Excel')
+    const msg = error.response?.data?.message || error.message
+    validacion.value = { ...validacion.value, error: 'Error en la carga: ' + msg }
+  } finally {
+    uploading.value = false
+    if (fileInput.value) fileInput.value.value = ''
   }
 }
 
-function saveUpload(fileName, totalRows) {
-  const record = { fileName, totalRows, date: new Date().toLocaleString() }
-  uploadHistory.value.unshift(record)
-  lastUpload.value = record
-  localStorage.setItem('excelUploads', JSON.stringify(uploadHistory.value))
-}
-
-function clearData() {
-  rows.value = []
-  headers.value = []
+function clearResultado() {
+  resultado.value  = null
+  validacion.value = null
 }
 </script>
 
@@ -284,6 +391,9 @@ function clearData() {
   grid-template-columns: repeat(3, 1fr);
   gap: 0.5rem;
 }
+.last-upload-grid--wide {
+  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+}
 .field-label { font-size: 0.75rem; color: #9e9e9e; }
 .field-value { font-size: 0.875rem; font-weight: 700; color: #333; }
 
@@ -363,6 +473,36 @@ function clearData() {
 }
 .clear-btn:hover { opacity: 0.9; }
 
+/* ── UPLOADING ── */
+.uploading-state {
+  display: flex; align-items: center; gap: 1rem; justify-content: center;
+  padding: 2.5rem; color: #6d6d6d; font-size: 0.9rem; margin-top: 1.5rem;
+}
+
+/* ── RESULTADO ── */
+.resultado-card {
+  margin-top: 2rem;
+  background: #fff;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+}
+.resultado-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+.resultado-item {
+  text-align: center; padding: 1rem; border-radius: 0.5rem; background: #f5f5f5;
+}
+.resultado-item.success { background: #e8f5e9; }
+.resultado-item.warn    { background: #fff3e0; }
+.resultado-num   { font-size: 2rem; font-weight: 700; color: #333; }
+.resultado-item.success .resultado-num { color: #2e7d32; }
+.resultado-item.warn    .resultado-num { color: #e65100; }
+.resultado-label { font-size: 0.75rem; color: #9e9e9e; margin-top: 0.25rem; }
+
 /* ── HISTORY ── */
 .history-header {
   display: flex;
@@ -387,5 +527,39 @@ function clearData() {
   text-align: center;
   font-size: 0.875rem;
   color: #9e9e9e;
+}
+
+/* ── VALIDACIÓN ── */
+.validacion-error,
+.validacion-warn {
+  margin-top: 1.5rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  border-radius: 0.75rem;
+  font-size: 0.85rem;
+}
+.validacion-error {
+  background: #ffebee;
+  border: 1px solid #ef9a9a;
+  color: #c62828;
+}
+.validacion-warn {
+  background: #fff3e0;
+  border: 1px solid #ffcc80;
+  color: #e65100;
+}
+.val-title { font-weight: 700; margin-bottom: 0.25rem; font-size: 0.875rem; }
+.val-msg   { font-size: 0.82rem; margin-bottom: 0.15rem; }
+.val-hint  {
+  margin-top: 0.5rem; font-size: 0.75rem; opacity: 0.75;
+  font-style: italic; line-height: 1.5;
+}
+.resultado-warn-banner {
+  display: flex; align-items: center; gap: 0.5rem;
+  background: #fff3e0; color: #e65100;
+  border-radius: 0.5rem; padding: 0.5rem 0.75rem;
+  font-size: 0.78rem; margin-bottom: 1rem;
 }
 </style>

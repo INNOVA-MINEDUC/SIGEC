@@ -11,7 +11,7 @@ primaryKey:true
 
 cui:{
 type:DataTypes.STRING(20),
-allowNull:false,
+allowNull:true,   // puede ser null cuando el archivo no trae CUI RENAP
 unique:true
 },
 
@@ -36,12 +36,14 @@ municipio_id:{
 type:DataTypes.INTEGER
 },
 
-pueblo_id:{
-type:DataTypes.INTEGER
+pueblo:{
+type:DataTypes.STRING(100),
+allowNull:true
 },
 
-comunidad_linguistica_id:{
-type:DataTypes.INTEGER
+comunidad_linguistica:{
+type:DataTypes.STRING(100),
+allowNull:true
 }
 
 },{

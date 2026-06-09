@@ -1,7 +1,6 @@
 import Caso from "../models/Caso.js"
 import Nina from "../models/Niña.js"
 import HistorialEducativo from "../models/HistorialEducativo.js"
-import Institucion from "../models/Institucion.js"
 import CentroEducativo from "../models/CentroEducativo.js"
 
 export const getAllNinas = async (req, res) => {
@@ -23,11 +22,6 @@ export const getAllNinas = async (req, res) => {
       as: 'historiales',
 
       include: [
-
-        {
-          model: Institucion,
-          as: 'institucion',
-        },
 
         {
           model: CentroEducativo,
@@ -94,10 +88,6 @@ export const getNinaById = async (req, res) => {
           model: HistorialEducativo,
 
           include: [
-
-            {
-              model: Institucion,
-            },
 
             {
               model: CentroEducativo,
@@ -175,10 +165,6 @@ export const getNinaByCui = async (req, res) => {
           model: HistorialEducativo,
 
           include: [
-
-            {
-              model: Institucion,
-            },
 
             {
               model: CentroEducativo,

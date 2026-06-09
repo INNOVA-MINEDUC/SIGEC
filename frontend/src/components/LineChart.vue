@@ -3,126 +3,128 @@
 </template>
 
 <script setup>
-import { onMounted, onBeforeUnmount, computed, watch } from "vue";
-import * as am5 from "@amcharts/amcharts5";
-import * as am5xy from "@amcharts/amcharts5/xy";
-import am5themes_Animated from "@amcharts/amcharts5/themes/Animated";
+import { onMounted, onBeforeUnmount, watch } from "vue"
+import * as am5 from "@amcharts/amcharts5"
+import * as am5xy from "@amcharts/amcharts5/xy"
+import am5themes_Animated from "@amcharts/amcharts5/themes/Animated"
 import { useCasosStore } from '@/stores/casos'
 
 const casosStore = useCasosStore()
 
+const MESES = [
+  "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+  "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+]
 
+let root
+let series
+let xAxis
 
-let root;
+const buildData = () =>
+  MESES.map((month, i) => ({
+    month,
+    value: casosStore.casosPorMes(i + 1).length
+  }))
+
+const updateChart = () => {
+  if (!series || !xAxis) return
+  const data = buildData()
+  xAxis.data.setAll(data)
+  series.data.setAll(data)
+}
 
 onMounted(() => {
-  root = am5.Root.new("chartdivline");
-  root._logo.dispose()
+  root = am5.Root.new("chartdivline")
+  root._logo?.dispose()
+  root.setThemes([am5themes_Animated.new(root)])
 
-  root.setThemes([am5themes_Animated.new(root)]);
-
-  // Crear chart
-  let chart = root.container.children.push(
+  const chart = root.container.children.push(
     am5xy.XYChart.new(root, {
       panX: true,
-      panY: true,
+      panY: false,
       wheelX: "panX",
       wheelY: "zoomX",
       pinchZoomX: true,
       paddingLeft: 0,
       paddingRight: 1
     })
-  );
+  )
 
-  // Cursor
-  let cursor = chart.set("cursor", am5xy.XYCursor.new(root, {}));
-  cursor.lineY.set("visible", false);
+  const cursor = chart.set("cursor", am5xy.XYCursor.new(root, {}))
+  cursor.lineY.set("visible", false)
 
-  // Axis X
-  let xRenderer = am5xy.AxisRendererX.new(root, {
+  // Eje X
+  const xRenderer = am5xy.AxisRendererX.new(root, {
     minGridDistance: 30,
     minorGridEnabled: true
-  });
-
+  })
   xRenderer.labels.template.setAll({
     rotation: -90,
     centerY: am5.p50,
     centerX: am5.p100,
     paddingRight: 15
-  });
+  })
+  xRenderer.grid.template.setAll({ location: 1 })
 
-  xRenderer.grid.template.setAll({ location: 1 });
-
-  let xAxis = chart.xAxes.push(
+  xAxis = chart.xAxes.push(
     am5xy.CategoryAxis.new(root, {
       maxDeviation: 0.3,
       categoryField: "month",
       renderer: xRenderer,
       tooltip: am5.Tooltip.new(root, {})
     })
-  );
+  )
 
-  // Axis Y
-  let yAxis = chart.yAxes.push(
+  // Eje Y — una sola instancia del renderer + maxPrecision: 0 para enteros
+  const yRenderer = am5xy.AxisRendererY.new(root, { strokeOpacity: 0.1 })
+
+  const yAxis = chart.yAxes.push(
     am5xy.ValueAxis.new(root, {
       maxDeviation: 0.3,
-      renderer: am5xy.AxisRendererY.new(root, { strokeOpacity: 0.1 })
+      min: 0,
+      maxPrecision: 0,
+      renderer: yRenderer   // ← misma instancia, no una nueva
     })
-  );
+  )
 
   // Serie
-  let series = chart.series.push(
+  series = chart.series.push(
     am5xy.ColumnSeries.new(root, {
-      name: "Series 1",
-      xAxis: xAxis,
-      yAxis: yAxis,
+      name: "Casos",
+      xAxis,
+      yAxis,
       valueYField: "value",
       categoryXField: "month",
       sequencedInterpolation: true,
-      tooltip: am5.Tooltip.new(root, { labelText: "{valueY}" })
+      tooltip: am5.Tooltip.new(root, { labelText: "{categoryX}: [bold]{valueY}[/] casos" })
     })
-  );
+  )
 
   series.columns.template.setAll({
     cornerRadiusTL: 5,
     cornerRadiusTR: 5,
     strokeOpacity: 0,
     width: am5.percent(40),
-    fill: am5.color("#ff9797"),   // COLOR ROSA
+    fill: am5.color("#ff9797"),
     stroke: am5.color("#ff9797")
-  });
+  })
 
+  // Datos iniciales
+  const data = buildData()
+  xAxis.data.setAll(data)
+  series.data.setAll(data)
 
- // Datos con los meses del año
-const data = [
-  { month: "Enero", value: casosStore.casosPorMes(1).length },
-  { month: "Febrero", value: casosStore.casosPorMes(2).length },
-  { month: "Marzo", value: casosStore.casosPorMes(3).length },
-  { month: "Abril", value: casosStore.casosPorMes(4).length },
-  { month: "Mayo", value: casosStore.casosPorMes(5).length },
-  { month: "Junio", value: casosStore.casosPorMes(6).length },
-  { month: "Julio", value: casosStore.casosPorMes(7).length },
-  { month: "Agosto", value: casosStore.casosPorMes(8).length },
-  { month: "Septiembre", value: casosStore.casosPorMes(9).length },
-  { month: "Octubre", value: casosStore.casosPorMes(10).length },
-  { month: "Noviembre", value: casosStore.casosPorMes(11).length },
-  { month: "Diciembre", value: casosStore.casosPorMes(12).length }
-]
+  series.appear(1000)
+  chart.appear(1000, 100)
+})
 
-
-
-
-  xAxis.data.setAll(data);
-  series.data.setAll(data);
-
-  // Animación
-  series.appear(1000);
-  chart.appear(1000, 100);
-});
+watch(() => casosStore.casos, () => {
+  updateChart()
+}, { deep: true })
 
 onBeforeUnmount(() => {
-  if (root) root.dispose();
-});
+  if (root) root.dispose()
+})
 </script>
 
 <style scoped>

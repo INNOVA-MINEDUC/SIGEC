@@ -1,23 +1,23 @@
 import { Router } from "express";
-
+import { verifyToken }  from "../middleware/verifyToken.js";
+import { requireRole } from "../middleware/requireRole.js";
 import {
   createUser,
   getUsers,
   getUserById,
   updateUser,
-  deleteUser,
+  toggleActive,
 } from "../controllers/UserController.js";
 
 const router = Router();
 
-router.post("/", createUser);
+// Todas las rutas de gestión de usuarios: solo admin
+router.use(verifyToken, requireRole('admin'))
 
-router.get("/", getUsers);
-
-router.get("/:id", getUserById);
-
-router.put("/:id", updateUser);
-
-router.delete("/:id", deleteUser);
+router.post("/",                  createUser);
+router.get("/",                   getUsers);
+router.get("/:id",                getUserById);
+router.put("/:id",                updateUser);
+router.patch("/:id/toggle-active", toggleActive);
 
 export default router;

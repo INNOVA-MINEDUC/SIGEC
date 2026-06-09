@@ -108,24 +108,23 @@ export const updateUser = async (req, res) => {
 };
 
 
-export const deleteUser = async (req, res) => {
+export const toggleActive = async (req, res) => {
   try {
     const user = await User.findByPk(req.params.id);
 
     if (!user) {
-      return res.status(404).json({
-        message: "Usuario no encontrado",
-      });
+      return res.status(404).json({ message: "Usuario no encontrado" });
     }
 
-    await user.destroy();
+    // Evitar que el admin se inActive a sí mismo
+    if (req.user?.id === user.id) {
+      return res.status(400).json({ message: "No puedes inactivar tu propia cuenta" });
+    }
 
-    res.json({
-      message: "Usuario eliminado",
-    });
+    await user.update({ isActive: !user.isActive });
+
+    res.json({ id: user.id, isActive: user.isActive });
   } catch (error) {
-    res.status(500).json({
-      message: error.message,
-    });
+    res.status(500).json({ message: error.message });
   }
 };

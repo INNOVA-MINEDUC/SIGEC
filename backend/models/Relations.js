@@ -4,12 +4,9 @@ import Role from './Role.js'
 import User from './User.js'
 
 import Departamento from './Departamento.js'
+import Departamental from './Departamental.js'
 import Municipio from './Municipio.js'
 
-import Pueblo from './Pueblo.js'
-import ComunidadLinguistica from './ComunidadLinguistica.js'
-
-import Institucion from './Institucion.js'
 import CentroEducativo from './CentroEducativo.js'
 
 import Nina from './Nina.js'
@@ -113,6 +110,50 @@ as:'departamento'
 
 
 /* ======================================================
+DEPARTAMENTO - DEPARTAMENTAL
+====================================================== */
+
+Departamento.hasMany(Departamental,{
+
+foreignKey:'departamento_id',
+
+as:'departamentales'
+
+})
+
+Departamental.belongsTo(Departamento,{
+
+foreignKey:'departamento_id',
+
+as:'departamento'
+
+})
+
+
+
+/* ======================================================
+DEPARTAMENTAL - CASOS EMBARAZO
+====================================================== */
+
+Departamental.hasMany(CasoEmbarazo,{
+
+foreignKey:'departamental_id',
+
+as:'casosEmbarazo'
+
+})
+
+CasoEmbarazo.belongsTo(Departamental,{
+
+foreignKey:'departamental_id',
+
+as:'departamental'
+
+})
+
+
+
+/* ======================================================
 MUNICIPIO - CENTROS EDUCATIVOS
 ====================================================== */
 
@@ -157,50 +198,6 @@ as:'municipio'
 
 
 /* ======================================================
-PUEBLO - NIÑAS
-====================================================== */
-
-Pueblo.hasMany(Nina,{
-
-foreignKey:'pueblo_id',
-
-as:'ninas'
-
-})
-
-Nina.belongsTo(Pueblo,{
-
-foreignKey:'pueblo_id',
-
-as:'pueblo'
-
-})
-
-
-
-/* ======================================================
-COMUNIDAD LINGUISTICA - NIÑAS
-====================================================== */
-
-ComunidadLinguistica.hasMany(Nina,{
-
-foreignKey:'comunidad_linguistica_id',
-
-as:'ninas'
-
-})
-
-Nina.belongsTo(ComunidadLinguistica,{
-
-foreignKey:'comunidad_linguistica_id',
-
-as:'comunidadLinguistica'
-
-})
-
-
-
-/* ======================================================
 NIÑA - CASOS EMBARAZO
 ====================================================== */
 
@@ -223,28 +220,6 @@ as:'nina'
 
 
 /* ======================================================
-INSTITUCION - CASOS EMBARAZO
-====================================================== */
-
-Institucion.hasMany(CasoEmbarazo,{
-
-foreignKey:'institucion_id',
-
-as:'casosEmbarazo'
-
-})
-
-CasoEmbarazo.belongsTo(Institucion,{
-
-foreignKey:'institucion_id',
-
-as:'institucion'
-
-})
-
-
-
-/* ======================================================
 NIÑA - HISTORIAL EDUCATIVO
 ====================================================== */
 
@@ -261,28 +236,6 @@ HistorialEducativo.belongsTo(Nina,{
 foreignKey:'nina_id',
 
 as:'nina'
-
-})
-
-
-
-/* ======================================================
-INSTITUCION - HISTORIAL EDUCATIVO
-====================================================== */
-
-Institucion.hasMany(HistorialEducativo,{
-
-foreignKey:'institucion_id',
-
-as:'historialesEducativos'
-
-})
-
-HistorialEducativo.belongsTo(Institucion,{
-
-foreignKey:'institucion_id',
-
-as:'institucion'
 
 })
 
