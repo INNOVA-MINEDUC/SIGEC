@@ -56,7 +56,7 @@ export default {
       updatedAt:       new Date()
     }));
 
-    await queryInterface.bulkInsert('departamentales', rows, {});
+    await queryInterface.bulkInsert('departamentales', rows, { ignoreDuplicates: true });
   },
 
   async down (queryInterface, Sequelize) {
