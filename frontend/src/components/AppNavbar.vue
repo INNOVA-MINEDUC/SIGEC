@@ -45,6 +45,7 @@ const BASE_LINKS = [
 const ADMIN_LINKS = [
   { name: 'Importar Datos', to: '/charge-data' },
   { name: 'Usuarios',       to: '/users' },
+  { name: 'Auditoría',      to: '/auditoria' },
 ]
 
 const navLinks = computed(() => {

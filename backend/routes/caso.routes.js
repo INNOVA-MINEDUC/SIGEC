@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { attachUser } from "../middleware/attachUser.js";
 
 import {
   ObtenerCasos,
@@ -11,6 +12,8 @@ import {
 } from "../controllers/CasoController.js";
 
 const router = Router();
+
+router.use(attachUser);
 
 router.get("/generar-numero", GenerarNumeroCaso);
 router.get("/", ObtenerCasosFiltrados);

@@ -352,8 +352,7 @@ const cargarCasosFiltrados = async () => {
       sinQueja: soloSinQueja.value,
     }
 
-    console.log(payload)
-    const response = await api.post(`}/caso`, payload)
+    const response = await api.post('/caso', payload)
     casos.value = extractCasos(response)
     page.value = 1
   } catch (error) {
@@ -374,10 +373,6 @@ onMounted(async () => {
 const statCards = computed(() => {
   const totales = casos.value.length
 
-  const pendientes = casos.value.filter(
-    c => normalizeText(c.estado) === 'pendiente'
-  ).length
-
   const completados = casos.value.filter(
     c => normalizeText(c.estado) === 'completado'
   ).length
@@ -396,12 +391,6 @@ const statCards = computed(() => {
       value: padZero(totales),
       pink: iconFootprintsPink,
       white: iconFootprintsWhite
-    },
-    {
-      label: 'Casos incompletos',
-      value: padZero(pendientes),
-      pink: iconClipboardPink,
-      white: iconClipboardWhite
     },
     {
       label: 'Casos completados',

@@ -1,6 +1,7 @@
 import User from "../models/User.js";
 import bcrypt from "bcryptjs";
 import Role from "../models/Role.js";
+import { registrarAuditoria } from "../utils/auditoria.js";
 
 export const createUser = async (req, res) => {
   try {
@@ -14,6 +15,14 @@ export const createUser = async (req, res) => {
       password: hashedPassword,
       roleId,
     });
+
+    registrarAuditoria({
+      usuario_id:  req.user?.id,
+      accion:      'crear_usuario',
+      entidad:     'User',
+      entidad_id:  user.id,
+      descripcion: `Creó al usuario ${user.name} (${user.email})`,
+    })
 
     res.status(201).json(user);
   } catch (error) {
@@ -85,19 +94,26 @@ export const updateUser = async (req, res) => {
       });
     }
 
-    let hashedPassword = user.password;
+    const updates = {};
+    if (name !== undefined)     updates.name = name;
+    if (email !== undefined)    updates.email = email;
+    if (roleId !== undefined)   updates.roleId = roleId;
+    if (isActive !== undefined) updates.isActive = isActive;
 
+    // Solo se actualiza la contraseña si se envió una nueva; de lo contrario se conserva la actual
     if (password) {
-      hashedPassword = await bcrypt.hash(password, 10);
+      updates.password = await bcrypt.hash(password, 10);
     }
 
-    await user.update({
-      name,
-      email,
-      password: hashedPassword,
-      roleId,
-      isActive,
-    });
+    await user.update(updates);
+
+    registrarAuditoria({
+      usuario_id:  req.user?.id,
+      accion:      'actualizar_usuario',
+      entidad:     'User',
+      entidad_id:  user.id,
+      descripcion: `Actualizó al usuario ${user.name} (${user.email})`,
+    })
 
     res.json(user);
   } catch (error) {
@@ -122,6 +138,14 @@ export const toggleActive = async (req, res) => {
     }
 
     await user.update({ isActive: !user.isActive });
+
+    registrarAuditoria({
+      usuario_id:  req.user?.id,
+      accion:      user.isActive ? 'activar_usuario' : 'desactivar_usuario',
+      entidad:     'User',
+      entidad_id:  user.id,
+      descripcion: `${user.isActive ? 'Activó' : 'Desactivó'} al usuario ${user.name} (${user.email})`,
+    })
 
     res.json({ id: user.id, isActive: user.isActive });
   } catch (error) {

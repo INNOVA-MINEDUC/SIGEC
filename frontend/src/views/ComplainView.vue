@@ -378,7 +378,7 @@
 
                 <div
                   class="input-box estado-box"
-                  :class="{ 'estado-error': submitIntent && !form.estado }"
+                  :class="{ 'estado-error': submitIntent && (!form.estado || (casoId && form.estado === estadoOriginal)) }"
                 >
                   <v-icon
                     size="16"
@@ -389,17 +389,17 @@
                     <option value="" disabled>
                       {{ estadoOriginal ? 'Selecciona el nuevo estado *' : 'Estado del caso *' }}
                     </option>
-                    <option value="pendiente">Pendiente</option>
-                    <option value="faltante">Faltante</option>
-                    <option value="completado">Completado</option>
+                    <option value="pendiente"  :disabled="estadoOriginal === 'pendiente'">Pendiente</option>
+                    <option value="faltante"   :disabled="estadoOriginal === 'faltante'">Faltante</option>
+                    <option value="completado" :disabled="estadoOriginal === 'completado'">Completado</option>
                   </select>
                   <v-icon size="16" class="select-chevron">mdi-chevron-down</v-icon>
                 </div>
 
-                <!-- Alerta si intentó enviar sin estado -->
-                <div v-if="submitIntent && !form.estado" class="estado-requerido">
+                <!-- Alerta si intentó enviar sin cambiar el estado -->
+                <div v-if="submitIntent && (!form.estado || (casoId && form.estado === estadoOriginal))" class="estado-requerido">
                   <v-icon size="13" color="#e53935">mdi-alert-circle</v-icon>
-                  {{ casoId ? 'Debes seleccionar el nuevo estado antes de guardar' : 'El estado es obligatorio' }}
+                  {{ casoId ? 'Debes seleccionar un estado distinto al actual antes de guardar' : 'El estado es obligatorio' }}
                 </div>
 
               </div>
@@ -547,6 +547,10 @@ const cargarCaso = async (id) => {
 
     // Step 2
     form.cui                  = nina.cui || ''
+    const fc = parseFecha(caso.fecha_primera_consulta)
+    form.consultaDia          = fc.dia
+    form.consultaMes          = fc.mes
+    form.consultaAno          = fc.ano
     form.nombreCompleto       = nina.nombre_completo || ''
     const fn = parseFecha(nina.fecha_nacimiento)
     form.nacimientoDia        = fn.dia
@@ -663,6 +667,11 @@ async function submitForm() {
       : 'El estado del caso es obligatorio'
     return
   }
+
+  if (casoId.value && form.estado === estadoOriginal.value) {
+    errores.value = 'Debes cambiar el estado del caso antes de guardar'
+    return
+  }
   try {
     if (casoId.value) {
       // UPDATE existing case — sends full payload so all fields can be edited
@@ -673,6 +682,7 @@ async function submitForm() {
         departamental_id: form.direccionDepartamental || null,
         datos_nina: {
           no_notificacion:          form.noNotificacion || null,
+          fecha_primera_consulta:   toFecha(form.consultaDia, form.consultaMes, form.consultaAno),
           nombre_completo:          form.nombreCompleto,
           fecha_nacimiento:         toFecha(form.nacimientoDia, form.nacimientoMes, form.nacimientoAno),
           edad:                     form.edad || null,
