@@ -8,6 +8,7 @@ import Departamento from '../models/Departamento.js'
 import HistorialEducativo from '../models/HistorialEducativo.js'
 import CargaArchivo from '../models/CargaArchivo.js'
 import User from '../models/User.js'
+import { registrarAuditoria } from '../utils/auditoria.js'
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -142,6 +143,33 @@ export const CargaMasiva = async (req, res) => {
     console.log(`\n━━━ CARGA MASIVA: ${req.file.originalname} ━━━`)
     console.log(`   Fila de cabecera detectada: ${headerRowNum}`)
     console.log(`   Columnas (${colsDetectadas.length}):`, colsDetectadas.join(' | '))
+
+    // 6.1 Validar que el archivo tenga las columnas necesarias (evita cargas de archivos incorrectos)
+    const COLS_OBLIGATORIAS = [
+      { patron: 'nombre completo', label: 'Nombre completo' },
+    ]
+    const COLS_IMPORTANTES = [
+      { patron: 'cui renap',             label: 'CUI RENAP' },
+      { patron: 'departamento',          label: 'Departamento' },
+      { patron: 'fecha primer contacto', label: 'Fecha Primer Contacto' },
+      { patron: 'edad',                  label: 'Edad Años' },
+      { patron: 'fecha nacimiento',      label: 'Fecha Nacimiento' },
+    ]
+
+    const faltanObligatorias = COLS_OBLIGATORIAS
+      .filter(c => !colsDetectadas.some(h => h.includes(c.patron)))
+      .map(c => c.label)
+
+    if (faltanObligatorias.length > 0) {
+      return res.status(400).json({
+        ok: false,
+        message: `El archivo no contiene las columnas obligatorias (${faltanObligatorias.join(', ')}). Verifique que está subiendo el archivo correcto del reporte MSPAS.`,
+      })
+    }
+
+    const faltanImportantes = COLS_IMPORTANTES
+      .filter(c => !colsDetectadas.some(h => h.includes(c.patron)))
+      .map(c => c.label)
 
     // 7. Extraer filas de datos
     const rawRows = []
@@ -328,6 +356,14 @@ export const CargaMasiva = async (req, res) => {
     // 10. Actualizar conteos finales
     await carga.update({ registros_nuevos: nuevos, registros_duplicados: duplicados })
 
+    registrarAuditoria({
+      usuario_id:  req.user?.id,
+      accion:      'carga_masiva',
+      entidad:     'CargaArchivo',
+      entidad_id:  carga.id,
+      descripcion: `Realizó una carga masiva del archivo "${req.file.originalname}" (${nuevos} nuevos, ${duplicados} duplicados de ${totalFilas} filas)`,
+    })
+
     return res.status(200).json({
       ok:       true,
       message:  'Carga masiva completada',
@@ -335,6 +371,9 @@ export const CargaMasiva = async (req, res) => {
       total:    totalFilas,
       nuevos,
       duplicados,
+      advertencias: faltanImportantes.length > 0
+        ? [`El archivo no incluye estas columnas: ${faltanImportantes.join(', ')}. Esos datos quedarán vacíos.`]
+        : [],
       _debug: {
         fila_cabecera:       headerRowNum,
         columnas_detectadas: colsDetectadas,

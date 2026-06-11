@@ -12,6 +12,7 @@ import ComplainView from './views/ComplainView.vue'
 import ShowDataView from './views/ShowDataView.vue'
 import ChargeData from './views/ChargeData.vue'
 import UsersView from './views/UsersView.vue'
+import AuditoriaView from './views/AuditoriaView.vue'
 import ProfileView from './views/ProfileView.vue'
 import Seguimiento from './views/Seguimiento.vue'
 
@@ -92,6 +93,16 @@ const routes = [
     meta: {
       requiresAuth: true,
       roles: ['admin'],           // solo admin gestiona usuarios
+    }
+  },
+
+  {
+    path: '/auditoria',
+    name: 'auditoria',
+    component: AuditoriaView,
+    meta: {
+      requiresAuth: true,
+      roles: ['admin'],           // solo admin consulta la bitácora
     }
   },
 

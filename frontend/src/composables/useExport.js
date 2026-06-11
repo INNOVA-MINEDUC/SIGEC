@@ -1,19 +1,129 @@
-import * as XLSX from 'xlsx'
+import * as XLSX from 'xlsx-js-style'
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
+import api from '@/helpers/api'
+import sigecLogoUrl from '@/assets/LOGO_SISEC.png'
+import mineducLogoUrl from '@/assets/logo_mineduc.png'
 
-// ── Columnas para Excel (todas) ──────────────────────────────────────────────
-const COLS_EXCEL = [
-  'No. Caso', 'CUI', 'Nombre Completo', 'Estado', 'Fecha Ingreso',
-  'Queja', 'Institución', 'No. Notificación',
-  'Departamento', 'Municipio', 'Pueblo', 'Comunidad Lingüística',
-  'Edad', 'Dirección',
-  'Grado', 'Nivel', 'Status Sistema', 'Resultado',
-  'Centro Educativo', 'Código UDI', 'Código Personal',
-  'Área', 'Jornada', 'Sector',
+// Registra la descarga en la bitácora de auditoría (no bloquea la exportación si falla)
+function registrarDescarga(tipo, descripcion) {
+  api.post('/auditoria/descarga', { tipo, descripcion }).catch(() => {})
+}
+
+// ── Paleta institucional (azul marino) ───────────────────────────────────────
+const NAVY      = [31, 56, 100]   // #1F3864
+const NAVY_DARK = [17, 32, 61]    // #11203D
+const GOLD      = [197, 160, 89]  // acento dorado
+const SLATE     = [90, 110, 140]
+const STEEL     = [120, 150, 180]
+const SAGE      = [110, 150, 120]
+const PALETTE   = [GOLD, SLATE, STEEL, SAGE, [150, 120, 170], [180, 140, 100]]
+
+// ── Carga una imagen (logo) como dataURL para usarla en jsPDF ────────────────
+function loadImageData(url) {
+  return new Promise((resolve) => {
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.onload = () => {
+      const canvas = document.createElement('canvas')
+      canvas.width = img.naturalWidth
+      canvas.height = img.naturalHeight
+      const ctx = canvas.getContext('2d')
+      ctx.drawImage(img, 0, 0)
+      resolve({ dataUrl: canvas.toDataURL('image/png'), w: img.naturalWidth, h: img.naturalHeight })
+    }
+    img.onerror = () => resolve(null)
+    img.src = url
+  })
+}
+
+// Dibuja la franja de encabezado institucional con logos en un PDF
+function drawPdfHeader(doc, { sigec, mineduc, title, subtitle, barH = 22, logoH = 13, titleSize = 13 }) {
+  const W = doc.internal.pageSize.getWidth()
+  const PAD = 12
+
+  doc.setFillColor(...NAVY)
+  doc.rect(0, 0, W, barH, 'F')
+  doc.setFillColor(...GOLD)
+  doc.rect(0, barH, W, 1, 'F')
+
+  if (sigec) {
+    const w = logoH * (sigec.w / sigec.h)
+    doc.addImage(sigec.dataUrl, 'PNG', PAD, (barH - logoH) / 2, w, logoH)
+  }
+  if (mineduc) {
+    const w = logoH * (mineduc.w / mineduc.h)
+    doc.addImage(mineduc.dataUrl, 'PNG', W - PAD - w, (barH - logoH) / 2, w, logoH)
+  }
+
+  doc.setTextColor(255, 255, 255)
+  doc.setFontSize(titleSize)
+  doc.setFont('helvetica', 'bold')
+  doc.text(title, W / 2, barH * 0.45, { align: 'center' })
+  if (subtitle) {
+    doc.setFontSize(7.5)
+    doc.setFont('helvetica', 'normal')
+    doc.text(subtitle, W / 2, barH * 0.8, { align: 'center' })
+  }
+}
+
+// ── Columnas para Excel agrupadas por sección (Información General / Niña / Establecimiento / Situación Educativa)
+const GRUPOS_EXCEL = [
+  { label: 'Información General', cols: ['No. Caso', 'Fecha Ingreso', 'Estado', 'No. Notificación', 'Queja'] },
+  { label: 'Datos de la Niña',     cols: ['CUI', 'Nombre Completo', 'Edad', 'Dirección', 'Departamento', 'Municipio', 'Pueblo', 'Comunidad Lingüística'] },
+  { label: 'Establecimiento',      cols: ['Institución', 'Centro Educativo', 'Código UDI', 'Área', 'Jornada', 'Sector'] },
+  { label: 'Situación Educativa',  cols: ['Grado', 'Nivel', 'Status Sistema', 'Resultado', 'Código Personal'] },
 ]
 
-// ── Convierte un caso a fila de datos ────────────────────────────────────────
+// Colores institucionales por sección (tonos de azul marino)
+const GRUPO_COLORES = {
+  'Información General': '203864',
+  'Datos de la Niña':     '2E5395',
+  'Establecimiento':      '4472C4',
+  'Situación Educativa':  '1F3864',
+}
+
+// ── Convierte un caso a fila de datos, en el mismo orden que GRUPOS_EXCEL ────
+function casoAFilaExcel(caso) {
+  const nina   = caso.nina || {}
+  const hist   = (nina.historialEducativo || [])[0] || {}
+  const centro = hist.centroEducativo || {}
+  const dept   = nina.municipio?.departamento?.nombre
+              || caso.departamental?.departamento?.nombre || ''
+  const mun    = nina.municipio?.nombre || ''
+  return [
+    // Información General
+    caso.numero_caso     || '',
+    caso.fecha_ingreso   || '',
+    caso.estado          || '',
+    caso.no_notificacion || '',
+    caso.queja           || '',
+    // Datos de la Niña
+    nina.cui                           || '',
+    nina.nombre_completo               || '',
+    nina.edad                          || '',
+    nina.direccion                     || '',
+    dept,
+    mun,
+    nina.pueblo?.nombre                || '',
+    nina.comunidadLinguistica?.nombre  || '',
+    // Establecimiento
+    caso.institucion     || '',
+    centro.nombre        || '',
+    centro.codigo_udi    || '',
+    centro.area          || '',
+    centro.jornada       || '',
+    centro.sector        || '',
+    // Situación Educativa
+    hist.grado           || '',
+    hist.nivel           || '',
+    hist.status_actual   || '',
+    hist.resultado       || '',
+    hist.codigo_personal || '',
+  ]
+}
+
+// ── Convierte un caso a fila de datos (orden plano, usado por el PDF) ───────
 function casoAFila(caso) {
   const nina   = caso.nina || {}
   const hist   = (nina.historialEducativo || [])[0] || {}
@@ -53,29 +163,77 @@ function casoAFila(caso) {
 // EXPORTAR EXCEL
 // ────────────────────────────────────────────────────────────────────────────
 export function exportarExcel(casos, nombre = 'SIGEC_Casos') {
-  const filas = casos.map(casoAFila)
-  const ws = XLSX.utils.aoa_to_sheet([COLS_EXCEL, ...filas])
+  const flatCols  = GRUPOS_EXCEL.flatMap(g => g.cols)
+  const totalCols = flatCols.length
+  const filas     = casos.map(casoAFilaExcel)
 
-  // Encabezado con estilo (negrita + fondo rosa)
-  const headerRange = XLSX.utils.decode_range(ws['!ref'])
-  for (let C = headerRange.s.c; C <= headerRange.e.c; C++) {
-    const cell = ws[XLSX.utils.encode_cell({ r: 0, c: C })]
+  // Fila de título + fila de grupos + fila de columnas + datos
+  const tituloRow = [`Base de Datos de Casos de Embarazos en Niñas — SIGEC, MINEDUC Guatemala (Generado: ${new Date().toLocaleDateString('es-GT', { dateStyle: 'long' })})`]
+  const grupoRow  = []
+  GRUPOS_EXCEL.forEach(g => { grupoRow.push(g.label); for (let i = 1; i < g.cols.length; i++) grupoRow.push('') })
+
+  const ws = XLSX.utils.aoa_to_sheet([tituloRow, grupoRow, flatCols, ...filas])
+
+  // Combinar celdas: título (toda la fila) y cada grupo de encabezado
+  ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: totalCols - 1 } }]
+  let colIdx = 0
+  GRUPOS_EXCEL.forEach(g => {
+    if (g.cols.length > 1) {
+      ws['!merges'].push({ s: { r: 1, c: colIdx }, e: { r: 1, c: colIdx + g.cols.length - 1 } })
+    }
+    colIdx += g.cols.length
+  })
+
+  // Estilo: fila de título
+  for (let c = 0; c < totalCols; c++) {
+    const cell = ws[XLSX.utils.encode_cell({ r: 0, c })]
     if (cell) {
       cell.s = {
-        font: { bold: true, color: { rgb: 'FFFFFF' } },
-        fill: { fgColor: { rgb: 'FF9797' } },
-        alignment: { horizontal: 'center', vertical: 'center', wrapText: true }
+        font: { bold: true, sz: 12, color: { rgb: 'FFFFFF' } },
+        fill: { fgColor: { rgb: '11203D' } },
+        alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
       }
     }
   }
 
-  // Ancho de columnas automático
-  ws['!cols'] = COLS_EXCEL.map((h, i) => {
-    const maxLen = Math.max(h.length, ...filas.map(r => String(r[i] ?? '').length))
-    return { wch: Math.min(maxLen + 2, 40) }
+  // Estilo: fila de grupos (cada sección con su tono institucional)
+  colIdx = 0
+  GRUPOS_EXCEL.forEach(g => {
+    for (let i = 0; i < g.cols.length; i++) {
+      const cell = ws[XLSX.utils.encode_cell({ r: 1, c: colIdx + i })]
+      if (cell) {
+        cell.s = {
+          font: { bold: true, sz: 11, color: { rgb: 'FFFFFF' } },
+          fill: { fgColor: { rgb: GRUPO_COLORES[g.label] } },
+          alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+        }
+      }
+    }
+    colIdx += g.cols.length
   })
 
-  ws['!rows'] = [{ hpt: 28 }] // altura fila encabezado
+  // Estilo: fila de encabezados de columna (azul institucional claro + texto azul marino)
+  for (let c = 0; c < totalCols; c++) {
+    const cell = ws[XLSX.utils.encode_cell({ r: 2, c })]
+    if (cell) {
+      cell.s = {
+        font: { bold: true, sz: 10, color: { rgb: '1F3864' } },
+        fill: { fgColor: { rgb: 'D9E2F3' } },
+        alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+        border: {
+          bottom: { style: 'thin', color: { rgb: '1F3864' } },
+        },
+      }
+    }
+  }
+
+  // Ancho de columnas automático (más anchas para que el encabezado no se corte)
+  ws['!cols'] = flatCols.map((h, i) => {
+    const maxLen = Math.max(h.length, ...filas.map(r => String(r[i] ?? '').length))
+    return { wch: Math.max(Math.min(maxLen + 4, 40), 14) }
+  })
+
+  ws['!rows'] = [{ hpt: 22 }, { hpt: 20 }, { hpt: 32 }] // títulos / grupos / encabezados
 
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb, ws, 'Casos')
@@ -103,6 +261,8 @@ export function exportarExcel(casos, nombre = 'SIGEC_Casos') {
 
   const hoy = new Date().toLocaleDateString('es-GT').replace(/\//g, '-')
   XLSX.writeFile(wb, `${nombre}_${hoy}.xlsx`)
+
+  registrarDescarga('excel', `Exportó "${nombre}" a Excel (${casos.length} casos)`)
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -297,31 +457,31 @@ export function exportarPDF(casos, nombre = 'SIGEC_Casos', resumenFiltros = '') 
   doc.setTextColor(60, 60, 60)
   doc.text('Distribución por Estado', COL1_X, curY)
 
-  const donaR = 18
+  const donaR = 16
   const donaCX = COL1_X + COL1_W / 2
-  const donaCY = curY + 8 + donaR
+  const donaCY = curY + 6 + donaR
   drawDonut(doc, donaCX, donaCY, donaR, estadoSegs)
 
   // Total en el centro
   doc.setFontSize(11)
   doc.setFont('helvetica', 'bold')
   doc.setTextColor(80)
-  doc.text(String(total), donaCX, donaCY + 3.5, { align: 'center' })
+  doc.text(String(total), donaCX, donaCY + 1.5, { align: 'center' })
   doc.setFontSize(5.5)
   doc.setFont('helvetica', 'normal')
-  doc.text('total', donaCX, donaCY + 8, { align: 'center' })
+  doc.text('total', donaCX, donaCY + 6, { align: 'center' })
 
-  // Leyenda
-  let ly = curY + 5
+  // Leyenda — debajo de la dona, sin solaparse
+  let ly = donaCY + donaR + 6
   estadoSegs.forEach(seg => {
     const pct = total > 0 ? ((seg.v / total) * 100).toFixed(1) : '0.0'
     doc.setFillColor(...seg.c)
-    doc.roundedRect(COL1_X, ly, 4, 4, 0.5, 0.5, 'F')
+    doc.roundedRect(COL1_X + 8, ly, 4, 4, 0.5, 0.5, 'F')
     doc.setFontSize(6.5)
     doc.setTextColor(60)
     doc.setFont('helvetica', 'normal')
-    doc.text(`${seg.l}: ${seg.v} (${pct}%)`, COL1_X + 6, ly + 3.2)
-    ly += 7
+    doc.text(`${seg.l}: ${seg.v} (${pct}%)`, COL1_X + 14, ly + 3.2)
+    ly += 6
   })
 
   // ── Columna 2: Mensual (barras verticales) ─────────────────────────────────
@@ -427,4 +587,252 @@ export function exportarPDF(casos, nombre = 'SIGEC_Casos', resumenFiltros = '') 
   }
 
   doc.save(`${nombre}_${hoyCorto}.pdf`)
+
+  registrarDescarga('pdf', `Exportó "${nombre}" a PDF (${total} casos)`)
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// AUDITORÍA — Etiquetas y formato
+// ────────────────────────────────────────────────────────────────────────────
+const ACCION_LABELS = {
+  crear_caso:         'Caso creado',
+  actualizar_caso:    'Caso actualizado',
+  crear_usuario:      'Usuario creado',
+  actualizar_usuario: 'Usuario actualizado',
+  activar_usuario:    'Usuario activado',
+  desactivar_usuario: 'Usuario desactivado',
+  descargar_pdf:      'Descarga de PDF',
+  descargar_excel:    'Descarga de Excel',
+  carga_masiva:       'Carga masiva',
+}
+
+const accionLabel = (v) => ACCION_LABELS[v] || v
+
+function formatFechaHora(fecha) {
+  if (!fecha) return ''
+  return new Date(fecha).toLocaleString('es-GT', { dateStyle: 'short', timeStyle: 'medium' })
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// EXPORTAR AUDITORÍA — EXCEL
+// ────────────────────────────────────────────────────────────────────────────
+export function exportarAuditoriaExcel(registros, filtrosTexto = '') {
+  const COLS = ['Fecha', 'Hora', 'Usuario', 'Correo', 'Acción', 'Descripción']
+
+  const filas = registros.map(r => {
+    const fecha = r.createdAt ? new Date(r.createdAt) : null
+    return [
+      fecha ? fecha.toLocaleDateString('es-GT') : '',
+      fecha ? fecha.toLocaleTimeString('es-GT') : '',
+      r.usuario?.name  || 'Sistema',
+      r.usuario?.email || '',
+      accionLabel(r.accion),
+      r.descripcion || '',
+    ]
+  })
+
+  const totalCols = COLS.length
+  const tituloRow = [`SIGEC — Bitácora de Auditoría — Ministerio de Educación de Guatemala (Generado: ${new Date().toLocaleString('es-GT', { dateStyle: 'long', timeStyle: 'short' })})`]
+
+  const ws = XLSX.utils.aoa_to_sheet([tituloRow, COLS, ...filas])
+
+  // Combinar la fila de título a lo ancho de toda la tabla
+  ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: totalCols - 1 } }]
+
+  // Estilo: fila de título (azul marino oscuro)
+  for (let c = 0; c < totalCols; c++) {
+    const cell = ws[XLSX.utils.encode_cell({ r: 0, c })]
+    if (cell) {
+      cell.s = {
+        font: { bold: true, sz: 12, color: { rgb: 'FFFFFF' } },
+        fill: { fgColor: { rgb: '11203D' } },
+        alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+      }
+    }
+  }
+
+  // Estilo: fila de encabezados (azul marino + letras blancas)
+  for (let c = 0; c < totalCols; c++) {
+    const cell = ws[XLSX.utils.encode_cell({ r: 1, c })]
+    if (cell) {
+      cell.s = {
+        font: { bold: true, sz: 12, color: { rgb: 'FFFFFF' } },
+        fill: { fgColor: { rgb: '1F3864' } },
+        alignment: { horizontal: 'center', vertical: 'center', wrapText: true }
+      }
+    }
+  }
+
+  // Ancho de columnas automático (más anchas para que el encabezado no se corte)
+  ws['!cols'] = COLS.map((h, i) => {
+    const maxLen = Math.max(h.length, ...filas.map(r => String(r[i] ?? '').length))
+    return { wch: Math.max(Math.min(maxLen + 4, 60), 14) }
+  })
+  ws['!rows'] = [{ hpt: 22 }, { hpt: 32 }]
+
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, ws, 'Auditoría')
+
+  // Hoja de resumen
+  const porAccion = {}
+  registros.forEach(r => { porAccion[r.accion] = (porAccion[r.accion] || 0) + 1 })
+
+  const resumenRows = [
+    ['SIGEC — Bitácora de Auditoría'],
+    ['Ministerio de Educación de Guatemala'],
+    [`Generado: ${new Date().toLocaleString('es-GT', { dateStyle: 'full', timeStyle: 'short' })}`],
+    [],
+    ...(filtrosTexto ? [['Filtros aplicados', filtrosTexto], []] : []),
+    ['RESUMEN'],
+    ['Total de registros', registros.length],
+    ...Object.entries(porAccion).map(([accion, cant]) => [accionLabel(accion), cant]),
+  ]
+  const wsRes = XLSX.utils.aoa_to_sheet(resumenRows)
+  wsRes['!cols'] = [{ wch: 30 }, { wch: 15 }]
+  XLSX.utils.book_append_sheet(wb, wsRes, 'Resumen')
+
+  const hoy = new Date().toLocaleDateString('es-GT').replace(/\//g, '-')
+  XLSX.writeFile(wb, `SIGEC_Auditoria_${hoy}.xlsx`)
+
+  registrarDescarga('excel', `Exportó la bitácora de auditoría a Excel (${registros.length} registros)${filtrosTexto ? ` — ${filtrosTexto}` : ''}`)
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// EXPORTAR AUDITORÍA — PDF
+// ────────────────────────────────────────────────────────────────────────────
+export async function exportarAuditoriaPDF(registros, filtrosTexto = '', usuario = null) {
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' })
+  const W = 297, H = 210
+  const PAD = 12
+  const hoy = new Date().toLocaleDateString('es-GT', { dateStyle: 'full' })
+  const hoyCorto = new Date().toLocaleDateString('es-GT').replace(/\//g, '-')
+  const ahora = new Date().toLocaleString('es-GT', { dateStyle: 'long', timeStyle: 'short' })
+  const total = registros.length
+
+  const [sigec, mineduc] = await Promise.all([
+    loadImageData(sigecLogoUrl),
+    loadImageData(mineducLogoUrl),
+  ])
+
+  // ── Métricas por acción ───────────────────────────────────────────────────
+  const porAccion = {}
+  registros.forEach(r => { porAccion[r.accion] = (porAccion[r.accion] || 0) + 1 })
+  const resumenAcciones = Object.entries(porAccion)
+    .sort((a, b) => b[1] - a[1])
+    .map(([accion, cant]) => ({ l: accionLabel(accion), v: cant }))
+
+  // ── Encabezado con logos ──────────────────────────────────────────────────
+  drawPdfHeader(doc, {
+    sigec, mineduc,
+    title: 'SIGEC — Bitácora de Auditoría',
+    subtitle: 'Ministerio de Educación de Guatemala',
+  })
+
+  let curY = 27
+
+  // ── Bloque de información de generación/descarga ─────────────────────────
+  const infoH = 16
+  doc.setFillColor(240, 242, 247)
+  doc.setDrawColor(...NAVY)
+  doc.setLineWidth(0.2)
+  doc.roundedRect(PAD, curY, W - PAD * 2, infoH, 1, 1, 'FD')
+
+  const colA = PAD + 3
+  const colB = W / 2 + 5
+  doc.setFontSize(7)
+  doc.setTextColor(...NAVY_DARK)
+
+  doc.setFont('helvetica', 'bold')
+  doc.text('Documento generado:', colA, curY + 5.5)
+  doc.setFont('helvetica', 'normal')
+  doc.text(ahora, colA + 32, curY + 5.5)
+
+  doc.setFont('helvetica', 'bold')
+  doc.text('Generado por:', colA, curY + 11)
+  doc.setFont('helvetica', 'normal')
+  doc.text(usuario ? `${usuario.name || ''}${usuario.email ? ` (${usuario.email})` : ''}`.trim() : 'No especificado', colA + 32, curY + 11)
+
+  doc.setFont('helvetica', 'bold')
+  doc.text('Total de registros:', colB, curY + 5.5)
+  doc.setFont('helvetica', 'normal')
+  doc.text(String(total), colB + 32, curY + 5.5)
+
+  doc.setFont('helvetica', 'bold')
+  doc.text('Filtros aplicados:', colB, curY + 11)
+  doc.setFont('helvetica', 'normal')
+  doc.text(filtrosTexto || 'Ninguno', colB + 32, curY + 11)
+
+  curY += infoH + 6
+
+  // ── Stat boxes: total + top acciones ────────────────────────────────────────
+  const boxes = [
+    { label: 'Total registros', value: total, color: NAVY },
+    ...resumenAcciones.slice(0, 5).map((a, i) => ({
+      label: a.l, value: a.v, color: PALETTE[i % PALETTE.length],
+    })),
+  ]
+  const boxW = 42, boxH = 20, boxGap = 3
+  const totalBoxW = boxes.length * boxW + (boxes.length - 1) * boxGap
+  const bx0 = (W - totalBoxW) / 2
+  boxes.forEach((b, i) => drawStatBox(doc, bx0 + i * (boxW + boxGap), curY, boxW, boxH, b.value, b.label, b.color))
+  curY += boxH + 8
+
+  // Línea divisoria formal
+  doc.setDrawColor(...NAVY)
+  doc.setLineWidth(0.3)
+  doc.line(PAD, curY, W - PAD, curY)
+
+  // Pie de página 1
+  doc.setFontSize(6)
+  doc.setTextColor(140, 140, 140)
+  doc.text(`SIGEC — MINEDUC  ·  Documento generado el ${hoy}  ·  Página 1`, W / 2, H - 5, { align: 'center' })
+
+  // ── PÁGINA 2+: TABLA DE REGISTROS ────────────────────────────────────────────
+  doc.addPage()
+
+  drawPdfHeader(doc, {
+    sigec, mineduc,
+    title: 'Detalle de Acciones Registradas',
+    subtitle: `${total} registros`,
+    barH: 16,
+    logoH: 10,
+    titleSize: 10,
+  })
+
+  const colsPDF = ['Fecha', 'Usuario', 'Correo', 'Acción', 'Descripción']
+  const body = registros.map(r => [
+    formatFechaHora(r.createdAt),
+    r.usuario?.name  || 'Sistema',
+    r.usuario?.email || '',
+    accionLabel(r.accion),
+    r.descripcion || '',
+  ])
+
+  autoTable(doc, {
+    head: [colsPDF],
+    body,
+    startY: 19,
+    styles: { fontSize: 6.5, cellPadding: 1.5, overflow: 'linebreak', textColor: [50, 50, 50], lineColor: [225, 228, 235], lineWidth: 0.1 },
+    headStyles: { fillColor: NAVY, textColor: 255, fontStyle: 'bold', fontSize: 7 },
+    alternateRowStyles: { fillColor: [240, 242, 247] },
+    margin: { left: PAD, right: PAD },
+    columnStyles: {
+      0: { cellWidth: 32 },
+      1: { cellWidth: 38 },
+      2: { cellWidth: 50 },
+      3: { cellWidth: 35, fontStyle: 'bold', textColor: NAVY_DARK },
+    },
+    didDrawPage: ({ pageNumber }) => {
+      doc.setFontSize(6)
+      doc.setTextColor(140, 140, 140)
+      doc.text(
+        `SIGEC — MINEDUC  ·  Página ${pageNumber}  ·  ${hoy}`,
+        W / 2, H - 5, { align: 'center' }
+      )
+    }
+  })
+
+  doc.save(`SIGEC_Auditoria_${hoyCorto}.pdf`)
+
+  registrarDescarga('pdf', `Exportó la bitácora de auditoría a PDF (${total} registros)${filtrosTexto ? ` — ${filtrosTexto}` : ''}`)
 }

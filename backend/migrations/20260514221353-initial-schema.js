@@ -104,56 +104,6 @@ export default {
     })
 
     // =====================================================
-    // TABLA: pueblos
-    // =====================================================
-    await queryInterface.createTable('pueblos', {
-      id: {
-        type: Sequelize.INTEGER,
-        autoIncrement: true,
-        primaryKey: true,
-        allowNull: false
-      },
-      nombre: {
-        type: Sequelize.STRING(150),
-        allowNull: false,
-        unique: true
-      },
-      createdAt: {
-        type: Sequelize.DATE,
-        defaultValue: Sequelize.fn('NOW')
-      },
-      updatedAt: {
-        type: Sequelize.DATE,
-        defaultValue: Sequelize.fn('NOW')
-      }
-    })
-
-    // =====================================================
-    // TABLA: comunidades_linguisticas
-    // =====================================================
-    await queryInterface.createTable('comunidades_linguisticas', {
-      id: {
-        type: Sequelize.INTEGER,
-        autoIncrement: true,
-        primaryKey: true,
-        allowNull: false
-      },
-      nombre: {
-        type: Sequelize.STRING(150),
-        allowNull: false,
-        unique: true
-      },
-      createdAt: {
-        type: Sequelize.DATE,
-        defaultValue: Sequelize.fn('NOW')
-      },
-      updatedAt: {
-        type: Sequelize.DATE,
-        defaultValue: Sequelize.fn('NOW')
-      }
-    })
-
-    // =====================================================
     // TABLA: roles
     // =====================================================
     await queryInterface.createTable('roles', {
@@ -570,8 +520,6 @@ export default {
     await queryInterface.dropTable('centros_educativos')
     await queryInterface.dropTable('users')
     await queryInterface.dropTable('roles')
-    await queryInterface.dropTable('comunidades_linguisticas')
-    await queryInterface.dropTable('pueblos')
     await queryInterface.dropTable('municipios')
     await queryInterface.dropTable('departamentales')
     await queryInterface.dropTable('departamentos')

@@ -13,6 +13,7 @@ import HistorialEducativo from "../models/HistorialEducativo.js";
 import CentroEducativo from "../models/CentroEducativo.js";
 
 import CargaArchivo from "../models/CargaArchivo.js";
+import { registrarAuditoria } from "../utils/auditoria.js";
 
 export const GenerarNumeroCaso = async (req, res) => {
   try {
@@ -478,6 +479,14 @@ export const RegistrarCaso = async (req, res) => {
 
     await t.commit()
 
+    registrarAuditoria({
+      usuario_id:  req.user?.id,
+      accion:      'crear_caso',
+      entidad:     'CasoEmbarazo',
+      entidad_id:  caso.id,
+      descripcion: `Registró el caso ${caso.numero_caso}`,
+    })
+
     return res.status(201).json({
       success: true,
       message: 'Caso registrado exitosamente',
@@ -740,6 +749,8 @@ export const ActualizarCaso = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Caso no encontrado' })
     }
 
+    const estadoAnterior = caso.estado
+
     // 1. Actualizar caso
     const casoUpdates = {}
     if (queja !== undefined)      casoUpdates.queja           = queja || null
@@ -748,6 +759,7 @@ export const ActualizarCaso = async (req, res) => {
     if (departamental_id)         casoUpdates.departamental_id = departamental_id
     if (datos_nina?.no_notificacion !== undefined) casoUpdates.no_notificacion = datos_nina.no_notificacion || null
     if (datos_nina?.institucion !== undefined)     casoUpdates.institucion     = datos_nina.institucion || null
+    if (datos_nina?.fecha_primera_consulta !== undefined) casoUpdates.fecha_primera_consulta = datos_nina.fecha_primera_consulta || null
     await caso.update(casoUpdates, { transaction: t })
 
     // 2. Actualizar niña
@@ -837,6 +849,19 @@ export const ActualizarCaso = async (req, res) => {
     }
 
     await t.commit()
+
+    let descripcion = `Actualizó el caso ${caso.numero_caso}`
+    if (estado && estado !== estadoAnterior) {
+      descripcion += ` (estado: ${estadoAnterior || 'sin estado'} → ${estado})`
+    }
+    registrarAuditoria({
+      usuario_id:  req.user?.id,
+      accion:      'actualizar_caso',
+      entidad:     'CasoEmbarazo',
+      entidad_id:  caso.id,
+      descripcion,
+    })
+
     return res.json({ success: true, message: 'Caso actualizado', data: { id: caso.id } })
   } catch (error) {
     await t.rollback()

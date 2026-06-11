@@ -2,6 +2,7 @@
 
 import Role from './Role.js'
 import User from './User.js'
+import Auditoria from './Auditoria.js'
 
 import Departamento from './Departamento.js'
 import Departamental from './Departamental.js'
@@ -82,6 +83,32 @@ User.belongsTo(Role,{
 foreignKey:'roleId',
 
 as:'role'
+
+})
+
+
+
+/* ======================================================
+USER - AUDITORIAS
+====================================================== */
+
+User.hasMany(
+Auditoria,
+{
+
+foreignKey:'usuario_id',
+
+as:'auditorias'
+
+})
+
+Auditoria.belongsTo(
+User,
+{
+
+foreignKey:'usuario_id',
+
+as:'usuario'
 
 })
 

@@ -7,6 +7,7 @@ import authRoutes from './routes/auth.routes.js'
 import casoRoutes from './routes/caso.routes.js'
 import deptRoutes from './routes/dept.routes.js'
 import uploadRoutes from './routes/upload.routes.js'
+import auditoriaRoutes from './routes/auditoria.routes.js'
 // import niñasRoutes from './routes/niña.routes.js'
 // import quejasRoutes from './routes/queja.routes.js'
 import dotenv from 'dotenv'
@@ -30,6 +31,7 @@ app.use("/api/v1/caso", casoRoutes);
 app.use("/api/v1/dept", deptRoutes);
 // app.use('/api/v1/ninas', niñasRoutes)
 app.use('/api/v1/upload', uploadRoutes)
+app.use('/api/v1/auditoria', auditoriaRoutes)
 // app.use('/api/v1/queja', quejasRoutes)
 
 
