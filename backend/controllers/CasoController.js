@@ -15,6 +15,14 @@ import CentroEducativo from "../models/CentroEducativo.js";
 import CargaArchivo from "../models/CargaArchivo.js";
 import { registrarAuditoria } from "../utils/auditoria.js";
 
+// Estados institucionales válidos para el campo CasoEmbarazo.estado
+export const ESTADOS_VALIDOS = [
+  'Verificados en el (SIRE)',
+  'sin verificar en el (SIRE)',
+  'Verificados en el sistema de quejas, comentarios o sugerencias',
+  'sin quejas',
+]
+
 export const GenerarNumeroCaso = async (req, res) => {
   try {
     const maxId = await CasoEmbarazo.max('id') || 0
@@ -164,11 +172,18 @@ try{
 
 const{
 
-departamento_id,
+departamental_id,
 estado,
-sinQueja
+sinQueja,
+busqueda,
+page    = 1,
+limit   = 10,
 
 }=req.body
+
+const pageNum  = Math.max(1, parseInt(page)  || 1)
+const limitNum = Math.max(1, parseInt(limit) || 10)
+const offset   = (pageNum - 1) * limitNum
 
 
 /* ======================================
@@ -177,172 +192,109 @@ WHERE CASOS
 
 const whereCaso={}
 
-
-/* estado */
-
-if(
-estado &&
-estado !== 'Todos'
-){
-
-whereCaso.estado=estado
-
+/* departamental */
+if(departamental_id && departamental_id !== 'Todos'){
+  whereCaso.departamental_id=departamental_id
 }
 
+/* estado */
+if(estado && estado !== 'Todos'){
+  whereCaso.estado=estado
+}
 
-/* sin queja */
+/* condiciones extra con Op.and para poder combinar sinQueja + busqueda */
+const andConditions = []
 
-if(
-sinQueja===true ||
-sinQueja==="true"
-){
+if(sinQueja===true || sinQueja==='true'){
+  andConditions.push({ [Op.or]: [{ queja: null }, { queja: '' }] })
+}
 
-whereCaso[Op.or]=[
-  { queja: null },
-  { queja: '' }
-]
+if(busqueda && busqueda.trim()){
+  const bs = String(busqueda).trim().replace(/'/g, "''")
+  andConditions.push({
+    [Op.or]: [
+      { numero_caso: { [Op.like]: `%${bs}%` } },
+      { queja:       { [Op.like]: `%${bs}%` } },
+      sequelize.literal(
+        `EXISTS (SELECT 1 FROM ninas n WHERE n.id = CasoEmbarazo.nina_id AND n.nombre_completo LIKE '%${bs}%')`
+      ),
+    ]
+  })
+}
 
+if(andConditions.length > 0){
+  whereCaso[Op.and] = andConditions
 }
 
 
 /* ======================================
-CONSULTA
+CONSULTA PAGINADA
 ====================================== */
 
-const casos=await CasoEmbarazo.findAll({
-
-where:whereCaso,
-
-include:[
-
-{
-
-model:Nina,
-
-as:'nina',
-
-required:true,
-
-include:[
-
-{
-
-model:Municipio,
-
-as:'municipio',
-
-required:false,
-
-include:[
-
-{
-
-model:Departamento,
-
-as:'departamento',
-
-required:false
-
-}
-
+const includeConfig = [
+  {
+    model: Nina, as: 'nina', required: true,
+    include: [
+      { model: Municipio, as: 'municipio', required: false,
+        include: [{ model: Departamento, as: 'departamento', required: false }] },
+      { model: HistorialEducativo, as: 'historialEducativo',
+        include: [{ model: CentroEducativo, as: 'centroEducativo',
+          include: [{ model: Municipio, as: 'municipio' }] }] },
+    ]
+  },
+  { model: Departamental, as: 'departamental', required: false,
+    include: [{ model: Departamento, as: 'departamento' }] },
+  { model: CargaArchivo, as: 'cargaArchivo' },
 ]
 
-},
-
-
-{
-
-model:HistorialEducativo,
-
-as:'historialEducativo',
-
-include:[
-
-{
-
-model:CentroEducativo,
-
-as:'centroEducativo',
-
-include:[
-
-{
-
-model:Municipio,
-
-as:'municipio'
-
-}
-
-]
-
-}
-
-]
-
-}
-
-]
-
-},
-
-{
-
-model:Departamental,
-
-as:'departamental',
-
-required:false,
-
-include:[{model:Departamento,as:'departamento'}]
-
-},
-
-{
-
-model:CargaArchivo,
-
-as:'cargaArchivo'
-
-}
-
-],
-
-order:[
-
-['createdAt','DESC']
-
-]
-
+const { count, rows: casos } = await CasoEmbarazo.findAndCountAll({
+  where:    whereCaso,
+  include:  includeConfig,
+  order:    [['createdAt','DESC']],
+  limit:    limitNum,
+  offset,
+  distinct: true,  // necesario cuando hay includes para no duplicar el conteo
 })
 
 
-const filtrados = casos.filter((caso) => {
-  const nina = caso.nina
-  if (departamento_id && departamento_id !== 'Todos') {
-    const deptNina = nina?.municipio?.departamento?.id
-    const deptCaso = caso.departamental?.departamento_id
-    if (String(deptNina) !== String(departamento_id) && String(deptCaso) !== String(departamento_id)) return false
-  }
-  return true
-})
+/* ======================================
+ESTADÍSTICAS GLOBALES (sin paginación)
+== reflejan el TOTAL del filtro actual ==
+====================================== */
+
+const [statsRows, mayoresCount] = await Promise.all([
+  CasoEmbarazo.findAll({
+    where: whereCaso,
+    attributes: ['estado', [sequelize.fn('COUNT', sequelize.col('CasoEmbarazo.id')), 'c']],
+    group:  ['estado'],
+    raw:    true,
+  }),
+  CasoEmbarazo.count({
+    where: whereCaso,
+    include: [{
+      model: Nina, as: 'nina', required: true,
+      include: [{
+        model: HistorialEducativo, as: 'historialEducativo', required: true,
+        where: { status_actual: {
+          [Op.in]: ['Mayor de 14 años','No existe Registro','MAYOR DE 14 AÑOS','NO EXISTE REGISTRO']
+        }},
+      }],
+    }],
+    distinct: true,
+  }),
+])
+
+const stats = { mayoresOSinRegistro: mayoresCount }
+statsRows.forEach(r => { if(r.estado) stats[r.estado] = parseInt(r.c) })
+
 
 return res.json({
-
-success:true,
-
-total:filtrados.length,
-
-filters:{
-
-departamento_id,
-estado,
-sinQueja
-
-},
-
-data:filtrados
-
+  success:    true,
+  total:      count,
+  page:       pageNum,
+  totalPages: Math.ceil(count / limitNum),
+  data:       casos,
+  stats,
 })
 
 }catch(error){
@@ -376,10 +328,9 @@ export const RegistrarCaso = async (req, res) => {
       await t.rollback()
       return res.status(400).json({ success: false, message: 'El nombre completo de la niña es requerido' })
     }
-    const ESTADOS_VALIDOS = ['pendiente', 'faltante', 'completado']
     if (!estado || !ESTADOS_VALIDOS.includes(estado)) {
       await t.rollback()
-      return res.status(400).json({ success: false, message: 'El estado del caso es obligatorio (pendiente, faltante, completado)' })
+      return res.status(400).json({ success: false, message: `El estado del caso es obligatorio (${ESTADOS_VALIDOS.join(', ')})` })
     }
 
     // 1. Buscar o crear niña por CUI
@@ -464,14 +415,17 @@ export const RegistrarCaso = async (req, res) => {
     }, { transaction: t })
 
     // 4. Crear historial educativo
-    if (se.grado || centroId) {
+    if (Object.values(se).some(v => v !== undefined && v !== null && v !== '')) {
       await HistorialEducativo.create({
         nina_id:             nina.id,
         centro_educativo_id: centroId,
         codigo_personal:     se.codigo_personal || null,
         status_actual:       se.status_actual || null,
+        subsistema:          se.subsistema || null,
         grado:               se.grado || null,
         nivel:               se.nivel || null,
+        programa:            se.programa || null,
+        etapa:               se.etapa || null,
         resultado:           se.resultado || null,
         anio:                se.anio ? Number(se.anio) : null,
       }, { transaction: t })
@@ -737,10 +691,9 @@ export const ActualizarCaso = async (req, res) => {
     const { id } = req.params
     const { queja, estado, fecha_ingreso, departamental_id, datos_nina, situacion_educativa } = req.body
 
-    const ESTADOS_VALIDOS = ['pendiente', 'faltante', 'completado']
     if (estado && !ESTADOS_VALIDOS.includes(estado)) {
       await t.rollback()
-      return res.status(400).json({ success: false, message: 'Estado no válido: usar pendiente, faltante o completado' })
+      return res.status(400).json({ success: false, message: `Estado no válido: usar uno de: ${ESTADOS_VALIDOS.join(', ')}` })
     }
 
     const caso = await CasoEmbarazo.findByPk(id, { transaction: t })
@@ -835,15 +788,18 @@ export const ActualizarCaso = async (req, res) => {
         centro_educativo_id: centroId || historialExistente?.centro_educativo_id || null,
         codigo_personal:     se.codigo_personal || null,
         status_actual:       se.status_actual   || null,
+        subsistema:          se.subsistema      || null,
         grado:               se.grado           || null,
         nivel:               se.nivel           || null,
+        programa:            se.programa        || null,
+        etapa:               se.etapa           || null,
         resultado:           se.resultado       || null,
         anio:                se.anio ? Number(se.anio) : null,
       }
 
       if (historialExistente) {
         await historialExistente.update(historialData, { transaction: t })
-      } else if (se.grado || centroId) {
+      } else {
         await HistorialEducativo.create(historialData, { transaction: t })
       }
     }

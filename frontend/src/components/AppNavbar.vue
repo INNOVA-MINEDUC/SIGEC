@@ -2,7 +2,7 @@
   <nav class="navbar">
     <div class="nav-container">
       <div class="logo-container">
-        <img :src="logoSisec" alt="Logo SIGEC" class="header-logo-img" />
+        <img src="/imgs/logo.png" alt="Logo SIGEC" class="header-logo-img" />
       </div>
       <div class="nav-links">
         <router-link
@@ -38,7 +38,7 @@ const auth = useAuthStore()
 const BASE_LINKS = [
   { name: 'Inicio',      to: '/' },
   { name: 'Seguimiento', to: '/seguimiento' },
-  { name: 'Quejas',      to: '/complains' },
+  { name: 'Registro',      to: '/complains' },
   { name: 'Dashboard',   to: '/dashboard' },
 ]
 
@@ -53,8 +53,8 @@ const navLinks = computed(() => {
   return BASE_LINKS
 })
 
-function logout() {
-  auth.logout()
+async function logout() {
+  await auth.logoutSession()
   router.push('/login')
 }
 </script>
@@ -103,8 +103,8 @@ function logout() {
   border-bottom: 2px solid transparent;
 }
 .nav-item-active {
-  color: #ff9797;
-  border-bottom-color: #ff9797;
+  color: #10233f;
+  border-bottom-color: #f472b6;
   font-weight: 600;
 }
 .divider {
@@ -126,7 +126,7 @@ function logout() {
   text-decoration: none;
 }
 .logout-btn {
-  background-color: #ff9797;
+  background-color: #10233f;
   color: white;
   margin-left: 0.25rem;
   padding: 0.375rem 1rem;

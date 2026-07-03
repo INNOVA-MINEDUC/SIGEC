@@ -1,0 +1,24 @@
+flowchart TD
+    A([Inicio: Usuario admin/operador<br/>accede a Carga de Datos]) --> B[Selecciona archivo Excel<br/>.xlsx con formato MSPAS]
+    B --> C[POST /api/v1/upload/masivo<br/>multipart/form-data]
+    C --> D[Middleware verifyToken<br/>+ requireRole]
+    D --> E{Rol autorizado?}
+    E -- No --> F([403 Prohibido]) --> ZF([Fin])
+    E -- Si --> G[Multer guarda archivo<br/>temporal en servidor]
+    G --> H[UploadController invoca<br/>cargaExcel.js]
+    H --> I[ExcelJS abre el libro<br/>y localiza la hoja de datos]
+    I --> J[Detecta fila de encabezados<br/>headerRowNum = 4<br/>los datos inician en fila 5]
+    J --> K[Itera cada fila de datos]
+    K --> L{Fila vacia o<br/>es parte de tabla pivote?}
+    L -- Si --> K
+    L -- No --> M{CUI / numero de caso<br/>ya existe en BD?}
+    M -- Si --> N[Marcar como duplicado<br/>incrementar contador]
+    M -- No --> O[Crear/actualizar:<br/>NINA, CASO_EMBARAZO,<br/>HISTORIAL_EDUCATIVO,<br/>relaciones geograficas]
+    O --> P[Incrementar contador<br/>de registros nuevos]
+    N --> K
+    P --> K
+    K -->|Fin de filas| Q[Registrar CARGA_ARCHIVO<br/>con totales: nuevos, duplicados, total]
+    Q --> R[Registrar auditoria<br/>accion: carga_masiva]
+    R --> S[Responder 200 OK<br/>con resumen de la carga]
+    S --> T[Frontend muestra resumen:<br/>registros nuevos vs duplicados]
+    T --> Z([Fin])

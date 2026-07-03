@@ -2,21 +2,23 @@ import ExcelJS from 'exceljs'
 import { sequelize } from '../config/database.js'
 import CasoEmbarazo from '../models/CasoEmbarazo.js'
 import Nina from '../models/Nina.js'
-import Municipio from '../models/Municipio.js'
-import Departamental from '../models/Departamental.js'
-import Departamento from '../models/Departamento.js'
 import HistorialEducativo from '../models/HistorialEducativo.js'
 import CargaArchivo from '../models/CargaArchivo.js'
 import User from '../models/User.js'
 import { registrarAuditoria } from '../utils/auditoria.js'
+import { validarUbicacion } from '../helpers/validarUbicacion.js'
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
 const normalizar = (texto) =>
   String(texto ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim()
 
-// Elimina artículos iniciales: "El Petén" → "peten", "La Libertad" → "libertad"
-const quitarArticulo = (str) => str.replace(/^(el|la|los|las)\s+/, '')
+
+// Convierte texto a Title Case: "MARIA JOSE GARCIA" → "Maria Jose Garcia"
+const toTitleCase = (str) => {
+  if (!str) return str
+  return String(str).toLowerCase().replace(/(?:^|[\s\-\/])\S/g, c => c.toUpperCase())
+}
 
 // Valores que equivalen a "sin dato" en los archivos MSPAS
 const VACIOS = new Set(['no indica', 'sin dato', 'n/a', 'n.a.', 'nd', 'ninguno', '-', '--', 's/d', 'no aplica'])
@@ -87,32 +89,7 @@ export const CargaMasiva = async (req, res) => {
       return res.status(400).json({ ok: false, message: 'El archivo no contiene hojas' })
     }
 
-    // 2. Pre-cargar departamentales (con su departamento_id)
-    const departamentales = await Departamental.findAll({
-      include: [{ model: Departamento, as: 'departamento' }]
-    })
-    // deptMap: nombre_normalizado → { departamental_id, departamento_id }
-    const deptMap = {}
-    departamentales.forEach(d => {
-      if (!d.departamento) return
-      const norm = normalizar(d.departamento.nombre)
-      const entry = { departamental_id: d.id, departamento_id: d.departamento_id }
-      deptMap[norm] = entry
-      deptMap[quitarArticulo(norm)] = entry
-    })
-
-    // 3. Pre-cargar municipios — mapa: `{departamento_id}|{nombre_norm}` → municipio_id
-    const municipiosList = await Municipio.findAll({ attributes: ['id', 'nombre', 'departamento_id'] })
-    const municipioMap = {}
-    municipiosList.forEach(m => {
-      const norm = normalizar(m.nombre)
-      const key  = `${m.departamento_id}|${norm}`
-      const key2 = `${m.departamento_id}|${quitarArticulo(norm)}`
-      municipioMap[key]  = m.id
-      municipioMap[key2] = m.id
-    })
-
-    // 4. Identificadores existentes para deduplicación
+    // 2. Identificadores existentes para deduplicación
     const existingNinas   = await Nina.findAll({ attributes: ['cui', 'nombre_completo'] })
     const existingCuis    = new Set(existingNinas.map(n => String(n.cui ?? '').trim()).filter(Boolean))
     const existingNombres = new Set(existingNinas.map(n => normalizar(String(n.nombre_completo ?? ''))).filter(Boolean))
@@ -215,7 +192,7 @@ export const CargaMasiva = async (req, res) => {
       const get    = (col) => row[normalizar(col)] ?? null
 
       const cuiRaw         = clean(get('CUI RENAP')) || clean(get('cui')) || null
-      const nombreCompleto = clean(get('Nombre completo'))
+      const nombreCompleto = toTitleCase(clean(get('Nombre completo')))
 
       // Sin nombre: omitir
       if (!nombreCompleto) {
@@ -243,37 +220,16 @@ export const CargaMasiva = async (req, res) => {
       const cuiFinal    = cuiRaw ?? null
       const fechaNacStr = parseDate(get('Fecha Nacimiento'))
 
-      // ── Resolución de departamental y departamento ──────────────────────────
-      const deptoNombre      = clean(get('Departamento'))
-      const deptoNorm        = deptoNombre ? normalizar(deptoNombre) : null
-      const deptEntry        = deptoNorm
-        ? (deptMap[deptoNorm] ?? deptMap[quitarArticulo(deptoNorm)] ?? null)
-        : null
-      const departamental_id = deptEntry?.departamental_id ?? null
-      const departamento_id  = deptEntry?.departamento_id  ?? null
-
-      // ── Resolución de municipio ─────────────────────────────────────────────
-      // Solo se asigna si el municipio del archivo coincide con uno del mismo
-      // departamento que la departamental. Si no coincide, se deja null.
-      let municipio_id = null
+      // ── Resolución de departamental, departamento y municipio ───────────────
+      const deptoNombre     = clean(get('Departamento'))
       const municipioNombre = clean(get('Municipio')) || clean(get('municipio'))
-      if (municipioNombre && departamento_id) {
-        const mNorm = normalizar(municipioNombre)
-        municipio_id =
-          municipioMap[`${departamento_id}|${mNorm}`] ??
-          municipioMap[`${departamento_id}|${quitarArticulo(mNorm)}`] ??
-          null
-        if (municipio_id) {
-          console.log(`     municipio: "${municipioNombre}" → id=${municipio_id} (depto_id=${departamento_id})`)
-        } else {
-          console.log(`     municipio: "${municipioNombre}" no encontrado en depto_id=${departamento_id}`)
-        }
-      }
+      const { departamental_id, departamento_id, municipio_id } =
+        await validarUbicacion(deptoNombre, municipioNombre)
 
       // ── Pueblo y comunidad lingüística como texto ───────────────────────────
-      const pueblo               = clean(get('Pueblo'))               || null
-      const comunidad_linguistica = clean(get('Comunidad Linguistica')) ||
-                                    clean(get('Comunidad Lingüística')) || null
+      const pueblo               = toTitleCase(clean(get('Pueblo')))               || null
+      const comunidad_linguistica = toTitleCase(clean(get('Comunidad Linguistica')) ||
+                                    clean(get('Comunidad Lingüística'))) || null
 
       // ── Escolaridad → nivel ─────────────────────────────────────────────────
       const nivelEducativo = mapEscolaridad(get('Escolaridad') ?? get('escolaridad'))
@@ -282,7 +238,7 @@ export const CargaMasiva = async (req, res) => {
       try {
         const edadRaw = get('Edad Años')
         const edad    = edadRaw ? parseInt(String(edadRaw), 10) || null : null
-        const direccion = clean(get('Dirección'))
+        const direccion = toTitleCase(clean(get('Dirección')))
 
         const nina = await Nina.create({
           cui:                    cuiFinal,
@@ -310,7 +266,7 @@ export const CargaMasiva = async (req, res) => {
           no_notificacion:        noNotificacion,
           institucion,
           queja:                  null,
-          estado:                 'faltante',
+          estado:                 'sin Verificar en el SIRE',
           departamental_id,
         }, { transaction: t })
 

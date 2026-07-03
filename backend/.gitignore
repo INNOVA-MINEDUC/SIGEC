@@ -58,3 +58,7 @@ cypress/screenshots/
 # Archivos de producción
 dist-ssr/
 *.local
+
+# Datos de carga para seeders (pueden contener información sensible)
+seed-data/*.xlsx
+seed-data/*.xls

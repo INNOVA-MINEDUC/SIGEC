@@ -241,19 +241,21 @@ export function exportarExcel(casos, nombre = 'SIGEC_Casos') {
   // Hoja de resumen
   const totalCasos = casos.length
   const porEstado = {
-    pendiente:  casos.filter(c => c.estado === 'pendiente').length,
-    faltante:   casos.filter(c => c.estado === 'faltante').length,
-    completado: casos.filter(c => c.estado === 'completado').length,
+    verificadosSire:   casos.filter(c => c.estado === 'Verificados en el SIRE').length,
+    sinVerificarSire:  casos.filter(c => c.estado === 'sin Verificar en el SIRE').length,
+    verificadosQuejas: casos.filter(c => c.estado === 'Verificados en el Sistema de Quejas, Comentarios o Sugerencias').length,
+    sinQuejas:         casos.filter(c => c.estado === 'sin Quejas').length,
   }
   const resumenRows = [
     ['Reporte SIGEC — MINEDUC Guatemala'],
     [`Generado: ${new Date().toLocaleDateString('es-GT', { dateStyle: 'full' })}`],
     [],
     ['RESUMEN DE CASOS'],
-    ['Total de casos',  totalCasos],
-    ['Pendientes',      porEstado.pendiente],
-    ['Faltantes',       porEstado.faltante],
-    ['Completados',     porEstado.completado],
+    ['Total de casos',                                                 totalCasos],
+    ['Verificados en el SIRE',                                         porEstado.verificadosSire],
+    ['Sin Verificar en el SIRE',                                       porEstado.sinVerificarSire],
+    ['Verificados en el Sistema de Quejas, Comentarios o Sugerencias',  porEstado.verificadosQuejas],
+    ['Sin Quejas',                                                     porEstado.sinQuejas],
   ]
   const wsRes = XLSX.utils.aoa_to_sheet(resumenRows)
   wsRes['!cols'] = [{ wch: 25 }, { wch: 15 }]
@@ -357,7 +359,7 @@ function drawDonut(doc, cx, cy, r, segments) {
 // ────────────────────────────────────────────────────────────────────────────
 // EXPORTAR PDF (con gráficas)
 // ────────────────────────────────────────────────────────────────────────────
-export function exportarPDF(casos, nombre = 'SIGEC_Casos', resumenFiltros = '') {
+export function exportarPDF(casos, nombre = 'SIGEC_Casos', resumenFiltros = '', { pixelarNombres = false } = {}) {
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' })
   const W = 297, H = 210
   const PAD = 12
@@ -365,10 +367,11 @@ export function exportarPDF(casos, nombre = 'SIGEC_Casos', resumenFiltros = '') 
   const hoyCorto = new Date().toLocaleDateString('es-GT').replace(/\//g, '-')
 
   // ── Métricas ──────────────────────────────────────────────────────────────
-  const total      = casos.length
-  const pendientes = casos.filter(c => c.estado === 'pendiente').length
-  const faltantes  = casos.filter(c => c.estado === 'faltante').length
-  const completados = casos.filter(c => c.estado === 'completado').length
+  const total              = casos.length
+  const verificadosSire    = casos.filter(c => c.estado === 'Verificados en el SIRE').length
+  const sinVerificarSire   = casos.filter(c => c.estado === 'sin Verificar en el SIRE').length
+  const verificadosQuejas  = casos.filter(c => c.estado === 'Verificados en el Sistema de Quejas, Comentarios o Sugerencias').length
+  const sinQuejas          = casos.filter(c => c.estado === 'sin Quejas').length
 
   // Mensual
   const MESES_S = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
@@ -400,16 +403,17 @@ export function exportarPDF(casos, nombre = 'SIGEC_Casos', resumenFiltros = '') 
     .sort((a, b) => b[1] - a[1]).slice(0, 8)
     .map(([l, v]) => ({ l: l.length > 14 ? l.slice(0, 12) + '…' : l, v }))
 
-  // Estado donut segments
+  // Estado donut segments — paleta institucional (azul + gris)
   const estadoSegs = [
-    { l: 'Completados', v: completados, c: [100, 200, 120] },
-    { l: 'Pendientes',  v: pendientes,  c: [255, 151, 151] },
-    { l: 'Faltantes',   v: faltantes,   c: [255, 200, 100] },
+    { l: 'Verificados SIRE',     v: verificadosSire,   c: NAVY_DARK },
+    { l: 'Sin Verificar SIRE',   v: sinVerificarSire,  c: STEEL },
+    { l: 'Verificados Quejas',   v: verificadosQuejas, c: SLATE },
+    { l: 'Sin Quejas',           v: sinQuejas,         c: NAVY },
   ]
 
   // ── PÁGINA 1: DASHBOARD DE GRÁFICAS ──────────────────────────────────────
   // Header
-  doc.setFillColor(255, 151, 151)
+  doc.setFillColor(...NAVY)
   doc.rect(0, 0, W, 18, 'F')
   doc.setTextColor(255, 255, 255)
   doc.setFontSize(12)
@@ -422,22 +426,23 @@ export function exportarPDF(casos, nombre = 'SIGEC_Casos', resumenFiltros = '') 
 
   let curY = 22
   if (resumenFiltros) {
-    doc.setFillColor(255, 240, 240)
+    doc.setFillColor(240, 242, 247)
     doc.roundedRect(PAD, curY, W - PAD * 2, 7, 1, 1, 'F')
     doc.setFontSize(6.5)
-    doc.setTextColor(180, 60, 60)
+    doc.setTextColor(...NAVY_DARK)
     doc.text(`Filtros aplicados: ${resumenFiltros}`, PAD + 2, curY + 4.5)
     curY += 10
   }
 
-  // ── Stat boxes ─────────────────────────────────────────────────────────────
+  // ── Stat boxes — paleta institucional (azul + gris) ────────────────────────
   const boxes = [
-    { label: 'Total',       value: total,       color: [255, 151, 151] },
-    { label: 'Pendientes',  value: pendientes,   color: [255, 180, 100] },
-    { label: 'Faltantes',   value: faltantes,    color: [255, 200, 80]  },
-    { label: 'Completados', value: completados,  color: [100, 195, 130] },
+    { label: 'Total',                  value: total,             color: NAVY },
+    { label: 'Verificados SIRE',       value: verificadosSire,   color: STEEL },
+    { label: 'Sin Verificar SIRE',     value: sinVerificarSire,  color: SLATE  },
+    { label: 'Verificados Quejas',     value: verificadosQuejas, color: NAVY_DARK },
+    { label: 'Sin Quejas',             value: sinQuejas,         color: [170, 180, 195] },
   ]
-  const boxW = 62, boxH = 20, boxGap = 3
+  const boxW = 50, boxH = 20, boxGap = 3
   const totalBoxW = boxes.length * boxW + (boxes.length - 1) * boxGap
   const bx0 = (W - totalBoxW) / 2
   boxes.forEach((b, i) => drawStatBox(doc, bx0 + i * (boxW + boxGap), curY, boxW, boxH, b.value, b.label, b.color))
@@ -489,7 +494,7 @@ export function exportarPDF(casos, nombre = 'SIGEC_Casos', resumenFiltros = '') 
   doc.setFont('helvetica', 'bold')
   doc.setTextColor(60)
   doc.text('Casos por Mes', COL2_X, curY)
-  drawVBars(doc, COL2_X, curY + 4, COL2_W, 50, porMes, [255, 151, 151])
+  drawVBars(doc, COL2_X, curY + 4, COL2_W, 50, porMes, NAVY)
 
   // ── Columna 3: Edades (barras horizontales) ─────────────────────────────────
   doc.setFontSize(7.5)
@@ -507,7 +512,7 @@ export function exportarPDF(casos, nombre = 'SIGEC_Casos', resumenFiltros = '') 
     doc.setFont('helvetica', 'normal')
     doc.setTextColor(60)
     doc.text(item.l, COL3_X, by + 5.5)
-    drawHBar(doc, COL3_X + 12, by, barMaxW, 7, fillW, [255, 200, 100])
+    drawHBar(doc, COL3_X + 12, by, barMaxW, 7, fillW, STEEL)
     doc.setFontSize(6)
     doc.setTextColor(60)
     doc.text(String(item.v), COL3_X + 12 + barMaxW + 2, by + 5.5)
@@ -531,7 +536,7 @@ export function exportarPDF(casos, nombre = 'SIGEC_Casos', resumenFiltros = '') 
       doc.setFont('helvetica', 'normal')
       doc.setTextColor(60)
       doc.text(item.l, COL2_X, by + 5)
-      drawHBar(doc, COL2_X + 30, by, dBarMaxW, 6, fillW, [173, 216, 230])
+      drawHBar(doc, COL2_X + 30, by, dBarMaxW, 6, fillW, NAVY)
       doc.setFontSize(5.5)
       doc.setTextColor(60)
       doc.text(String(item.v), COL2_X + 30 + dBarMaxW + 2, by + 4.5)
@@ -547,7 +552,7 @@ export function exportarPDF(casos, nombre = 'SIGEC_Casos', resumenFiltros = '') 
   if (total > 0) {
     doc.addPage()
 
-    doc.setFillColor(255, 151, 151)
+    doc.setFillColor(...NAVY)
     doc.rect(0, 0, W, 15, 'F')
     doc.setTextColor(255, 255, 255)
     doc.setFontSize(10)
@@ -557,17 +562,25 @@ export function exportarPDF(casos, nombre = 'SIGEC_Casos', resumenFiltros = '') 
     doc.setFont('helvetica', 'normal')
     doc.text(`${total} registros`, W - PAD, 10, { align: 'right' })
 
-    const colsPDF = ['No. Caso', 'Nombre', 'Estado', 'Fecha Ingreso', 'Depto.', 'Municipio', 'Edad', 'Grado', 'Nivel', 'Centro Educativo', 'Queja']
+    const colsPDF = ['No. Caso', pixelarNombres ? 'Nombre (protegido)' : 'Nombre', 'Estado', 'Fecha Ingreso', 'Depto.', 'Municipio', 'Edad', 'Grado', 'Nivel', 'Centro Educativo', 'Queja']
     const idxPDF  = [0, 2, 3, 4, 8, 9, 12, 14, 15, 18, 5]
-    const body    = casos.map(c => { const f = casoAFila(c); return idxPDF.map(i => f[i]) })
+    const body    = casos.map(c => {
+      const f = casoAFila(c)
+      const row = idxPDF.map(i => f[i])
+      if (pixelarNombres && row[1]) {
+        const inicial = String(row[1]).charAt(0).toUpperCase()
+        row[1] = `${inicial}. ████████████`
+      }
+      return row
+    })
 
     autoTable(doc, {
       head: [colsPDF],
       body,
       startY: 18,
       styles: { fontSize: 6.5, cellPadding: 1.5, overflow: 'linebreak' },
-      headStyles: { fillColor: [255, 151, 151], textColor: 255, fontStyle: 'bold', fontSize: 7 },
-      alternateRowStyles: { fillColor: [255, 248, 248] },
+      headStyles: { fillColor: NAVY, textColor: 255, fontStyle: 'bold', fontSize: 7 },
+      alternateRowStyles: { fillColor: [240, 242, 247] },
       margin: { left: PAD, right: PAD },
       columnStyles: {
         1: { cellWidth: 38 },

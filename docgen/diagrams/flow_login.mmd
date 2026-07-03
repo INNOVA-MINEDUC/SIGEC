@@ -1,0 +1,44 @@
+sequenceDiagram
+    actor U as Usuario
+    participant FE as Frontend (Vue)
+    participant API as API Express
+    participant MW as Middleware (verifyToken)
+    participant DB as Base de Datos MySQL
+
+    U->>FE: Ingresa email y contraseña
+    FE->>API: POST /api/v1/auth/login
+    API->>DB: Busca usuario por email
+    DB-->>API: Datos del usuario (hash de password)
+    API->>API: Compara password con bcrypt
+    alt Credenciales validas
+        API->>DB: Registra auditoria (inicio_sesion)
+        API->>API: Genera JWT firmado
+        API-->>FE: 200 OK + token + datos de usuario
+        FE->>FE: Guarda token en store (Pinia) y localStorage
+        FE-->>U: Redirige al Dashboard
+    else Credenciales invalidas
+        API-->>FE: 401 Unauthorized
+        FE-->>U: Muestra mensaje de error
+    end
+
+    Note over U,DB: En cada peticion posterior
+    U->>FE: Navega a vista protegida
+    FE->>API: Solicitud con header Authorization: Bearer token
+    API->>MW: verifyToken
+    MW->>MW: Valida firma y expiracion del JWT
+    alt Token valido
+        MW->>API: attachUser (req.user)
+        API->>API: requireRole (si aplica)
+        API-->>FE: 200 OK + datos solicitados
+    else Token invalido o expirado
+        MW-->>FE: 401 / 403
+        FE->>FE: Limpia sesion
+        FE-->>U: Redirige a Login
+    end
+
+    U->>FE: Clic en "Cerrar sesion"
+    FE->>API: POST /api/v1/auth/logout
+    API->>DB: Registra auditoria (cierre_sesion)
+    API-->>FE: 200 OK
+    FE->>FE: Limpia token y estado
+    FE-->>U: Redirige a Login

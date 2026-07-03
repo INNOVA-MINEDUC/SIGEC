@@ -15,6 +15,7 @@ import UsersView from './views/UsersView.vue'
 import AuditoriaView from './views/AuditoriaView.vue'
 import ProfileView from './views/ProfileView.vue'
 import Seguimiento from './views/Seguimiento.vue'
+import PSE from './views/PSE.vue'
 
 // Routes
 const routes = [
@@ -24,6 +25,15 @@ const routes = [
     path: '/login',
     name: 'login',
     component: LoginView,
+    meta: {
+      public: true
+    }
+  },
+
+  {
+    path: '/pse',
+    name: 'pse',
+    component: PSE,
     meta: {
       public: true
     }

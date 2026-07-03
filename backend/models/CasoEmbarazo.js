@@ -63,12 +63,10 @@ allowNull:true
 },
 
 estado:{
-type:DataTypes.ENUM(
-  'pendiente',
-  'faltante',
-  'completado'
-  ),
-  },
+type:DataTypes.STRING(100),
+allowNull:false,
+defaultValue:'sin Verificar en el SIRE'
+},
 },
 
 {

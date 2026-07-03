@@ -38,10 +38,10 @@ onMounted(() => {
   departamentosSeries.mapPolygons.template.setAll({
     tooltipText: "{departamen}",
     interactive: true,
-    fill: am5.color("#ff7b7b")
+    fill: am5.color("#10233f")
   })
   departamentosSeries.mapPolygons.template.states.create("hover", {
-    fill: am5.color("#ffb3b3")
+    fill: am5.color("#1F3864")
   })
 
   const municipiosSeries = chart.series.push(
@@ -50,10 +50,10 @@ onMounted(() => {
   municipiosSeries.mapPolygons.template.setAll({
     tooltipText: "{municipio}",
     interactive: true,
-    fill: am5.color("#ffb3b3")
+    fill: am5.color("#10233f")
   })
   municipiosSeries.mapPolygons.template.states.create("hover", {
-    fill: am5.color("#ff7b7b")
+    fill: am5.color("#1F3864")
   })
 
   const municipioSeleccionadoSeries = chart.series.push(
@@ -62,10 +62,10 @@ onMounted(() => {
   municipioSeleccionadoSeries.mapPolygons.template.setAll({
     tooltipText: "{municipio}",
     interactive: true,
-    fill: am5.color("#ffb3b3")
+    fill: am5.color("#10233f")
   })
   municipioSeleccionadoSeries.mapPolygons.template.states.create("hover", {
-    fill: am5.color("#ff7b7b")
+    fill: am5.color("#1F3864")
   })
 
   const backContainer = chart.children.push(

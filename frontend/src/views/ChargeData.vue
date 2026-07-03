@@ -7,8 +7,8 @@
       <img src="@/assets/hero_charge_data.jpg" alt="Hero background" class="hero-bg" />
       <div class="hero-overlay"></div>
       <div class="hero-content">
-        <h1 class="hero-title">Importar Datos</h1>
-        <p class="hero-subtitle">Sube y Administra tus archivos web</p>
+        <h1 class="hero-title">Importar datos</h1>
+        <p class="hero-subtitle">sube y administra tus archivos web</p>
       </div>
     </section>
 
@@ -20,12 +20,12 @@
 
             <!-- Left Column -->
             <div class="card-left">
-              <div class="section-label">IMPORTAR EXCEL</div>
-              <h2 class="section-heading">Datos del Ministerio<br />de Salud</h2>
+              <div class="section-label">Importar excel</div>
+              <h2 class="section-heading">Ministerio de salud pública y asistencia social<br />(MSPAS)</h2>
 
               <div v-if="lastUpload" class="last-upload-card">
                 <div class="last-upload-header">
-                  <v-icon size="18" color="#ff9797">mdi-circle</v-icon>
+                  <v-icon size="18" color="primary">mdi-circle</v-icon>
                   <span class="last-upload-title">Última carga</span>
                 </div>
                 <div class="last-upload-grid last-upload-grid--wide">
@@ -44,7 +44,7 @@
                 <div class="upload-text">Arrastre y suelte su archivo</div>
                 <div class="upload-or">o</div>
                 <input type="file" ref="fileInput" accept=".xlsx,.xls" class="file-input" @change="onFileChange" />
-                <button class="upload-btn" @click="fileInput.click()">Subir Archivos</button>
+                <button class="upload-btn" @click="fileInput.click()">Subir archivos</button>
                 <div class="upload-hint">Tamaño hasta 100 MB</div>
               </div>
             </div>
@@ -111,6 +111,7 @@
             :headers="historyHeaders"
             :items="uploadHistory"
             density="comfortable"
+             items-per-page-text="Registros por página"
           />
           <div v-else class="empty-state">No hay cargas registradas aún</div>
         </div>
@@ -139,12 +140,48 @@ const validacion    = ref(null)   // { error, advertencias, nombreArchivo }
 
 // ── Constants ──────────────────────────────────────────
 const historyHeaders = [
-  { title: 'Archivo',    key: 'nombre_archivo' },
-  { title: 'Total',      key: 'total_registros' },
-  { title: 'Nuevos',     key: 'registros_nuevos' },
-  { title: 'Duplicados', key: 'registros_duplicados' },
-  { title: 'Subido por', key: 'usuario_nombre' },
-  { title: 'Fecha',      key: 'fecha_fmt' },
+  {
+    title: 'Archivo',
+    key: 'nombre_archivo',
+    headerProps: {
+      style: 'background-color: #10233f; color: white;'
+    }
+  },
+  {
+    title: 'Total',
+    key: 'total_registros',
+    headerProps: {
+      style: 'background-color: #10233f; color: white;'
+    }
+  },
+  {
+    title: 'Nuevos',
+    key: 'registros_nuevos',
+    headerProps: {
+      style: 'background-color: #10233f; color: white;'
+    }
+  },
+  {
+    title: 'Duplicados',
+    key: 'registros_duplicados',
+    headerProps: {
+      style: 'background-color: #10233f; color: white;'
+    }
+  },
+  {
+    title: 'Subido por',
+    key: 'usuario_nombre',
+    headerProps: {
+      style: 'background-color: #10233f; color: white;'
+    }
+  },
+  {
+    title: 'Fecha',
+    key: 'fecha_fmt',
+    headerProps: {
+      style: 'background-color: #10233f; color: white;'
+    }
+  },
 ]
 
 // Columnas esperadas en el archivo MSPAS
@@ -324,7 +361,11 @@ function clearResultado() {
 /* ── HERO ── */
 .hero             { position: relative; width: 100%; overflow: hidden; height: 500px; }
 .hero-bg          { width: 100%; height: 100%; object-fit: cover; object-position: center; }
-.hero-overlay     { position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(255,151,151,0) 0%, rgba(255,151,151,0.2) 40%, rgba(255,151,151,0.95) 100%); }
+.hero-overlay     { position: absolute; inset: 0;
+  background: linear-gradient(to bottom,
+      rgba(16, 35, 63, 0) 0%,
+      rgba(16, 35, 63, 0.2) 40%,
+      rgba(16, 35, 63, 0.95) 100%); }
 .hero-content     { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 3.5rem; padding-inline: 1.5rem; text-align: center; }
 .hero-title       { color: white; text-shadow: 0 4px 12px rgba(0,0,0,0.3); font-size: 64px; font-weight: 700; line-height: 1.15; max-width: 900px; margin-bottom: 0; }
 .hero-subtitle    { margin-top: 0.5rem; color: white; font-size: 1.5rem; font-weight: 700; text-shadow: 0 2px 8px rgba(0,0,0,0.3); max-width: 700px; }
@@ -352,7 +393,7 @@ function clearResultado() {
 
 /* ── LEFT COLUMN ── */
 .section-label {
-  color: #ff9797;
+  color: primary;
   font-size: 20px;
   font-weight: 700;
   letter-spacing: 1px;
@@ -443,7 +484,7 @@ function clearResultado() {
 }
 .file-input  { display: none; }
 .upload-btn {
-  background-color: #ff9797;
+  background-color: #10233f;
   color: white;
   border-radius: 0.5rem;
   border: none;

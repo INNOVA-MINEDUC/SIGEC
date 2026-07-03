@@ -1,0 +1,19 @@
+flowchart TD
+    A([Inicio: Usuario autenticado<br/>accede a Registro de Caso]) --> B[Completa formulario:<br/>datos de la nina, fechas,<br/>forma de deteccion, institucion,<br/>departamental, etc.]
+    B --> C{Valida campos<br/>obligatorios en frontend}
+    C -- Faltan datos --> B
+    C -- Datos completos --> D[POST /api/v1/caso]
+    D --> E[Middleware verifyToken<br/>+ attachUser]
+    E --> F{Token valido?}
+    F -- No --> G([401 No autorizado]) --> Z([Fin])
+    F -- Si --> H[CasoController.RegistrarCaso]
+    H --> I{La nina ya existe<br/>por CUI?}
+    I -- No --> J[Crear registro en NINA]
+    I -- Si --> K[Usar NINA existente]
+    J --> L
+    K --> L[Crear registro en CASO_EMBARAZO<br/>asociado a la NINA]
+    L --> M[Generar numero de caso<br/>autoincremental]
+    M --> N[Registrar auditoria<br/>accion: crear_caso]
+    N --> O[Responder 201 Created<br/>con datos del caso]
+    O --> P[Frontend actualiza<br/>tabla / dashboard]
+    P --> Z2([Fin])

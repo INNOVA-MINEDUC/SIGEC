@@ -1,0 +1,18 @@
+graph TB
+    U["Usuario / Navegador"]
+
+    subgraph FE_C["Contenedor Frontend (Nginx, puerto 8080 -> 80)"]
+        FE["SPA Vue 3 + Vuetify<br/>(build estatico de Vite)"]
+    end
+
+    subgraph BE_C["Contenedor Backend (Node 20, puerto 3000)"]
+        API["API REST Express 5<br/>JWT + Multer + ExcelJS"]
+    end
+
+    subgraph DB_S["Servidor de Base de Datos"]
+        DB[("MySQL 8 - sigec")]
+    end
+
+    U -->|HTTPS| FE
+    FE -->|"REST JSON /api/v1/*<br/>Axios + Bearer JWT"| API
+    API -->|Sequelize ORM| DB

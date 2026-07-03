@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
 import User from "../models/User.js"
 import Role from "../models/Role.js"
+import { registrarAuditoria } from "../utils/auditoria.js"
 import dotenv from 'dotenv'
 dotenv.config()
 
@@ -54,7 +55,16 @@ export const AuthLogin = async (req, res) => {
       { expiresIn: '1d' }
     )
 
-    // 5. Respuesta
+    // 5. Registrar inicio de sesión en la bitácora de auditoría
+    registrarAuditoria({
+      usuario_id:  user.id,
+      accion:      'inicio_sesion',
+      entidad:     'User',
+      entidad_id:  user.id,
+      descripcion: `Inicio de sesión de ${user.name} (${user.email})`,
+    })
+
+    // 6. Respuesta
     return res.json({
       message: 'Login exitoso',
       token,
@@ -66,6 +76,24 @@ export const AuthLogin = async (req, res) => {
       }
     })
 
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ message: 'Error en el servidor' })
+  }
+}
+
+// Registra el cierre de sesión de un usuario en la bitácora de auditoría
+export const AuthLogout = async (req, res) => {
+  try {
+    registrarAuditoria({
+      usuario_id:  req.user?.id,
+      accion:      'cierre_sesion',
+      entidad:     'User',
+      entidad_id:  req.user?.id,
+      descripcion: `Cierre de sesión de ${req.user?.email ?? 'usuario'}`,
+    })
+
+    return res.json({ message: 'Sesión cerrada' })
   } catch (error) {
     console.error(error)
     res.status(500).json({ message: 'Error en el servidor' })

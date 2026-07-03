@@ -1,0 +1,105 @@
+erDiagram
+    ROLE ||--o{ USER : "tiene"
+    USER ||--o{ CARGA_ARCHIVO : "sube"
+    USER ||--o{ AUDITORIA : "genera"
+    DEPARTAMENTO ||--o{ MUNICIPIO : "contiene"
+    DEPARTAMENTO ||--o{ DEPARTAMENTAL : "tiene"
+    DEPARTAMENTAL ||--o{ CASO_EMBARAZO : "supervisa"
+    MUNICIPIO ||--o{ CENTRO_EDUCATIVO : "ubica"
+    MUNICIPIO ||--o{ NINA : "reside_en"
+    NINA ||--o{ CASO_EMBARAZO : "registra"
+    NINA ||--o{ HISTORIAL_EDUCATIVO : "tiene"
+    CENTRO_EDUCATIVO ||--o{ HISTORIAL_EDUCATIVO : "asiste_a"
+    CARGA_ARCHIVO ||--o{ CASO_EMBARAZO : "origina"
+
+    ROLE {
+        int id PK
+        string name
+        string description
+    }
+    USER {
+        int id PK
+        string name
+        string email
+        string password
+        int roleId FK
+        boolean isActive
+    }
+    AUDITORIA {
+        int id PK
+        int usuario_id FK
+        string accion
+        string entidad
+        int entidad_id
+        text descripcion
+        datetime createdAt
+    }
+    DEPARTAMENTO {
+        int id PK
+        string nombre
+    }
+    DEPARTAMENTAL {
+        int id PK
+        string nombre
+        int departamento_id FK
+    }
+    MUNICIPIO {
+        int id PK
+        int departamento_id FK
+        string nombre
+    }
+    CENTRO_EDUCATIVO {
+        int id PK
+        string codigo_udi
+        string nombre
+        text direccion
+        int municipio_id FK
+        string sector
+        string jornada
+        string area
+    }
+    NINA {
+        int id PK
+        string cui
+        string nombre_completo
+        date fecha_nacimiento
+        int edad
+        text direccion
+        int municipio_id FK
+        string pueblo
+        string comunidad_linguistica
+    }
+    CASO_EMBARAZO {
+        int id PK
+        string numero_caso
+        int nina_id FK
+        int carga_archivo_id FK
+        date fecha_ingreso
+        date fecha_primera_consulta
+        string forma_deteccion
+        int departamental_id FK
+        string no_notificacion
+        string institucion
+        string queja
+        string estado
+    }
+    HISTORIAL_EDUCATIVO {
+        int id PK
+        int nina_id FK
+        int centro_educativo_id FK
+        string codigo_personal
+        string status_actual
+        string grado
+        string nivel
+        string resultado
+        int anio
+    }
+    CARGA_ARCHIVO {
+        int id PK
+        string nombre_archivo
+        int total_registros
+        int registros_nuevos
+        int registros_duplicados
+        datetime fecha_carga
+        int usuario_id FK
+    }

@@ -1,0 +1,18 @@
+graph LR
+  API["/api/v1"]
+
+  API --> AUTH["/auth<br/>login, logout,<br/>validate-token"]
+  API --> USERS["/users<br/>CRUD usuarios<br/>(admin)"]
+  API --> ROLES["/roles<br/>CRUD roles"]
+  API --> CASO["/caso<br/>registrar, listar,<br/>filtrar, actualizar"]
+  API --> DEPT["/dept<br/>departamentos,<br/>municipios,<br/>departamentales"]
+  API --> UPLOAD["/upload<br/>excel, masivo,<br/>historial (admin)"]
+  API --> AUDIT["/auditoria<br/>bitacora, descarga<br/>(admin)"]
+
+  AUTH -.-> AuthC[[AuthController]]
+  USERS -.-> UserC[[UserController]]
+  ROLES -.-> RoleC[[RoleController]]
+  CASO -.-> CasoC[[CasoController]]
+  DEPT -.-> DeptC[[DeptController]]
+  UPLOAD -.-> UploadC[[UploadController]]
+  AUDIT -.-> AuditC[[AuditoriaController]]

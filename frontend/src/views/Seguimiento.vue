@@ -4,7 +4,7 @@
 
     <!-- ── HERO ── -->
     <section class="hero">
-      <img src="@/assets/ninas_embarazadas_-09.png" alt="Niña embarazada" class="hero-bg" />
+      <img src="/imgs/img4.jpg" alt="Niña embarazada" class="hero-bg" />
       <div class="hero-overlay"></div>
       <div class="hero-content">
         <p class="hero-top-text">Buscar por</p>
@@ -14,7 +14,7 @@
     </section>
 
     <!-- ── STATS SECTION ── -->
-    <section class="stats">
+    <!-- <section class="stats">
       <div class="stats-container">
         <div class="stats-grid">
           <div class="stat-card" v-for="card in statCards" :key="card.label">
@@ -27,7 +27,52 @@
           </div>
         </div>
       </div>
-    </section>
+    </section> -->
+
+    <!-- ── INDICADORES NACIONALES ── -->
+<section class="indicadores">
+  <div class="section-shell">
+
+    <div class="sec-grid">
+      <div class="sec-item">
+        <span class="sec-val">{{ displayKpis.estudiantes.toLocaleString('es-GT') }}</span>
+        <span class="sec-label">Casos totales</span>
+        <span class="sec-module">Número total de casos reportados en el Ministerio de salud pública y asistencia social (MSPAS) que requieren verificación dentro del sistema de registros educativos.</span>
+      </div>
+
+      <div class="sec-item">
+        <span class="sec-val">{{ displayKpis.mayoresOSinRegistro.toLocaleString('es-GT') }}</span>
+        <span class="sec-label">Casos mayores de 14 años o sin registro</span>
+        <span class="sec-module">Cantidad de casos correspondientes a niñas mayores de 14 años o que no presentan registro dentro del sistema de registros educativos.</span>
+      </div>
+
+      <div class="sec-item">
+        <span class="sec-val">{{ displayKpis.verificadosSire.toLocaleString('es-GT') }}</span>
+        <span class="sec-label">Verificados en el (SIRE)</span>
+        <span class="sec-module">Cantidad de casos cuya información ha sido validada y confirmada en el sistema de registros educativos (SIRE).</span>
+      </div>
+
+      <div class="sec-item">
+        <span class="sec-val sec-val--money">{{ displayKpis.sinVerificarSire.toLocaleString('es-GT') }}</span>
+        <span class="sec-label">Sin verificar en el (SIRE)</span>
+        <span class="sec-module">Cantidad de casos que aún no han sido localizados o validados dentro del sistema de registros educativos.</span>
+      </div>
+
+      <div class="sec-item">
+        <span class="sec-val sec-val--money">{{ displayKpis.verificadosQuejas.toLocaleString('es-GT') }}</span>
+        <span class="sec-label">Verificados en el sistema de quejas, comentarios o sugerencias</span>
+        <span class="sec-module">Cantidad de casos ingresados dentro del sistema de quejas, comentarios o sugerencias.</span>
+      </div>
+
+      <div class="sec-item">
+        <span class="sec-val sec-val--money">{{ displayKpis.sinQuejas.toLocaleString('es-GT') }}</span>
+        <span class="sec-label">Sin quejas</span>
+        <span class="sec-module">Cantidad de casos que, a la fecha de consulta, no cuentan con un registro en el sistema de quejas, comentarios o sugerencias.</span>
+      </div>
+    </div>
+
+  </div>
+</section>
 
     <!-- ── SEARCH BAR ── -->
     <section class="search-bar-section">
@@ -54,86 +99,76 @@
       <div class="container-max">
         <div class="table-header">
           <h2>Casos recientes</h2>
-          
-          <!-- Grupo de filtros alineados con tus estilos nativos -->
-  <div class="filters-wrapper">
 
-<v-checkbox
-v-model="soloSinQueja"
-label="Solo sin queja"
-color="pink"
-density="compact"
-hide-details
-class="queja-check"
-@update:modelValue="handleFilter"
-/>
+          <!-- Grupo de filtros -->
+          <div class="filters-wrapper">
 
-<v-select
-v-model="selectedDepartamento"
-:items="departamentos"
-item-title="nombre"
-item-value="id"
-label="Departamento"
-prepend-inner-icon="mdi-map-marker"
-variant="outlined"
-density="compact"
-hide-details
-rounded="lg"
-class="filter-select"
-@update:modelValue="handleFilter"
-/>
+            <v-checkbox
+              v-model="soloSinQueja"
+              label="Solo sin queja"
+              color="primary"
+              density="compact"
+              hide-details
+              class="queja-check"
+              @update:modelValue="handleFilter"
+            />
 
-<v-select
-v-model="selectedEstado"
-:items="estadoOptions"
-label="Estado"
-prepend-inner-icon="mdi-clipboard-check"
-variant="outlined"
-density="compact"
-hide-details
-rounded="lg"
-class="filter-select"
-@update:modelValue="handleFilter"
-/>
+            <v-select
+              v-model="selectedDepartamental"
+              :items="departamentales"
+              item-title="nombre"
+              item-value="id"
+              label="Dirección Departamental"
+              prepend-inner-icon="mdi-map-marker"
+              variant="outlined"
+              density="compact"
+              hide-details
+              rounded="lg"
+              class="filter-select"
+              @update:modelValue="handleFilter"
+            />
 
+            <v-select
+              v-model="selectedEstado"
+              :items="estadoOptions"
+              label="Estado"
+              prepend-inner-icon="mdi-clipboard-check"
+              variant="outlined"
+              density="compact"
+              hide-details
+              rounded="lg"
+              class="filter-select"
+              @update:modelValue="handleFilter"
+            />
 
-<!-- NUEVO BOTON -->
+            <v-btn
+              color="primary"
+              variant="tonal"
+              rounded="xl"
+              prepend-icon="mdi-filter-remove"
+              class="clear-filter-btn"
+              @click="limpiarFiltros"
+            >
+              Limpiar filtros
+            </v-btn>
 
-<v-btn
-
-color="pink"
-
-variant="tonal"
-
-rounded="xl"
-
-prepend-icon="mdi-filter-remove"
-
-class="clear-filter-btn"
-
-@click="limpiarFiltros"
-
->
-
-Limpiar filtros
-
-</v-btn>
-
-</div>
+          </div>
         </div>
 
         <div class="table-wrapper">
           <table>
             <thead>
-<tr>
-<th>ID</th>
-<th>Nombre</th>
-<th>Escuela</th>
-<th>Queja</th>
-<th>Estado</th>
-<th>Acciones</th>
-</tr>
-</thead>
+              <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>CUI</th>
+                <th>Código Personal</th>
+                <th>Numero de Queja</th>
+                <th>Estado Actual dentro del Sistema Educativo</th>
+                <th>Estado del Caso</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
 
             <tbody>
               <tr
@@ -150,37 +185,31 @@ Limpiar filtros
                 </td>
 
                 <td>
-                  {{
-                    caso.nina?.historialEducativo?.[0]?.centroEducativo?.nombre ||
-                    'Sin registro'
-                  }}
+                  {{ caso.nina?.cui || 'Sin CUI' }}
                 </td>
 
-<td>
-
-<div class="queja-container">
-
-<div
-class="queja-dot"
-:style="getQuejaStyle(caso)"
-></div>
-
-<span class="queja-text">
-  {{ tieneQueja(caso) ? caso.queja : 'Sin queja' }}
-</span>
-
-</div>
-
-</td>
+                <td>
+                  {{ caso.nina?.historialEducativo?.[0]?.codigo_personal || 'Sin código' }}
+                </td>
 
                 <td>
-<span
-class="status-badge"
-:style="getStatusStyle(caso.estado)"
->
-{{ caso.estado || 'Sin estado' }}
-</span>
-</td>
+                  <div class="queja-container">
+                    <div class="queja-dot" :style="getQuejaStyle(caso)"></div>
+                    <span class="queja-text">
+                      {{ tieneQueja(caso) ? caso.queja : 'Sin queja' }}
+                    </span>
+                  </div>
+                </td>
+
+                <td>
+                  {{ caso.nina?.historialEducativo?.[0]?.status_actual || 'Sin registro' }}
+                </td>
+
+                <td>
+                  <span class="status-badge" :style="getStatusStyle(caso.estado)">
+                    {{ caso.estado || 'Sin estado' }}
+                  </span>
+                </td>
 
                 <td>
                   <button class="action-btn" @click="irAQueja(caso)">SEGUIMIENTO</button>
@@ -188,7 +217,7 @@ class="status-badge"
               </tr>
 
               <tr v-if="paginated.length === 0">
-                <td colspan="6" class="empty-state">No se encontraron casos.</td>
+                <td colspan="8" class="empty-state">No se encontraron casos.</td>
               </tr>
             </tbody>
           </table>
@@ -197,25 +226,25 @@ class="status-badge"
         <!-- Pagination -->
         <div class="pagination">
           <div class="page-size">
-            <span>Items per page:</span>
+            <span>Casos por Página:</span>
             <select v-model="itemsPerPage" @change="handlePageSizeChange">
               <option v-for="n in ITEMS_PER_PAGE_OPTIONS" :key="n" :value="n">{{ n }}</option>
             </select>
           </div>
 
           <div class="page-controls">
-            <span>{{ filtered.length > 0 ? `${startItem}-${endItem} of ${filtered.length}` : '0 of 0' }}</span>
+            <span>{{ serverTotal > 0 ? `${startItem}-${endItem} de ${serverTotal}` : '0 de 0' }}</span>
             <div class="pag-buttons">
-              <button @click="page = 1" :disabled="page === 1">
+              <button @click="goToPage(1)" :disabled="serverPage === 1 || loading">
                 <v-icon size="16">mdi-chevron-double-left</v-icon>
               </button>
-              <button @click="page = Math.max(1, page - 1)" :disabled="page === 1">
+              <button @click="goToPage(serverPage - 1)" :disabled="serverPage === 1 || loading">
                 <v-icon size="16">mdi-chevron-left</v-icon>
               </button>
-              <button @click="page = Math.min(totalPages, page + 1)" :disabled="page === totalPages || totalPages === 0">
+              <button @click="goToPage(serverPage + 1)" :disabled="serverPage >= serverTotalPages || loading">
                 <v-icon size="16">mdi-chevron-right</v-icon>
               </button>
-              <button @click="page = totalPages" :disabled="page === totalPages || totalPages === 0">
+              <button @click="goToPage(serverTotalPages)" :disabled="serverPage >= serverTotalPages || loading">
                 <v-icon size="16">mdi-chevron-double-right</v-icon>
               </button>
             </div>
@@ -236,346 +265,377 @@ import api from '@/helpers/api'
 import AppNavbar from '@/components/AppNavbar.vue'
 import AppFooter from '@/components/AppFooter.vue'
 
-import iconFootprintsPink from '@/assets/ninas_embarazadas_-20.png'
-import iconFootprintsWhite from '@/assets/ninas_embarazadas_-13.png'
-import iconClipboardPink from '@/assets/ninas_embarazadas_-19.png'
-import iconClipboardWhite from '@/assets/ninas_embarazadas_-14.png'
-import iconGraduationPink from '@/assets/ninas_embarazadas_-18.png'
-import iconGraduationWhite from '@/assets/ninas_embarazadas_-15.png'
-import iconBuildingPink from '@/assets/ninas_embarazadas_-17.png'
-import iconBuildingWhite from '@/assets/ninas_embarazadas_-16.png'
-
 const router = useRouter()
 
+// ── Datos paginados del servidor ───────────────────────────────────────────────
+const casos           = ref([])
+const departamentales = ref([])
 
-const casos = ref([])
-const departamentos = ref([])
+const serverTotal      = ref(0)
+const serverPage       = ref(1)
+const serverTotalPages = ref(1)
+const serverStats      = ref({})
 
-const search = ref('')
-const selectedDepartamento = ref(null)
-const selectedEstado = ref('Todos')
-const soloSinQueja = ref(false)
-
-const page = ref(1)
-const itemsPerPage = ref(10)
-const loading = ref(false)
-const loadingFilters = ref(false)
+// ── Filtros y UI ────────────────────────────────────────────────────────────────
+const search                = ref('')
+const selectedDepartamental = ref(null)
+const selectedEstado        = ref('Todos')
+const soloSinQueja          = ref(false)
+const itemsPerPage          = ref(10)
+const loading               = ref(false)
 
 const ITEMS_PER_PAGE_OPTIONS = [5, 10, 15, 20]
 
-const normalizeText = (value) => {
-  return String(value ?? '')
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .trim()
-}
+const ESTADOS_CASO = [
+  'Verificados en el (SIRE)',
+  'Sin verificar en el (SIRE)',
+  'Verificados en el sistema de quejas, comentarios o sugerencias',
+  'Sin quejas',
+]
 
-const padZero = (num) => String(num).padStart(2, '0')
+// ── Helpers de estilo ──────────────────────────────────────────────────────────
+const normalizeText = (v) =>
+  String(v ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim()
 
 const STATUS_STYLES = {
-  pendiente:  { backgroundColor: '#ffd6d6',  color: '#c05050' },
-  faltante:   { backgroundColor: '#fef7e0',  color: '#b06000' },
-  completado: { backgroundColor: '#e6f4ea',  color: '#137333' }
+  'verificados en el sire':          { backgroundColor: '#10233f', color: '#fff' },
+  'sin verificar en el sire':        { backgroundColor: '#6d6d6d', color: '#fff' },
+  'verificados en el sistema de quejas, comentarios o sugerencias': { backgroundColor: '#1F3864', color: '#fff' },
+  'sin quejas':                      { backgroundColor: '#b0b0b0', color: '#fff' },
 }
 
-const getStatusStyle = (estado) => {
-  if (!estado) return {}
-  return STATUS_STYLES[normalizeText(estado)] || {
-    backgroundColor: '#f0f0f0',
-    color: '#6d6d6d'
-  }
-}
+const getStatusStyle = (estado) =>
+  STATUS_STYLES[normalizeText(estado)] || { backgroundColor: '#f0f0f0', color: '#6d6d6d' }
 
-const tieneQueja = (caso)=>{
+const tieneQueja    = (caso) => !!(caso.queja && String(caso.queja).trim() !== '')
+const getQuejaStyle = (caso) => ({
+  backgroundColor: tieneQueja(caso) ? '#10233f' : '#fff',
+  border:          tieneQueja(caso) ? 'none'    : '2px solid #10233f',
+})
 
-return !!(
-caso.queja &&
-String(caso.queja).trim()!==''
-)
-
-}
-
-const getQuejaStyle=(caso)=>{
-
-return{
-
-backgroundColor:
-
-tieneQueja(caso)
-
-? '#ff5c5c'
-
-: '#34c759'
-
-}
-
-}
-
-const extractCasos = (response) => {
-  return Array.isArray(response?.data?.data) ? response.data.data : []
-}
-
-const cargarDepartamentos = async () => {
+// ── Carga unificada: filtros + búsqueda + paginación en el servidor ────────────
+const fetchCasos = async (targetPage = 1) => {
+  loading.value = true
   try {
-    const response = await api.get(`/dept`)
-    departamentos.value = extractCasos(response)
-  } catch (error) {
-    console.error('Error cargando departamentos:', error)
-    departamentos.value = []
-  }
-}
-
-const cargarTodosLosCasos = async () => {
-  try {
-    loading.value = true
-    const response = await api.get(`/caso`)
-    casos.value = extractCasos(response)
-  } catch (error) {
-    console.error('Error cargando casos:', error)
+    const { data } = await api.post('/caso', {
+      departamental_id: selectedDepartamental.value || null,
+      estado:           selectedEstado.value !== 'Todos' ? selectedEstado.value : null,
+      sinQueja:         soloSinQueja.value,
+      busqueda:         search.value.trim() || null,
+      page:             targetPage,
+      limit:            itemsPerPage.value,
+    })
+    casos.value            = Array.isArray(data.data) ? data.data : []
+    serverTotal.value      = data.total      ?? 0
+    serverPage.value       = data.page       ?? targetPage
+    serverTotalPages.value = data.totalPages ?? 1
+    serverStats.value      = data.stats      ?? {}
+  } catch (e) {
+    console.error('Error cargando casos:', e)
     casos.value = []
+    serverTotal.value = 0; serverTotalPages.value = 1
   } finally {
     loading.value = false
   }
 }
 
-const cargarCasosFiltrados = async () => {
+const cargarDepartamentales = async () => {
   try {
-    loadingFilters.value = true
-
-    const payload = {
-      departamento_id: selectedDepartamento.value || null,
-      estado:
-        selectedEstado.value && selectedEstado.value !== 'Todos'
-          ? selectedEstado.value
-          : null,
-      sinQueja: soloSinQueja.value,
-    }
-
-    const response = await api.post('/caso', payload)
-    casos.value = extractCasos(response)
-    page.value = 1
-  } catch (error) {
-    console.error('Error filtrando casos:', error)
-    casos.value = []
-  } finally {
-    loadingFilters.value = false
+    const { data } = await api.get('/dept/departamentales')
+    departamentales.value = Array.isArray(data.data) ? data.data : []
+  } catch (e) {
+    console.error('Error cargando departamentales:', e)
+    departamentales.value = []
   }
 }
 
-onMounted(async () => {
-  await Promise.all([
-    cargarDepartamentos(),
-    cargarTodosLosCasos()
-  ])
-})
+onMounted(() => Promise.all([cargarDepartamentales(), fetchCasos(1)]))
 
-const statCards = computed(() => {
-  const totales = casos.value.length
+// ── KPIs — vienen del servidor, no de los 10 registros de la página ───────────
+const displayKpis = computed(() => ({
+  estudiantes:         serverTotal.value,
+  mayoresOSinRegistro: serverStats.value.mayoresOSinRegistro ?? 0,
+  verificadosSire:     serverStats.value['Verificados en el (SIRE)'] ?? 0,
+  sinVerificarSire:    serverStats.value['Sin verificar en el (SIRE)'] ?? 0,
+  verificadosQuejas:   serverStats.value['Verificados en el sistema de quejas, comentarios o sugerencias'] ?? 0,
+  sinQuejas:           serverStats.value['Sin quejas'] ?? 0,
+}))
 
-  const completados = casos.value.filter(
-    c => normalizeText(c.estado) === 'completado'
-  ).length
+// ── La tabla renderiza exactamente lo que devuelve el servidor ─────────────────
+const paginated = computed(() => casos.value)
 
-    const faltante = casos.value.filter(
-    c => normalizeText(c.estado) === 'faltante'
-  ).length
-
-  const sinQueja = casos.value.filter(
-    c => !c.queja || String(c.queja).trim() === ''
-  ).length
-
-  return [
-    {
-      label: 'Casos totales',
-      value: padZero(totales),
-      pink: iconFootprintsPink,
-      white: iconFootprintsWhite
-    },
-    {
-      label: 'Casos completados',
-      value: padZero(completados),
-      pink: iconGraduationPink,
-      white: iconGraduationWhite
-    },
-        {
-      label: 'Casos faltante',
-      value: padZero(faltante),
-      pink: iconGraduationPink,
-      white: iconGraduationWhite
-    },
-    {
-      label: 'Sin queja',
-      value: padZero(sinQueja),
-      pink: iconBuildingPink,
-      white: iconBuildingWhite
-    }
-  ]
-})
-
-const filtered = computed(() => {
-  const query = normalizeText(search.value)
-
-  return casos.value.filter((c) => {
-    const nombre = normalizeText(c.nina?.nombre_completo)
-    const queja = normalizeText(c.queja)
-    const departamento = normalizeText(c.nina?.municipio?.departamento?.nombre)
-    const numeroCaso = normalizeText(c.numero_caso)
-    const escuela = normalizeText(c.nina?.historialEducativo?.[0]?.centroEducativo?.nombre)
-
-    return (
-      !query ||
-      nombre.includes(query) ||
-      queja.includes(query) ||
-      departamento.includes(query) ||
-      numeroCaso.includes(query) ||
-      escuela.includes(query)
-    )
-  })
-})
-
-const totalPages = computed(() =>
-  Math.max(1, Math.ceil(filtered.value.length / itemsPerPage.value))
+const startItem = computed(() =>
+  serverTotal.value === 0 ? 0 : (serverPage.value - 1) * itemsPerPage.value + 1
+)
+const endItem = computed(() =>
+  Math.min(serverPage.value * itemsPerPage.value, serverTotal.value)
 )
 
-const paginated = computed(() => {
-  const start = (page.value - 1) * itemsPerPage.value
-  return filtered.value.slice(start, start + itemsPerPage.value)
-})
+const estadoOptions = computed(() => ['Todos', ...ESTADOS_CASO])
 
-const startItem = computed(() => {
-  if (filtered.value.length === 0) return 0
-  return (page.value - 1) * itemsPerPage.value + 1
-})
+// ── Manejadores ───────────────────────────────────────────────────────────────
+const handleSearch       = () => fetchCasos(1)
+const handleFilter       = () => fetchCasos(1)
+const goToPage           = (p) => fetchCasos(Math.max(1, Math.min(p, serverTotalPages.value)))
+const handlePageSizeChange = () => fetchCasos(1)
 
-const endItem = computed(() => {
-  return Math.min(page.value * itemsPerPage.value, filtered.value.length)
-})
-
-const estadoOptions = computed(() => {
-  return ['Todos', 'pendiente', 'faltante', 'completado']
-})
-
-const handleSearch = async () => {
-  page.value = 1
-  await cargarCasosFiltrados()
+const limpiarFiltros = () => {
+  search.value = ''; selectedDepartamental.value = null
+  selectedEstado.value = 'Todos'; soloSinQueja.value = false
+  fetchCasos(1)
 }
 
-const handleFilter = async () => {
-  page.value = 1
-  await cargarCasosFiltrados()
-}
-
-const handlePageSizeChange = () => {
-  page.value = 1
-}
-
-const resetSearch = async () => {
-  search.value = ''
-  selectedDepartamento.value = null
-  selectedEstado.value = 'Todos'
-  soloSinQueja.value = false
-  page.value = 1
-  await cargarTodosLosCasos()
-}
-
-const limpiarFiltros = async () => {
-
-search.value=''
-
-selectedDepartamento.value=null
-
-selectedEstado.value='Todos'
-
-soloSinQueja.value=false
-
-page.value=1
-
-await cargarTodosLosCasos()
-
-}
-
-const irAQueja = (caso) => {
-  router.push({ path: '/complains', query: { caso_id: caso.id } })
-}
-
+const irAQueja = (caso) => router.push({ path: '/complains', query: { caso_id: caso.id } })
 </script>
+
 <style scoped>
 
-.queja-container{
 
-display:flex;
 
-align-items:center;
+/* ==========================
+   INDICADORES SECUNDARIOS
+========================== */
 
-gap:10px;
-
+.indicadores{
+  width: 100vw;
+  margin-bottom: 20px;
 }
 
-.queja-dot{
+@keyframes secEnter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
 
-width:10px;
-
-height:10px;
-
-border-radius:50%;
-
-flex-shrink:0;
-
-box-shadow:
-
-0 0 0 3px rgba(0,0,0,.04);
-
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.queja-text{
-
-font-size:.75rem;
-
-font-weight:500;
-
-color:#6d6d6d;
-
+.sec-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  background: #10233f;
 }
 
-.clear-filter-btn{
-
-height:56px;
-
-padding-inline:20px;
-
-font-weight:600;
-
-text-transform:none;
-
-box-shadow:
-
-0 2px 10px rgba(0,0,0,.05);
-
-transition:.2s;
-
+/* Laptop */
+@media (max-width: 1400px) {
+  .sec-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
 
-
-.clear-filter-btn:hover{
-
-transform:translateY(-2px);
-
-box-shadow:
-
-0 8px 20px rgba(255,151,151,.20);
-
+/* Tablet */
+@media (max-width: 992px) {
+  .sec-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
-
-@media(max-width:768px){
-
-.clear-filter-btn{
-
-width:100%;
-
+/* Celular */
+@media (max-width: 576px) {
+  .sec-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
+.sec-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 28px 16px 24px;
+  border-right: 1px solid rgba(255, 255, 255, .08);
+  animation: secEnter .4s ease both;
+  transition: background .22s ease;
+}
+
+.sec-item:hover {
+  background: rgba(23, 196, 232, .07);
+}
+
+.sec-item:last-child {
+  border-right: none;
+}
+
+.sec-item:nth-child(1) { animation-delay: .35s; }
+.sec-item:nth-child(2) { animation-delay: .42s; }
+.sec-item:nth-child(3) { animation-delay: .49s; }
+.sec-item:nth-child(4) { animation-delay: .56s; }
+.sec-item:nth-child(5) { animation-delay: .63s; }
+
+.sec-val {
+  font-size: clamp(22px, 2.2vw, 30px);
+  font-weight: 900;
+  color: #17c4e8;
+  line-height: 1;
+  margin-bottom: 7px;
+}
+
+.sec-val--money {
+  font-size: clamp(16px, 1.6vw, 22px);
+}
+
+.sec-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, .9);
+  line-height: 1.35;
+  margin-bottom: 4px;
+}
+
+.sec-module {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: .09em;
+  color: rgba(255, 255, 255, .35);
+  margin-top: 2px;
+}
+
+/* ==========================
+   DISTRIBUCIÓN POR SEXO
+========================== */
+
+.sex-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 100%;
+  margin-bottom: 6px;
+}
+
+.sex-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.sex-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.sex-dot--m { background: #17c4e8; }
+.sex-dot--f { background: #f472b6; }
+
+.sex-bar-track {
+  flex: 1;
+  height: 4px;
+  background: rgba(255, 255, 255, .12);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.sex-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width .9s ease;
+}
+
+.sex-bar-fill--m { background: #17c4e8; }
+.sex-bar-fill--f { background: #f472b6; }
+
+.sex-pct {
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  min-width: 28px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.sex-name {
+  font-size: 10px;
+  color: rgba(255, 255, 255, .55);
+  min-width: 40px;
+  flex-shrink: 0;
+}
+
+/* ==========================
+   RESPONSIVE
+========================== */
+
+@media (max-width: 1200px) {
+
+  .sec-item:nth-child(3) {
+    border-right: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+
+  .sec-item:nth-child(2),
+  .sec-item:nth-child(4) {
+    border-right: none;
+  }
+
+  .sec-item:nth-child(3) {
+    border-right: 1px solid rgba(255,255,255,.08);
+  }
+
+  .sec-item:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+    border-right: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .kpi-grid,
+
+  .kpi-divider-label {
+    font-size: 9px;
+  }
+
+  .sec-item {
+    padding: 18px 12px 16px;
+  }
+}
+
+.queja-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.queja-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 3px rgba(0,0,0,.04);
+}
+
+.queja-text {
+  font-size: .75rem;
+  font-weight: 500;
+  color: #6d6d6d;
+}
+
+.clear-filter-btn {
+  height: 56px;
+  padding-inline: 20px;
+  font-weight: 600;
+  text-transform: none;
+  box-shadow: 0 2px 10px rgba(0,0,0,.05);
+  transition: .2s;
+}
+
+.clear-filter-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(255,151,151,.20);
+}
+
+@media (max-width: 768px) {
+  .clear-filter-btn {
+    width: 100%;
+  }
 }
 
 .landing-page {
@@ -591,7 +651,12 @@ width:100%;
 .hero-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to bottom, rgba(255,151,151,0) 0%, rgba(255,151,151,0.2) 40%, rgba(255,151,151,0.95) 100%);
+  background: linear-gradient(
+    to bottom,
+    rgba(16, 35, 63, 0) 0%,
+    rgba(16, 35, 63, 0.2) 40%,
+    rgba(16, 35, 63, 0.95) 100%
+);
 }
 .hero-content {
   position: absolute;
@@ -630,13 +695,13 @@ width:100%;
 .stat-card:hover .stat-value { color: #ffffff; }
 
 /* SEARCH BAR */
-.container-max { max-width: 60rem; margin: 0 auto; padding: 0 1.5rem; }
+.container-max { max-width: 70rem; margin: 0 auto; padding: 0 1.5rem; }
 .search-bar-section { padding-bottom: 2rem; background-color: #ffffff; }
 .search-actions { display: flex; flex-wrap: wrap; align-items: stretch; gap: 1rem; }
 .search-pill { display: flex; flex: 1; min-width: 300px; background-color: #f8f8f8; border-radius: 9999px; overflow: hidden; }
-.pill-input { flex: 1; background-color: transparent; border: none; padding: 0.875rem 1.5rem; font-size: 1rem; color: #6d6d6d; outline: none; }
-.pill-input::placeholder { color: #9e9e9e; }
-.pill-btn { background-color: #ff9797; color: white; border: none; padding: 0 2.5rem; font-size: 1rem; font-weight: 500; cursor: pointer; transition: opacity 0.2s; }
+.pill-input { flex: 1; background-color: #81848b; border: none; padding: 0.875rem 1.5rem; font-size: 1rem; color: #fff; outline: none; }
+.pill-input::placeholder { color: #fff; }
+.pill-btn { background-color: #10233f; color: white; border: none; padding: 0 2.5rem; font-size: 1rem; font-weight: 500; cursor: pointer; transition: opacity 0.2s; }
 .pill-btn:hover { opacity: 0.9; }
 .btn { display: flex; align-items: center; justify-content: center; padding: 0.875rem 2rem; border-radius: 9999px; font-size: 1rem; font-weight: 500; cursor: pointer; transition: all 0.2s; border: none; white-space: nowrap; }
 .btn-primary { background-color: #ff9797; color: white; }
@@ -657,8 +722,8 @@ tbody tr { border-bottom: 1px solid #f5f5f5; }
 .row-even { background-color: #ffffff; }
 .row-odd  { background-color: #fdfafa; }
 td { padding: 1rem 1.5rem; color: #6d6d6d; font-size: 0.75rem; vertical-align: middle; }
-.status-badge { display: inline-block; padding: 0.25rem 0.625rem; border-radius: 9999px; font-size: 0.7rem; font-weight: 500; text-transform: uppercase; }
-.action-btn { color: #ff9797; font-weight: 600; background: none; border: none; font-size: 0.65rem; letter-spacing: 0.05em; cursor: pointer; transition: opacity 0.2s; }
+.status-badge { display: inline-block; padding: 0.25rem 0.625rem; border-radius: 9999px; font-size: .5rem; font-weight: 500; text-transform: uppercase; }
+.action-btn { color: #10233f; font-weight: 600; background: none; border: none; font-size: 0.65rem; letter-spacing: 0.05em; cursor: pointer; transition: opacity 0.2s; }
 .action-btn:hover { opacity: 0.7; }
 .empty-state { text-align: center; padding: 2rem 1rem; color: #b0b0b0; }
 
@@ -672,84 +737,46 @@ td { padding: 1rem 1.5rem; color: #6d6d6d; font-size: 0.75rem; vertical-align: m
 .pag-buttons button:hover:not(:disabled) { background-color: #f9fafb; }
 .pag-buttons button:disabled { color: #d0d0d0; cursor: not-allowed; }
 
-.filters-wrapper{
-
-display:flex;
-
-gap:12px;
-
-align-items:center;
-
-flex-wrap:wrap;
-
+.filters-wrapper {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
-
-.filter-select{
-
-width:220px;
-
-min-width:220px;
-
+.filter-select {
+  width: 220px;
+  min-width: 220px;
 }
 
-
-.queja-check{
-
-background:#fafafa;
-
-padding-left:12px;
-
-padding-right:12px;
-
-border-radius:12px;
-
-border:1px solid #efefef;
-
-height:56px;
-
-display:flex;
-
-align-items:center;
-
+.queja-check {
+  background: #fafafa;
+  padding-left: 12px;
+  padding-right: 12px;
+  border-radius: 12px;
+  border: 1px solid #efefef;
+  height: 56px;
+  display: flex;
+  align-items: center;
 }
 
-
-:deep(.v-field){
-
-border-radius:14px !important;
-
-box-shadow:
-
-0 2px 10px rgba(0,0,0,.03);
-
+:deep(.v-field) {
+  border-radius: 14px !important;
+  box-shadow: 0 2px 10px rgba(0,0,0,.03);
 }
 
-
-:deep(.v-field:hover){
-
-box-shadow:
-
-0 6px 18px rgba(255,151,151,.12);
-
+:deep(.v-field:hover) {
+  box-shadow: 0 6px 18px rgba(255,151,151,.12);
 }
 
+@media (max-width: 768px) {
+  .filter-select {
+    width: 100%;
+    min-width: 100%;
+  }
 
-@media(max-width:768px){
-
-.filter-select{
-
-width:100%;
-
-min-width:100%;
-
-}
-
-.filters-wrapper{
-
-width:100%;
-
-}
-
+  .filters-wrapper {
+    width: 100%;
+  }
 }
 </style>

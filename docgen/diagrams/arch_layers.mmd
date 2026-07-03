@@ -1,0 +1,35 @@
+graph TB
+  subgraph Frontend["FRONTEND - SPA Vue 3 / Vuetify (Vite)"]
+    V["Views<br/>(LoginView, HomeView, DashboardView,<br/>Seguimiento, ComplainView, ChargeData,<br/>UsersView, AuditoriaView, ProfileView)"]
+    C["Componentes<br/>(AppNavbar, AppFooter, GuateMap,<br/>BarChart, LineChart, DonaChart, PieChart)"]
+    ST["Stores Pinia<br/>(auth, casos, users, FiltroStore)"]
+    CMP["Composables<br/>(useExport: Excel / PDF)"]
+    AX["helpers/api.js<br/>Axios + interceptor JWT"]
+
+    V --> C
+    V --> ST
+    V --> CMP
+    ST --> AX
+    CMP --> AX
+    V --> AX
+  end
+
+  subgraph Backend["BACKEND - API REST Express 5"]
+    RT["Routes<br/>(auth, users, roles, caso, dept, upload, auditoria)"]
+    MW["Middleware<br/>verifyToken / requireRole / attachUser"]
+    CT["Controllers<br/>(Auth, Caso, User, Role, Dept, Upload, Auditoria, Dashboard)"]
+    UT["Utils<br/>auditoria.js / cargaExcel.js"]
+    MD["Modelos Sequelize<br/>(Relations.js)"]
+
+    RT --> MW
+    MW --> CT
+    CT --> UT
+    CT --> MD
+  end
+
+  subgraph Datos["BASE DE DATOS"]
+    DBX[("MySQL 8")]
+  end
+
+  AX -->|"HTTP/JSON"| RT
+  MD --> DBX

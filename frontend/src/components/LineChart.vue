@@ -105,8 +105,8 @@ onMounted(() => {
     cornerRadiusTR: 5,
     strokeOpacity: 0,
     width: am5.percent(40),
-    fill: am5.color("#ff9797"),
-    stroke: am5.color("#ff9797")
+    fill: am5.color("#10233f"),
+    stroke: am5.color("#10233f")
   })
 
   // Datos iniciales
@@ -131,5 +131,6 @@ onBeforeUnmount(() => {
 #chartdivline {
   width: 100%;
   height: 300px;
+  filter: drop-shadow(2px 20px 12px);
 }
 </style>

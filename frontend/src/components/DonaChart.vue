@@ -16,9 +16,10 @@ let series
 let legend
 
 const buildData = () => [
-  { casos: "Completados",  value: casosStore.casosPorEstado("completado").length },
-  { casos: "Incompletos",  value: casosStore.casosPorEstado("pendiente").length },
-  { casos: "Faltantes",    value: casosStore.casosPorEstado("faltante").length   }
+  { casos: "Verificados en el SIRE",      value: casosStore.casosPorEstado("Verificados en el SIRE").length },
+  { casos: "Sin Verificar en el SIRE",    value: casosStore.casosPorEstado("sin Verificar en el SIRE").length },
+  { casos: "Verificados en Quejas",       value: casosStore.casosPorEstado("Verificados en el Sistema de Quejas, Comentarios o Sugerencias").length },
+  { casos: "Sin Quejas",                  value: casosStore.casosPorEstado("sin Quejas").length },
 ]
 
 onMounted(() => {
@@ -45,9 +46,10 @@ onMounted(() => {
   series.ticks.template.setAll({ forceHidden: true, visible: false })
 
   series.get("colors").set("colors", [
-    am5.color("#ff9797"),
-    am5.color("#ffb3b3"),
-    am5.color("#d0d0d0")
+    am5.color("#10233f"),
+    am5.color("#1F3864"),
+    am5.color("#6d6d6d"),
+    am5.color("#b0b0b0")
   ])
 
   series.slices.template.setAll({
@@ -60,18 +62,24 @@ onMounted(() => {
     am5.Legend.new(root, {
       centerY: am5.percent(50),
       y: am5.percent(50),
-      layout: root.verticalLayout
+      layout: root.verticalLayout,
+      marginLeft: 18,
     })
   )
 
   legend.valueLabels.template.setAll({
-    textAlign: "right",
-    text: "{valuePercentTotal.formatNumber('0.')}%"
+    textAlign: "left",
+    text: "{valuePercentTotal.formatNumber('0.')}%",
+    marginRight: 10,
+    fontSize: 12,
+    fontWeight: "700",
   })
 
   legend.labels.template.setAll({
-    width: 140,
-    oversizedBehavior: "truncate"
+    fontSize: 11,
+    maxWidth: 155,
+    oversizedBehavior: "wrap",
+    paddingLeft: 8,
   })
 
   // Cargar datos y esperar a que la serie los procese antes de pasarlos a la leyenda
@@ -101,6 +109,7 @@ onBeforeUnmount(() => {
 <style scoped>
 #chartdivdona {
   width: 100%;
-  height: 300px;
+  height: 340px;
+  filter: drop-shadow(2px 20px 12px);
 }
 </style>
