@@ -83,7 +83,8 @@
               type="text"
               v-model="search"
               @keydown.enter="handleSearch"
-              placeholder="Buscar por nombre, queja o departamento..."
+              @input="onSearchInput"
+              placeholder="Buscar por nombre, queja, CUI o código personal..."
               class="pill-input"
             />
             <button class="pill-btn" @click="handleSearch">Buscar</button>
@@ -378,6 +379,9 @@ const handleSearch       = () => fetchCasos(1)
 const handleFilter       = () => fetchCasos(1)
 const goToPage           = (p) => fetchCasos(Math.max(1, Math.min(p, serverTotalPages.value)))
 const handlePageSizeChange = () => fetchCasos(1)
+
+// Cuando el campo queda vacío se recarga sin filtro de búsqueda automáticamente
+const onSearchInput = () => { if (search.value === '') fetchCasos(1) }
 
 const limpiarFiltros = () => {
   search.value = ''; selectedDepartamental.value = null

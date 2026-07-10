@@ -62,24 +62,18 @@ onMounted(() => {
     am5.Legend.new(root, {
       centerY: am5.percent(50),
       y: am5.percent(50),
-      layout: root.verticalLayout,
-      marginLeft: 18,
+      layout: root.verticalLayout
     })
   )
 
   legend.valueLabels.template.setAll({
-    textAlign: "left",
-    text: "{valuePercentTotal.formatNumber('0.')}%",
-    marginRight: 10,
-    fontSize: 12,
-    fontWeight: "700",
+    textAlign: "right",
+    text: "{valuePercentTotal.formatNumber('0.')}%"
   })
 
   legend.labels.template.setAll({
-    fontSize: 11,
-    maxWidth: 155,
-    oversizedBehavior: "wrap",
-    paddingLeft: 8,
+    width: 140,
+    oversizedBehavior: "truncate"
   })
 
   // Cargar datos y esperar a que la serie los procese antes de pasarlos a la leyenda
@@ -109,7 +103,7 @@ onBeforeUnmount(() => {
 <style scoped>
 #chartdivdona {
   width: 100%;
-  height: 340px;
+  height: 300px;
   filter: drop-shadow(2px 20px 12px);
 }
 </style>

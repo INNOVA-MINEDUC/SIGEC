@@ -215,9 +215,21 @@ if(busqueda && busqueda.trim()){
     [Op.or]: [
       { numero_caso: { [Op.like]: `%${bs}%` } },
       { queja:       { [Op.like]: `%${bs}%` } },
-      sequelize.literal(
-        `EXISTS (SELECT 1 FROM ninas n WHERE n.id = CasoEmbarazo.nina_id AND n.nombre_completo LIKE '%${bs}%')`
-      ),
+      sequelize.literal(`EXISTS (
+        SELECT 1 FROM ninas n
+        WHERE n.id = CasoEmbarazo.nina_id
+          AND n.nombre_completo LIKE '%${bs}%'
+      )`),
+      sequelize.literal(`EXISTS (
+        SELECT 1 FROM ninas n
+        WHERE n.id = CasoEmbarazo.nina_id
+          AND n.cui LIKE '%${bs}%'
+      )`),
+      sequelize.literal(`EXISTS (
+        SELECT 1 FROM historial_educativo h
+        WHERE h.nina_id = CasoEmbarazo.nina_id
+          AND h.codigo_personal LIKE '%${bs}%'
+      )`),
     ]
   })
 }

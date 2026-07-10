@@ -1,4 +1,5 @@
 import ExcelJS from 'exceljs'
+import path from 'path'
 import { sequelize } from '../config/database.js'
 import '../models/Relations.js'
 import CasoEmbarazo from '../models/CasoEmbarazo.js'
@@ -10,18 +11,14 @@ import { validarUbicacion } from '../helpers/validarUbicacion.js'
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
-// Colapsa saltos de línea/espacios múltiples (frecuentes en cabeceras con texto ajustado)
 export const normalizar = (texto) =>
   String(texto ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim()
 
-
-// Convierte texto a Title Case: "MARIA JOSE GARCIA" → "Maria Jose Garcia"
 export const toTitleCase = (str) => {
   if (!str) return str
   return String(str).toLowerCase().replace(/(?:^|[\s\-\/])\S/g, c => c.toUpperCase())
 }
 
-// Valores que equivalen a "sin dato" en los archivos MSPAS
 const VACIOS = new Set(['no indica', 'sin dato', 'n/a', 'n.a.', 'nd', 'ninguno', '-', '--', 's/d', 'no aplica'])
 
 export const clean = (val) => {
@@ -32,7 +29,6 @@ export const clean = (val) => {
   return str
 }
 
-// ExcelJS puede devolver objetos para celdas con fórmulas o rich-text
 export const getCellValue = (cell) => {
   const v = cell.value
   if (v === null || v === undefined) return null
@@ -62,38 +58,155 @@ export const parseDate = (val) => {
   return null
 }
 
-// Mapea el valor de Escolaridad/Nivel del archivo a los niveles del sistema
 export const mapEscolaridad = (raw) => {
   if (!raw) return null
   const s = normalizar(raw)
-  if (s.includes('preprimaria'))                             return 'Preprimaria'
-  if (s.includes('primaria'))                                return 'Primaria'
-  if (s.includes('diversificado'))                          return 'Media (Diversificado)'
-  if (s.includes('basico') || s.includes('medio') ||
-      s.includes('ciclo basico'))                           return 'Media (Básico)'
-  return clean(raw) // pasar el valor original si no coincide con ningún patrón
+  if (s.includes('preprimaria'))   return 'Preprimaria'
+  if (s.includes('primaria'))      return 'Primaria'
+  if (s.includes('diversificado')) return 'Media (Diversificado)'
+  if (s.includes('basico') || s.includes('medio') || s.includes('ciclo basico')) return 'Media (Básico)'
+  return clean(raw)
 }
 
-// Columnas mínimas requeridas en el archivo
 export const COLS_OBLIGATORIAS = [
   { patron: 'nombre completo', label: 'Nombre completo' },
 ]
 export const COLS_IMPORTANTES = [
-  { patron: 'cui renap',             label: 'CUI RENAP' },
-  { patron: 'departamento',          label: 'Departamento' },
-  { patron: 'fecha primer contacto', label: 'Fecha Primer Contacto' },
-  { patron: 'edad',                  label: 'Edad Años' },
-  { patron: 'fecha nacimiento',      label: 'Fecha Nacimiento' },
+  { patron: 'cui',                label: 'CUI' },
+  { patron: 'departamento',       label: 'Departamento' },
+  { patron: 'edad',               label: 'Edad' },
+  { patron: 'fecha de nacimiento', label: 'Fecha de Nacimiento' },
 ]
 
+// ── Generador de reporte Excel de fallos ───────────────────────────────────────
+
+async function generarReporteFallos(fallidos, sinUbicacion, colsDetectadas, dirReporte, nombreBase) {
+  const wb = new ExcelJS.Workbook()
+
+  // ── Hoja 1: Registros NO insertados ─────────────────────────────────────────
+  if (fallidos.length > 0) {
+    const ws = wb.addWorksheet('No Insertados')
+
+    const headerRow = ws.addRow([
+      'N° Fila (Excel)',
+      'Motivo del fallo',
+      'Nombre Completo',
+      'CUI',
+      'Departamento (archivo)',
+      'Municipio (archivo)',
+      ...colsDetectadas,
+    ])
+    headerRow.eachCell(cell => {
+      cell.fill  = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF10233F' } }
+      cell.font  = { bold: true, color: { argb: 'FFFFFFFF' }, size: 10 }
+      cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true }
+    })
+    ws.getRow(1).height = 30
+
+    for (const f of fallidos) {
+      const vals = [
+        f.filaNum,
+        f.motivo,
+        f.nombre ?? '',
+        f.cui    ?? '',
+        f.depto  ?? '',
+        f.municipio ?? '',
+        ...colsDetectadas.map(col => {
+          const v = f.rawRow[col]
+          if (v instanceof Date) return v.toISOString().split('T')[0]
+          return v ?? ''
+        }),
+      ]
+      const dataRow = ws.addRow(vals)
+      // Colorear motivo según tipo
+      const motivoCell = dataRow.getCell(2)
+      if (f.tipo === 'duplicado') {
+        motivoCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFF3CD' } }
+      } else if (f.tipo === 'error_bd') {
+        motivoCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8D7DA' } }
+      } else {
+        motivoCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E3E5' } }
+      }
+    }
+
+    // Anchos de columna
+    ws.getColumn(1).width = 14
+    ws.getColumn(2).width = 45
+    ws.getColumn(3).width = 35
+    ws.getColumn(4).width = 18
+    ws.getColumn(5).width = 22
+    ws.getColumn(6).width = 22
+    for (let c = 7; c <= 6 + colsDetectadas.length; c++) ws.getColumn(c).width = 18
+
+    ws.autoFilter = { from: 'A1', to: { row: 1, column: 6 + colsDetectadas.length } }
+  }
+
+  // ── Hoja 2: Insertados pero sin ubicación resuelta ──────────────────────────
+  if (sinUbicacion.length > 0) {
+    const ws2 = wb.addWorksheet('Sin Ubicación')
+
+    const h2 = ws2.addRow([
+      'N° Fila (Excel)',
+      'Problema de ubicación',
+      'Nombre Completo',
+      'CUI',
+      'Departamento (archivo)',
+      'Municipio (archivo)',
+      'Fue insertado',
+    ])
+    h2.eachCell(cell => {
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1F3864' } }
+      cell.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 10 }
+      cell.alignment = { vertical: 'middle', horizontal: 'center' }
+    })
+
+    for (const u of sinUbicacion) {
+      ws2.addRow([
+        u.filaNum,
+        u.problema,
+        u.nombre ?? '',
+        u.cui    ?? '',
+        u.depto  ?? '',
+        u.municipio ?? '',
+        'Sí (sin filtro de departamental)',
+      ])
+    }
+
+    ws2.getColumn(1).width = 14
+    ws2.getColumn(2).width = 48
+    ws2.getColumn(3).width = 35
+    ws2.getColumn(4).width = 18
+    ws2.getColumn(5).width = 22
+    ws2.getColumn(6).width = 22
+    ws2.getColumn(7).width = 30
+  }
+
+  // ── Guardar ──────────────────────────────────────────────────────────────────
+  const ts   = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
+  const base = path.basename(nombreBase, path.extname(nombreBase))
+  const outPath = path.join(dirReporte, `reporte_fallos_${base}_${ts}.xlsx`)
+  await wb.xlsx.writeFile(outPath)
+  return outPath
+}
+
+// ── Procesador principal ───────────────────────────────────────────────────────
+
 /**
- * Procesa un archivo Excel (buffer) con el formato de reporte MSPAS y crea/actualiza
- * los registros correspondientes (Nina, CasoEmbarazo, HistorialEducativo, CentroEducativo).
+ * Procesa un archivo Excel con el formato de reporte SIRE/MSPAS y crea los registros
+ * correspondientes (Nina, CasoEmbarazo, HistorialEducativo, CentroEducativo).
  *
- * Usado tanto por el endpoint de carga masiva (UploadController) como por el seeder
- * que carga la base de datos a partir de un archivo Excel.
+ * @param {Buffer} buffer          - Contenido del archivo Excel
+ * @param {object} opts
+ * @param {string} opts.nombreArchivo  - Nombre del archivo (para logs y reporte)
+ * @param {number|null} opts.usuarioId - ID del usuario que carga (puede ser null en seeders)
+ * @param {string|null} opts.reporteDir - Directorio donde guardar el Excel de fallos.
+ *                                        Si es null no se genera el archivo.
  */
-export async function procesarExcelCasos(buffer, { nombreArchivo = 'archivo.xlsx', usuarioId = null } = {}) {
+export async function procesarExcelCasos(buffer, {
+  nombreArchivo = 'archivo.xlsx',
+  usuarioId     = null,
+  reporteDir    = null,
+} = {}) {
   // 1. Parsear Excel
   const workbook = new ExcelJS.Workbook()
   await workbook.xlsx.load(buffer)
@@ -102,67 +215,65 @@ export async function procesarExcelCasos(buffer, { nombreArchivo = 'archivo.xlsx
     return { ok: false, message: 'El archivo no contiene hojas' }
   }
 
-  // 2. Identificadores existentes para deduplicación
+  // 2. Pre-cargar sets de deduplicación
   const existingNinas   = await Nina.findAll({ attributes: ['cui', 'nombre_completo'] })
   const existingCuis    = new Set(existingNinas.map(n => String(n.cui ?? '').trim()).filter(Boolean))
   const existingNombres = new Set(existingNinas.map(n => normalizar(String(n.nombre_completo ?? ''))).filter(Boolean))
 
-  // 4.1 Centros educativos existentes (por código UDI)
   const existingCentros = await CentroEducativo.findAll({ attributes: ['id', 'codigo_udi'] })
-  const centroPorUdi = new Map(existingCentros.map(c => [normalizar(c.codigo_udi), c.id]))
+  const centroPorUdi    = new Map(existingCentros.map(c => [normalizar(c.codigo_udi), c.id]))
 
-  // 5. Max ID actual de casos para numerar y números de caso existentes
   const maxCasoId  = Number((await CasoEmbarazo.max('id')) || 0)
   const yearSuffix = String(new Date().getFullYear()).slice(-3)
   const existingNumerosCaso = new Set(
     (await CasoEmbarazo.findAll({ attributes: ['numero_caso'] })).map(c => String(c.numero_caso ?? '').trim())
   )
 
-  // 6. Auto-detectar fila de cabeceras buscando "nombre completo" en las primeras 8 filas.
-  // El formato SIRE tiene títulos y agrupaciones en las filas superiores antes de los nombres reales.
-  let headerRowNum = 1
-  for (let r = 1; r <= 8; r++) {
-    let found = false
+  // 3. Detectar fila de cabeceras.
+  //    El formato SIRE siempre tiene: filas 1-4 = título y grupos, fila 5 = headers, fila 6+ = datos.
+  //    Valor por defecto: 5. Solo se sobrescribe si se detecta una fila >= 5 con ambas claves.
+  let headerRowNum = 5
+  for (let r = 5; r <= 10; r++) {
+    let tieneNombre = false
+    let tieneCui    = false
     worksheet.getRow(r).eachCell({ includeEmpty: false }, (cell) => {
-      const norm = normalizar(String(getCellValue(cell) ?? ''))
-      if (norm.includes('nombre completo')) found = true
+      const v = normalizar(String(getCellValue(cell) ?? ''))
+      if (v.includes('nombre completo')) tieneNombre = true
+      if (v.includes('cui'))             tieneCui    = true
     })
-    if (found) { headerRowNum = r; break }
+    if (tieneNombre && tieneCui) { headerRowNum = r; break }
   }
 
-  // Mapear número de columna → nombre normalizado (las cabeceras repetidas se sufijan: "x", "x (2)", "x (3)"...)
+  // Mapear número de columna → nombre normalizado (duplicados sufijados: "x", "x (2)", ...)
   const headersByCol = {}
   const headerCounts = {}
   worksheet.getRow(headerRowNum).eachCell({ includeEmpty: false }, (cell, colNumber) => {
     const base = normalizar(String(getCellValue(cell) ?? ''))
     if (!base) return
     headerCounts[base] = (headerCounts[base] || 0) + 1
-    const name = headerCounts[base] > 1 ? `${base} (${headerCounts[base]})` : base
-    headersByCol[colNumber] = name
+    headersByCol[colNumber] = headerCounts[base] > 1 ? `${base} (${headerCounts[base]})` : base
   })
 
   const colsDetectadas = Object.values(headersByCol)
   console.log(`\n━━━ CARGA MASIVA: ${nombreArchivo} ━━━`)
-  console.log(`   Fila de cabecera detectada: ${headerRowNum}`)
-  console.log(`   Columnas (${colsDetectadas.length}):`, colsDetectadas.join(' | '))
+  console.log(`   Fila de cabecera: ${headerRowNum} | Columnas: ${colsDetectadas.length}`)
 
-  // 6.1 Validar que el archivo tenga las columnas necesarias (evita cargas de archivos incorrectos)
   const faltanObligatorias = COLS_OBLIGATORIAS
-    .filter(c => !colsDetectadas.some(h => h.includes(c.patron)))
-    .map(c => c.label)
+    .filter(c => !colsDetectadas.some(h => h.includes(c.patron))).map(c => c.label)
 
   if (faltanObligatorias.length > 0) {
     return {
       ok: false,
-      message: `El archivo no contiene las columnas obligatorias (${faltanObligatorias.join(', ')}). Verifique que está subiendo el archivo correcto del reporte MSPAS.`,
+      message: `El archivo no contiene las columnas obligatorias (${faltanObligatorias.join(', ')}).`,
     }
   }
 
   const faltanImportantes = COLS_IMPORTANTES
-    .filter(c => !colsDetectadas.some(h => h.includes(c.patron)))
-    .map(c => c.label)
+    .filter(c => !colsDetectadas.some(h => h.includes(c.patron))).map(c => c.label)
+  if (faltanImportantes.length > 0)
+    console.warn(`   Columnas importantes ausentes: ${faltanImportantes.join(', ')}`)
 
-  // 7. Extraer filas de datos
+  // 4. Extraer todas las filas de datos
   const rawRows = []
   worksheet.eachRow((row, rowNumber) => {
     if (rowNumber <= headerRowNum) return
@@ -175,19 +286,24 @@ export async function procesarExcelCasos(buffer, { nombreArchivo = 'archivo.xlsx
   })
 
   if (rawRows.length > 0) {
-    console.log('\n   Primera fila parseada (primeros 12 campos):')
-    Object.entries(rawRows[0]).slice(0, 12).forEach(([k, v]) =>
-      console.log(`     ${k.padEnd(30)} →  ${String(v ?? '(vacío)').slice(0, 60)}`)
-    )
+    console.log('\n   Primera fila (muestra de campos clave):')
+    const camposClave = ['nombre completo', 'cui', 'direccion departamental de educacion',
+                         'municipio de residencia', 'nivel', 'grado', 'no. de caso', 'no. de queja']
+    for (const k of camposClave) {
+      if (rawRows[0][k] !== undefined)
+        console.log(`     ${k.padEnd(40)} →  ${String(rawRows[0][k] ?? '(vacío)').slice(0, 50)}`)
+    }
   }
 
   const totalFilas = rawRows.length
-  let nuevos      = 0
-  let duplicados  = 0
-  const omitidos       = []
-  const erroresMuestra = []
+  let nuevos     = 0
+  let duplicados = 0
 
-  // 8. Crear registro de carga ANTES del loop
+  // Arrays para el reporte de fallos
+  const fallidos     = []  // registros que NO se insertaron
+  const sinUbicacion = []  // registros insertados pero sin departamental/municipio
+
+  // 5. Crear registro de carga
   const carga = await CargaArchivo.create({
     nombre_archivo:       nombreArchivo,
     total_registros:      totalFilas,
@@ -197,22 +313,19 @@ export async function procesarExcelCasos(buffer, { nombreArchivo = 'archivo.xlsx
     usuario_id:           usuarioId,
   })
 
-  console.log(`\n   Procesando ${totalFilas} filas de datos (carga_id=${carga.id})...\n`)
+  console.log(`\n   Procesando ${totalFilas} filas (carga_id=${carga.id})...\n`)
 
-  // 9. Procesar fila a fila
+  // 6. Loop principal
   for (let i = 0; i < rawRows.length; i++) {
     const row     = rawRows[i]
     const filaNum = headerRowNum + 1 + i
-    const get     = (col) => row[normalizar(col)] ?? null
-    // Búsqueda flexible: encuentra el primer valor cuya cabecera contenga alguno de los patrones
+
+    const get = (col) => row[normalizar(col)] ?? null
     const pick = (...patrones) => {
       for (const p of patrones) {
         const pn = normalizar(p)
         for (const [k, v] of Object.entries(row)) {
-          if (k.includes(pn)) {
-            const c = clean(v)
-            if (c !== null) return v
-          }
+          if (k.includes(pn)) { const c = clean(v); if (c !== null) return v }
         }
       }
       return null
@@ -221,82 +334,85 @@ export async function procesarExcelCasos(buffer, { nombreArchivo = 'archivo.xlsx
     const cuiRaw         = clean(get('CUI RENAP')) || clean(get('cui')) || null
     const nombreCompleto = toTitleCase(clean(get('Nombre completo')))
 
-    // Sin nombre: omitir
+    // Datos para el reporte (se capturan antes de cualquier skip)
+    const deptoArchivo    = clean(pick('Dirección Departamental', 'Departamento'))
+    const municipioArchivo = clean(pick('Municipio de Residencia', 'Municipio'))
+
+    const registroBase = {
+      filaNum,
+      nombre:     nombreCompleto,
+      cui:        cuiRaw,
+      depto:      deptoArchivo,
+      municipio:  municipioArchivo,
+      rawRow:     row,
+    }
+
+    // ── Validaciones de omisión ─────────────────────────────────────────────
     if (!nombreCompleto) {
       duplicados++
-      if (omitidos.length < 20) omitidos.push(`SIN_NOMBRE | fila ${filaNum}`)
+      fallidos.push({ ...registroBase, tipo: 'sin_nombre', motivo: 'Fila sin nombre completo' })
       console.warn(`  [OMITIDA fila ${filaNum}] Sin nombre completo`)
       continue
     }
 
-    // Deduplicar por CUI (si existe) o por nombre
     if (cuiRaw && existingCuis.has(cuiRaw)) {
       duplicados++
-      if (omitidos.length < 20) omitidos.push(`DUPLICADO_CUI | fila ${filaNum} | CUI: ${cuiRaw}`)
+      fallidos.push({ ...registroBase, tipo: 'duplicado', motivo: `Duplicado: CUI ${cuiRaw} ya existe en la BD` })
       console.warn(`  [OMITIDA fila ${filaNum}] Duplicado por CUI "${cuiRaw}"`)
       continue
     }
+
     if (!cuiRaw && existingNombres.has(normalizar(nombreCompleto))) {
       duplicados++
-      if (omitidos.length < 20) omitidos.push(`DUPLICADO_NOMBRE | fila ${filaNum} | nombre: "${nombreCompleto}"`)
+      fallidos.push({ ...registroBase, tipo: 'duplicado', motivo: `Duplicado: nombre "${nombreCompleto}" ya existe en la BD` })
       console.warn(`  [OMITIDA fila ${filaNum}] Duplicado por nombre "${nombreCompleto}"`)
       continue
     }
 
-    // Si no viene CUI se guarda null; nunca se inventan números
+    // ── Resolución de ubicación (niña) ──────────────────────────────────────
     const cuiFinal    = cuiRaw ?? null
     const fechaNacStr = parseDate(pick('Fecha de Nacimiento', 'Fecha Nacimiento'))
 
-    // ── Resolución de departamental, departamento y municipio (de la niña) ──
-    // Col 6 "Dirección Departamental de Educación" = departamento de la niña
-    // Col 14 "Municipio de Residencia" = municipio de la niña
-    const deptoNombre     = clean(pick('Dirección Departamental', 'Departamento'))
-    const municipioNombre = clean(pick('Municipio de Residencia', 'Municipio'))
     const { departamental_id, departamento_id, municipio_id } =
-      await validarUbicacion(deptoNombre, municipioNombre)
-    if (!departamental_id) console.warn(`  [SIN DEPTO  fila ${filaNum}] "${deptoNombre}" no resolvió departamental`)
-    if (!municipio_id)     console.warn(`  [SIN MUNI   fila ${filaNum}] "${municipioNombre}" no resolvió municipio`)
+      await validarUbicacion(deptoArchivo, municipioArchivo)
 
-    // ── Pueblo y comunidad lingüística como texto ───────────────────────────
+    const problemasUbicacion = []
+    if (!departamental_id) problemasUbicacion.push(`Departamento "${deptoArchivo}" no resolvió en la BD`)
+    if (!municipio_id)     problemasUbicacion.push(`Municipio "${municipioArchivo}" no resolvió en la BD`)
+
+    // ── Datos educativos ────────────────────────────────────────────────────
     const pueblo               = toTitleCase(clean(pick('Pueblo de pertenencia', 'Pueblo'))) || null
-    const comunidad_linguistica = toTitleCase(
-      clean(pick('Comunidad Linguistica', 'Comunidad Lingüística', 'Comunidad'))
-    ) || null
+    const comunidad_linguistica = toTitleCase(clean(pick('Comunidad Linguistica', 'Comunidad Lingüística', 'Comunidad'))) || null
+    const codigoPersonal       = clean(pick('Código personal', 'Codigo personal'))
+    const statusActual         = clean(pick('Status actual', 'Estatus actual'))
+    const grado                = clean(pick('Grado'))
+    const resultado            = clean(pick('Resultado'))
+    const anioRaw              = get('ano (2)') ?? pick('Ano Educativo')
+    const anio                 = anioRaw ? parseInt(String(anioRaw), 10) || null : null
+    const nivelEducativo       = mapEscolaridad(pick('Nivel') ?? get('Escolaridad') ?? get('escolaridad'))
+    const codigoUdi            = clean(pick('Código UDI', 'Codigo UDI'))
+    const centroNombre         = clean(pick('Nombre del Centro'))
+    const centroDireccion      = clean(pick('Dirección (2)', 'Direccion (2)'))
+    const sector               = clean(pick('Sector'))
+    const jornada              = clean(pick('Jornada'))
+    const area                 = clean(pick('Área', 'Area'))
 
-    // ── Situación educativa / centro educativo ──────────────────────────────
-    const codigoPersonal = clean(pick('Código personal', 'Codigo personal'))
-    const statusActual   = clean(pick('Status actual', 'Estatus actual'))
-    const grado          = clean(pick('Grado'))
-    const resultado      = clean(pick('Resultado'))
-    // "ano (2)" es col 24 (año educativo); "ano" es col 4 (año de ingreso)
-    const anioRaw        = get('ano (2)') ?? pick('Ano Educativo')
-    const anio           = anioRaw ? parseInt(String(anioRaw), 10) || null : null
-    const nivelEducativo = mapEscolaridad(pick('Nivel') ?? get('Escolaridad') ?? get('escolaridad'))
-
-    const codigoUdi       = clean(pick('Código UDI', 'Codigo UDI'))
-    const centroNombre    = clean(pick('Nombre del Centro'))
-    const centroDireccion = clean(pick('Dirección (2)', 'Direccion (2)'))
-    const sector          = clean(pick('Sector'))
-    const jornada         = clean(pick('Jornada'))
-    const area            = clean(pick('Área', 'Area'))
-
-    // Col 26 "Departamento" (exacto) = depto del centro educativo
-    // Col 27 "Zona o Municipio" = municipio del centro
-    const centroDeptoNombre     = clean(get('departamento'))
-    const centroMunicipioNombre = clean(pick('Zona o Municipio'))
+    // Resolución de ubicación del centro educativo
+    const centroDeptoNombre      = clean(get('departamento'))
+    const centroMunicipioNombre  = clean(pick('Zona o Municipio'))
     const { municipio_id: centroMunicipioId } =
       await validarUbicacion(centroDeptoNombre, centroMunicipioNombre)
     if (codigoUdi && !centroMunicipioId)
-      console.warn(`  [SIN CENTRO fila ${filaNum}] "${centroDeptoNombre}/${centroMunicipioNombre}" no resolvió municipio del centro`)
+      problemasUbicacion.push(`Municipio del centro "${centroDeptoNombre}/${centroMunicipioNombre}" no resolvió`)
 
-    // ── No. de caso y Queja son independientes ───────────────────────────────
     const numeroCasoArchivo = clean(get('no. de caso'))
     const queja             = clean(pick('No. de Queja', 'Numero de queja'))
 
+    // ── Inserción en BD ─────────────────────────────────────────────────────
     const t = await sequelize.transaction()
     try {
-      const edadRaw = get('edad') ?? pick('Edad')
-      const edad    = edadRaw ? parseInt(String(edadRaw), 10) || null : null
+      const edadRaw   = get('edad') ?? pick('Edad')
+      const edad      = edadRaw ? parseInt(String(edadRaw), 10) || null : null
       const direccion = toTitleCase(clean(get('direccion')))
 
       const nina = await Nina.create({
@@ -310,7 +426,7 @@ export async function procesarExcelCasos(buffer, { nombreArchivo = 'archivo.xlsx
         comunidad_linguistica,
       }, { transaction: t })
 
-      // Centro educativo: se crea/reutiliza solo si hay código UDI y municipio resuelto
+      // Centro educativo
       let centroEducativoId = null
       if (codigoUdi) {
         const udiNorm = normalizar(codigoUdi)
@@ -322,22 +438,21 @@ export async function procesarExcelCasos(buffer, { nombreArchivo = 'archivo.xlsx
             nombre:       toTitleCase(centroNombre) || codigoUdi,
             direccion:    toTitleCase(centroDireccion),
             municipio_id: centroMunicipioId,
-            sector,
-            jornada,
-            area,
+            sector, jornada, area,
           }, { transaction: t })
           centroEducativoId = centro.id
           centroPorUdi.set(udiNorm, centro.id)
         }
       }
 
-      // fecha_ingreso: construir desde Día/Mes/Año (cols 2/3/4) — formato SIRE
+      // Fecha de ingreso: construir desde Día/Mes/Año separados (cols 2/3/4 del SIRE)
       const diaIngreso = parseInt(String(get('dia') ?? ''), 10) || null
       const mesIngreso = parseInt(String(get('mes') ?? ''), 10) || null
       const anoIngreso = parseInt(String(get('ano') ?? ''), 10) || null
       const fechaContacto = (diaIngreso && mesIngreso && anoIngreso)
         ? `${anoIngreso}-${String(mesIngreso).padStart(2, '0')}-${String(diaIngreso).padStart(2, '0')}`
         : parseDate(pick('Fecha de ingreso', 'Fecha Primer Contacto'))
+
       const fechaConsulta  = parseDate(pick('Fecha Primera Consulta'))
       const noNotificacion = clean(pick('No. de notificacion', 'notificacion'))
       const institucion    = clean(get('institucion')) || clean(pick('Institucion'))
@@ -358,11 +473,10 @@ export async function procesarExcelCasos(buffer, { nombreArchivo = 'archivo.xlsx
         no_notificacion:        noNotificacion,
         institucion,
         queja,
-        estado:                 'sin Verificar en el SIRE',
+        estado:          'sin Verificar en el SIRE',
         departamental_id,
       }, { transaction: t })
 
-      // Crear historial educativo si hay datos de escolaridad/situación educativa
       if (nivelEducativo || codigoPersonal || statusActual || grado || resultado || anio || centroEducativoId) {
         await HistorialEducativo.create({
           nina_id:             nina.id,
@@ -382,40 +496,67 @@ export async function procesarExcelCasos(buffer, { nombreArchivo = 'archivo.xlsx
       existingNombres.add(normalizar(nombreCompleto))
       existingNumerosCaso.add(numeroCaso)
       nuevos++
-      const tag = cuiFinal ?? 'sin CUI'
-      console.log(`  [OK fila ${filaNum}] Caso ${numeroCaso} — "${nombreCompleto}" (${tag}) nivel="${nivelEducativo ?? '-'}" mun_id=${municipio_id ?? 'null'} centro_id=${centroEducativoId ?? 'null'}`)
+
+      // Registrar advertencias de ubicación para la hoja "Sin Ubicación"
+      if (problemasUbicacion.length > 0) {
+        sinUbicacion.push({
+          filaNum,
+          nombre:    nombreCompleto,
+          cui:       cuiFinal,
+          depto:     deptoArchivo,
+          municipio: municipioArchivo,
+          problema:  problemasUbicacion.join(' | '),
+        })
+        console.warn(`  [SIN UBI fila ${filaNum}] "${nombreCompleto}" insertado pero: ${problemasUbicacion.join(' | ')}`)
+      } else {
+        console.log(`  [OK   fila ${filaNum}] Caso ${numeroCaso} — "${nombreCompleto}" (${cuiFinal ?? 'sin CUI'}) nivel="${nivelEducativo ?? '-'}" depto_id=${departamental_id ?? 'null'}`)
+      }
 
     } catch (err) {
       await t.rollback()
-      const razon = err.name === 'SequelizeUniqueConstraintError'
-        ? `UNIQUE_CONSTRAINT | fila ${filaNum} | CUI: ${cuiFinal} | nombre: "${nombreCompleto}"`
-        : `DB_ERROR | fila ${filaNum} | ${err.message}`
-      if (omitidos.length < 20) omitidos.push(razon)
       duplicados++
-      if (err.name === 'SequelizeUniqueConstraintError') {
+      const esUnica = err.name === 'SequelizeUniqueConstraintError'
+      const motivo  = esUnica
+        ? `Restricción única en BD: CUI o nombre ya registrado (${err.fields?.join(', ') ?? ''})`
+        : `Error de BD: ${err.message}`
+      fallidos.push({ ...registroBase, tipo: 'error_bd', motivo })
+      if (esUnica) {
         console.warn(`  [OMITIDA fila ${filaNum}] Restricción única — "${nombreCompleto}" (${cuiFinal})`)
       } else {
-        console.error(`  [ERROR fila ${filaNum}] ${err.message}`)
-        if (erroresMuestra.length < 5) erroresMuestra.push(`[fila ${filaNum}] ${err.message}`)
+        console.error(`  [ERROR   fila ${filaNum}] ${err.message}`)
       }
     }
   }
 
+  // 7. Resumen en consola
   console.log(`\n   ── Resultado ──`)
-  console.log(`   Total filas:  ${totalFilas}`)
-  console.log(`   Nuevos:       ${nuevos}`)
-  console.log(`   Duplicados/Omitidos: ${duplicados}`)
-  if (omitidos.length) {
-    console.warn(`\n   ── Registros no ingresados (${omitidos.length}) ──`)
-    omitidos.forEach(r => console.warn(`     • ${r}`))
+  console.log(`   Total filas    : ${totalFilas}`)
+  console.log(`   Insertados     : ${nuevos}`)
+  console.log(`   No insertados  : ${duplicados}  (${fallidos.length} con detalle de fallo)`)
+  console.log(`   Sin ubicación  : ${sinUbicacion.length} (insertados pero con dept/mun no resuelto)`)
+
+  if (fallidos.length > 0) {
+    console.warn(`\n   ── No insertados (${fallidos.length}) ──`)
+    fallidos.forEach(f => console.warn(`     [fila ${f.filaNum}] ${f.motivo}`))
   }
-  if (erroresMuestra.length) {
-    console.error(`\n   ── Errores de BD (${erroresMuestra.length}) ──`)
-    erroresMuestra.forEach(e => console.error(`     • ${e}`))
+  if (sinUbicacion.length > 0) {
+    console.warn(`\n   ── Sin ubicación (${sinUbicacion.length}) ──`)
+    sinUbicacion.forEach(u => console.warn(`     [fila ${u.filaNum}] "${u.nombre}" | ${u.problema}`))
   }
+
+  // 8. Generar Excel de reporte si se indicó un directorio
+  let reportePath = null
+  if (reporteDir && (fallidos.length > 0 || sinUbicacion.length > 0)) {
+    try {
+      reportePath = await generarReporteFallos(fallidos, sinUbicacion, colsDetectadas, reporteDir, nombreArchivo)
+      console.log(`\n   ✔ Reporte de fallos generado: ${reportePath}`)
+    } catch (e) {
+      console.error(`   ✘ No se pudo generar el reporte: ${e.message}`)
+    }
+  }
+
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n')
 
-  // 10. Actualizar conteos finales
   await carga.update({ registros_nuevos: nuevos, registros_duplicados: duplicados })
 
   return {
@@ -425,14 +566,11 @@ export async function procesarExcelCasos(buffer, { nombreArchivo = 'archivo.xlsx
     total:    totalFilas,
     nuevos,
     duplicados,
+    reportePath,
+    fallidos: fallidos.map(f => ({ fila: f.filaNum, motivo: f.motivo, nombre: f.nombre, cui: f.cui })),
+    sinUbicacion: sinUbicacion.map(u => ({ fila: u.filaNum, nombre: u.nombre, problema: u.problema })),
     advertencias: faltanImportantes.length > 0
-      ? [`El archivo no incluye estas columnas: ${faltanImportantes.join(', ')}. Esos datos quedarán vacíos.`]
-      : [],
-    _debug: {
-      fila_cabecera:       headerRowNum,
-      columnas_detectadas: colsDetectadas,
-      omitidos_muestra:    omitidos,
-      errores_muestra:     erroresMuestra,
-    },
+      ? [`El archivo no incluye: ${faltanImportantes.join(', ')}`] : [],
+    _debug: { fila_cabecera: headerRowNum, columnas_detectadas: colsDetectadas },
   }
 }
