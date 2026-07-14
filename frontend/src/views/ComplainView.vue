@@ -283,6 +283,15 @@
               <!-- SUBSISTEMA ESCOLAR -->
               <template v-if="form.subsistema === 'Subsistema Escolar'">
 
+                <div class="input-box">
+                  <v-icon size="16" class="input-icon">mdi-podium</v-icon>
+                  <select v-model="form.nivel" :class="{ 'empty-select': !form.nivel }">
+                    <option value="" disabled selected>Nivel</option>
+                    <option v-for="n in NIVELES" :key="n" :value="n">{{ n }}</option>
+                  </select>
+                  <v-icon size="16" class="select-chevron">mdi-chevron-down</v-icon>
+                </div>
+
                 <div class="field-row">
                   <div class="input-box w-50">
                     <v-icon size="16" class="input-icon">mdi-school-outline</v-icon>
@@ -410,7 +419,7 @@
 
               </template>
 
-              <!-- Estado — obligatorio, nunca pre-rellenado -->
+              <!-- Estado — obligatorio solo al crear; en edición viene precargado y es opcional cambiarlo -->
               <div class="estado-wrapper">
 
                 <!-- Indicador del estado actual (solo en modo actualización) -->
@@ -418,36 +427,34 @@
                   <v-icon size="14">mdi-information-outline</v-icon>
                   Estado actual del caso:
                   <span class="estado-chip" :style="estadoChipStyle(estadoOriginal)">{{ estadoOriginal }}</span>
-                  — selecciona el nuevo estado para continuar
                 </div>
 
                 <div
                   class="input-box estado-box"
-                  :class="{ 'estado-error': submitIntent && (!form.estado || (casoId && form.estado === estadoOriginal)) }"
+                  :class="{ 'estado-error': submitIntent && !casoId && !form.estado }"
                 >
                   <v-icon
                     size="16"
                     class="input-icon"
-                    :color="form.estado ? '#10233f' : submitIntent ? '#e53935' : '#b0b0b0'"
+                    :color="form.estado ? '#10233f' : submitIntent && !casoId ? '#e53935' : '#b0b0b0'"
                   >mdi-flag</v-icon>
                   <select v-model="form.estado" :class="{ 'empty-select': !form.estado }">
                     <option value="" disabled selected>
-                      {{ estadoOriginal ? 'Selecciona el nuevo estado *' : 'Estado del caso *' }}
+                      {{ casoId ? 'Estado del caso' : 'Estado del caso *' }}
                     </option>
                     <option
                       v-for="est in ESTADOS_CASO"
                       :key="est"
                       :value="est"
-                      :disabled="estadoOriginal === est"
                     >{{ est }}</option>
                   </select>
                   <v-icon size="16" class="select-chevron">mdi-chevron-down</v-icon>
                 </div>
 
-                <!-- Alerta si intentó enviar sin cambiar el estado -->
-                <div v-if="submitIntent && (!form.estado || (casoId && form.estado === estadoOriginal))" class="estado-requerido">
+                <!-- Alerta solo al crear un caso nuevo sin estado -->
+                <div v-if="submitIntent && !casoId && !form.estado" class="estado-requerido">
                   <v-icon size="13" color="#e53935">mdi-alert-circle</v-icon>
-                  {{ casoId ? 'Debes seleccionar un estado distinto al actual antes de guardar' : 'El estado es obligatorio' }}
+                  El estado es obligatorio
                 </div>
 
               </div>
@@ -610,7 +617,7 @@ const form = reactive({
   programa: '', etapa: '',
   // Comunes
   resultado: '', anoEducativo: '',
-  estado: ''          // siempre vacío — el usuario debe elegirlo explícitamente
+  estado: ''          // vacío por defecto; obligatorio solo al crear un caso nuevo
 })
 
 // ── Datos desde API ───────────────────────────────────────────────────────────
@@ -694,7 +701,7 @@ const cargarCaso = async (id) => {
     form.area                 = centro.area || ''
     form.sector               = centro.sector || ''
     estadoOriginal.value      = caso.estado || ''
-    form.estado               = ''    // el usuario debe actualizar el estado manualmente
+    form.estado               = caso.estado || ''   // precargado; cambiarlo es opcional
 
     // Load municipios for departamento selects and set values
     const deptNinaId    = deptNinaObj.id || ''
@@ -778,17 +785,11 @@ async function submitForm() {
   errores.value  = ''
   submitIntent.value = true
 
-  if (!form.estado) {
-    errores.value = casoId.value
-      ? 'Debes seleccionar el nuevo estado del caso antes de guardar'
-      : 'El estado del caso es obligatorio'
+  if (!casoId.value && !form.estado) {
+    errores.value = 'El estado del caso es obligatorio'
     return
   }
 
-  if (casoId.value && form.estado === estadoOriginal.value) {
-    errores.value = 'Debes cambiar el estado del caso antes de guardar'
-    return
-  }
   try {
     if (casoId.value) {
       // UPDATE existing case — sends full payload so all fields can be edited

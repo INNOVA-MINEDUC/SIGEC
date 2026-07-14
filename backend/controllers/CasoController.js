@@ -17,10 +17,10 @@ import { registrarAuditoria } from "../utils/auditoria.js";
 
 // Estados institucionales válidos para el campo CasoEmbarazo.estado
 export const ESTADOS_VALIDOS = [
-  'Verificados en el (SIRE)',
-  'sin verificar en el (SIRE)',
-  'Verificados en el sistema de quejas, comentarios o sugerencias',
-  'sin quejas',
+  'Verificados en el SIRE',
+  'sin Verificar en el SIRE',
+  'Verificados en el Sistema de Quejas, Comentarios o Sugerencias',
+  'sin Quejas',
 ]
 
 export const GenerarNumeroCaso = async (req, res) => {

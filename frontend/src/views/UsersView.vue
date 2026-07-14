@@ -67,8 +67,8 @@
                     </div>
                   </td>
                   <td>
-                    <span :class="['role-badge', 'role-' + (user.role?.name?.toLowerCase() || 'user')]">
-                      {{ user.role?.name === 'admin' ? 'Admin' : 'Usuario' }}
+                    <span :class="['role-badge', 'role-' + (user.role?.toLowerCase() || 'user')]">
+                      {{ ROLE_LABELS[user.role?.toLowerCase()] || 'Usuario' }}
                     </span>
                   </td>
                   <td>
@@ -183,6 +183,8 @@ const roles = [
   { title: 'Usuario', value: 'user' },
 ]
 
+const ROLE_LABELS = { admin: 'Admin', moderator: 'Moderador', user: 'Usuario' }
+
 const userStore = useUserStore()
 
 // ── State ──────────────────────────────────────────────
@@ -214,7 +216,7 @@ const filteredUsers = computed(() => {
   
   return usersList.filter(u => {
     const matchesSearch = (u.name?.toLowerCase().includes(s) || u.email?.toLowerCase().includes(s))
-    const matchesRole = !r || u.role?.name?.toLowerCase() === r
+    const matchesRole = !r || u.role?.toLowerCase() === r
     return matchesSearch && matchesRole
   })
 })
@@ -330,8 +332,9 @@ background: linear-gradient(to bottom,
 
 /* BADGES */
 .role-badge   { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 9999px; font-size: 11px; font-weight: 600; }
-.role-admin   { background-color: #10233f; color: #ffffff; }
-.role-user    { background-color: #f5f5f5; color: #6d6d6d; }
+.role-admin     { background-color: #10233f; color: #ffffff; }
+.role-moderator { background-color: #ff9797; color: #ffffff; }
+.role-user      { background-color: #f5f5f5; color: #6d6d6d; }
 
 .text-gray { color: #1a1a1a; font-size: 13px; font-weight: 500; }
 

@@ -1,85 +1,148 @@
-import Fuse from "fuse.js";
-import data from "./data.json" with { type: "json" };
+import Fuse from 'fuse.js'
+import { fileURLToPath } from 'url'
+import path from 'path'
+import { readFileSync } from 'fs'
+import Departamental from '../models/Departamental.js'
+import Departamento from '../models/Departamento.js'
+import Municipio from '../models/Municipio.js'
 
-function normalizar(texto = "") {
-    return texto
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .replace(/[^\w\s]/g, "")
-        .replace(/\s+/g, " ")
-        .trim()
-        .toLowerCase();
-}
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
-/**
- * Normalizamos todo el catálogo una sola vez
- */
-const catalogo = data.map(item => ({
-    ...item,
+const normalizar = (texto) =>
+  String(texto ?? '')
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^\w\s]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase()
 
-    // Nombre original
-    nombreOriginal: item.nombre,
-    departamentoOriginal: item.departamento,
+// Catálogo de alias (apodos/abreviaturas como "sn"/"sta") curado a mano,
+// usado únicamente para enriquecer la búsqueda difusa de municipios.
+const aliasPorNombre = new Map(
+  JSON.parse(readFileSync(path.resolve(__dirname, './data.json'), 'utf-8'))
+    .map(item => [normalizar(item.nombre), (item.alias ?? []).map(normalizar)])
+)
 
-    // Nombre normalizado
-    nombre: normalizar(item.nombre),
+// El departamento tiene pocos candidatos (22) y a veces viene como nombre de
+// oficina ("Guatemala Norte") en vez del nombre puro: umbral más permisivo.
+// El municipio tiene 340 candidatos a nivel nacional (alto riesgo de choques
+// entre nombres parecidos de distintos departamentos): umbral más estricto.
+const FUSE_OPTIONS_DEPTO = { threshold: 0.4, includeScore: true, ignoreLocation: true }
+const FUSE_OPTIONS_MUNICIPIO = { threshold: 0.3, includeScore: true, ignoreLocation: true }
 
-    // Alias normalizados
-    alias: (item.alias ?? []).map(normalizar),
+// Score máximo aceptable para tomar el mejor candidato como válido.
+// Por encima de este valor se prefiere dejar el campo sin resolver
+// (en vez de asignar una ubicación incorrecta con baja confianza).
+const SCORE_MAX_ACEPTABLE = 0.5
 
-    // Departamento normalizado
-    departamento: normalizar(item.departamento)
-}));
+// Singleton: se inicializa solo una vez por proceso
+let fuseDepto = null
+let fuseMunicipios  = null   // Fuse GLOBAL: todos los municipios del país, sin filtrar por departamento
+let departamentalPorDepto = null // Map<departamento_id, departamental_id>
 
-/**
- * Fuse únicamente para municipios
- */
-const fuseMunicipios = new Fuse(catalogo, {
-    keys: [
-        "nombre",
-        "alias"
-    ],
-    threshold: 0.30,
-    includeScore: true,
-    ignoreLocation: true
-});
+async function init() {
+  if (fuseDepto) return
 
-/**
- * Busca un municipio y devuelve también su departamento
- */
-export function buscarMunicipio(texto) {
+  const departamentales = await Departamental.findAll({
+    include: [{ model: Departamento, as: 'departamento' }],
+  })
 
-    const busqueda = normalizar(texto);
+  const deptoEntries = departamentales
+    .filter(d => d.departamento)
+    .map(d => ({
+      nombre:           d.departamento.nombre,
+      nombreBusqueda:   normalizar(d.departamento.nombre),
+      departamental_id: d.id,
+      departamento_id:  d.departamento_id,
+    }))
 
-    const resultado = fuseMunicipios.search(busqueda);
+  fuseDepto = new Fuse(deptoEntries, { keys: ['nombreBusqueda'], ...FUSE_OPTIONS_DEPTO })
 
-    if (!resultado.length) {
-        return null;
+  departamentalPorDepto = new Map()
+  for (const d of deptoEntries) {
+    if (!departamentalPorDepto.has(d.departamento_id)) {
+      departamentalPorDepto.set(d.departamento_id, d.departamental_id)
     }
+  }
 
-    const municipio = resultado[0].item;
+  // Índice ÚNICO y GLOBAL de municipios: no se restringe por departamento,
+  // porque el departamento que trae el Excel puede venir mal y no debe
+  // impedir que un municipio bien escrito (o con alias conocido) se resuelva.
+  //
+  // Cada nombre/alias se agrega como una FILA independiente (comparación
+  // 1 a 1 contra el texto buscado) en vez de meter los alias en un arreglo
+  // dentro de un mismo campo: si se usa un campo tipo arreglo, Fuse combina
+  // los puntajes de todas sus cadenas, y un municipio con muchos alias
+  // termina "ganando" solo por tener más oportunidades de calzar por azar,
+  // sin que ninguna sea realmente una buena coincidencia.
+  const municipiosList = await Municipio.findAll({
+    attributes: ['id', 'nombre', 'departamento_id'],
+  })
 
-    return {
-        id: municipio.id,
-        municipio: municipio.nombreOriginal,
-        departamento: municipio.departamentoOriginal,
-        score: resultado[0].score
-    };
+  const filasMunicipios = []
+  for (const m of municipiosList) {
+    const nombreBusqueda = normalizar(m.nombre)
+    const base = { nombre: m.nombre, municipio_id: m.id, departamento_id: m.departamento_id }
+    filasMunicipios.push({ ...base, texto: nombreBusqueda })
+    for (const alias of aliasPorNombre.get(nombreBusqueda) ?? []) {
+      if (alias && alias !== nombreBusqueda) filasMunicipios.push({ ...base, texto: alias })
+    }
+  }
+
+  fuseMunicipios = new Fuse(filasMunicipios, { keys: ['texto'], ...FUSE_OPTIONS_MUNICIPIO })
 }
 
+// Devuelve el mejor resultado de una búsqueda Fuse, o null si no hay ninguno
+// con score suficientemente confiable (score más bajo = mejor coincidencia).
+const mejorCandidato = (resultados) => {
+  if (!resultados.length) return null
+  const mejor = resultados[0]
+  if (typeof mejor.score === 'number' && mejor.score > SCORE_MAX_ACEPTABLE) return null
+  return mejor.item
+}
 
-/* ===========================
-        PRUEBAS
-=========================== */
+/**
+ * Valida y resuelve departamento + municipio usando búsqueda difusa contra la BD.
+ *
+ * El municipio se busca primero en un índice GLOBAL (todos los municipios del
+ * país, con alias), sin importar qué departamento venga en el Excel. Si el
+ * municipio resuelve con confianza, el departamento se deriva de ESE municipio
+ * (corrigiendo el departamento del Excel si no coincide). Solo si el municipio
+ * no se puede determinar se recurre al departamento tal como viene escrito.
+ *
+ * @param {string|null} departamentoNombre  - Nombre tal como viene en el Excel
+ * @param {string|null} municipioNombre     - Nombre tal como viene en el Excel
+ * @returns {{ departamental_id, departamento_id, municipio_id }}
+ */
+export async function validarUbicacion(departamentoNombre, municipioNombre) {
+  await init()
 
-console.log(buscarMunicipio("coban"));
+  // 1. Intentar resolver el municipio en el catálogo global (con alias)
+  if (municipioNombre) {
+    const municipio = mejorCandidato(fuseMunicipios.search(normalizar(municipioNombre)))
+    if (municipio) {
+      return {
+        departamental_id: departamentalPorDepto.get(municipio.departamento_id) ?? null,
+        departamento_id:  municipio.departamento_id,
+        municipio_id:     municipio.municipio_id,
+      }
+    }
+  }
 
-console.log(buscarMunicipio("Cobán"));
+  // 2. El municipio no resolvió (o no vino) — recurrir al departamento del Excel
+  if (!departamentoNombre) {
+    return { departamental_id: null, departamento_id: null, municipio_id: null }
+  }
 
-console.log(buscarMunicipio("olapas"));
+  const depto = mejorCandidato(fuseDepto.search(normalizar(departamentoNombre)))
+  if (!depto) {
+    return { departamental_id: null, departamento_id: null, municipio_id: null }
+  }
 
-console.log(buscarMunicipio("San Jose Pinula"));
-
-console.log(buscarMunicipio("san jose pínula"));
-
-console.log(buscarMunicipio("Mixco"));
+  return {
+    departamental_id: depto.departamental_id,
+    departamento_id:  depto.departamento_id,
+    municipio_id:     null,
+  }
+}

@@ -116,7 +116,9 @@
             "santa maría cahabón",
             "santa maria cahabon",
             "sta maría cahabón",
-            "sta maria cahabon"
+            "sta maria cahabon",
+            "cahabón",
+            "cahabon"
           ]
         },
         {
@@ -169,6 +171,17 @@
             "santa catalina la tinta",
             "sta catalina la tinta"
           ]
+        },
+        {
+          "id": 332,
+          "nombre": "RAXRUHÁ",
+          "nombreCorregido": "raxruhá",
+          "departamentoId": 1,
+          "alias": [
+            "raxruhá",
+            "raxruha"
+          ],
+          "municipioApi": "Raxruhá"
         }
       ],
       "alias": [
@@ -256,7 +269,8 @@
           "departamentoId": 2,
           "alias": [
             "santa cruz el chol",
-            "sta cruz el chol"
+            "sta cruz el chol",
+            "el chol"
           ]
         }
       ],
@@ -544,7 +558,9 @@
           "departamentoId": 4,
           "alias": [
             "san juan ermita",
-            "sn juan ermita"
+            "sn juan ermita",
+            "san juan la ermita",
+            "sn juan la ermita"
           ]
         }
       ],
@@ -774,6 +790,16 @@
           "alias": [
             "tiquisate"
           ]
+        },
+        {
+          "id": 336,
+          "nombre": "SIPACATE",
+          "nombreCorregido": "sipacate",
+          "departamentoId": 6,
+          "alias": [
+            "sipacate"
+          ],
+          "municipioApi": "Sipacate"
         }
       ],
       "alias": [
@@ -1231,7 +1257,8 @@
           "departamentoId": 8,
           "alias": [
             "santa cruz barillas",
-            "sta cruz barillas"
+            "sta cruz barillas",
+            "barillas"
           ]
         },
         {
@@ -1259,7 +1286,8 @@
           "nombreCorregido": "soloma",
           "departamentoId": 8,
           "alias": [
-            "soloma"
+            "soloma",
+            "san pedro soloma"
           ]
         },
         {
@@ -1291,6 +1319,17 @@
             "unión cantinil",
             "union cantinil"
           ]
+        },
+        {
+          "id": 337,
+          "nombre": "PETATÁN",
+          "nombreCorregido": "petatán",
+          "departamentoId": 8,
+          "alias": [
+            "petatán",
+            "petatan"
+          ],
+          "municipioApi": "Petatán"
         }
       ],
       "alias": [
@@ -1345,16 +1384,6 @@
           "departamentoId": 9,
           "alias": [
             "puerto barrios"
-          ]
-        },
-        {
-          "id": 125,
-          "nombre": "SANLUIS",
-          "nombreCorregido": "san luis",
-          "departamentoId": 9,
-          "alias": [
-            "san luis",
-            "sn luis"
           ]
         }
       ],
@@ -1743,6 +1772,16 @@
           "alias": [
             "el chal"
           ]
+        },
+        {
+          "id": 335,
+          "nombre": "LASCRUCES",
+          "nombreCorregido": "las cruces",
+          "departamentoId": 12,
+          "alias": [
+            "las cruces"
+          ],
+          "municipioApi": "Las Cruces"
         }
       ],
       "alias": [
@@ -1883,7 +1922,8 @@
           "nombreCorregido": "ostuncalco",
           "departamentoId": 13,
           "alias": [
-            "ostuncalco"
+            "ostuncalco",
+            "san juan ostuncalco"
           ]
         },
         {
@@ -2273,7 +2313,8 @@
           "departamentoId": 15,
           "alias": [
             "san felipe",
-            "sn felipe"
+            "sn felipe",
+            "san felipe retalhuleu"
           ]
         },
         {
@@ -2780,6 +2821,16 @@
           "alias": [
             "tejutla"
           ]
+        },
+        {
+          "id": 333,
+          "nombre": "LABLANCA",
+          "nombreCorregido": "la blanca",
+          "departamentoId": 17,
+          "alias": [
+            "la blanca"
+          ],
+          "municipioApi": "La Blanca"
         }
       ],
       "alias": [
@@ -3359,6 +3410,19 @@
           "alias": [
             "zunilito"
           ]
+        },
+        {
+          "id": 338,
+          "nombre": "SANJOSÉLAMÁQUINA",
+          "nombreCorregido": "san josé la máquina",
+          "departamentoId": 20,
+          "alias": [
+            "san josé la máquina",
+            "san jose la maquina",
+            "la máquina",
+            "la maquina"
+          ],
+          "municipioApi": "La Máquina"
         }
       ],
       "alias": [
@@ -3399,7 +3463,8 @@
           "departamentoId": 21,
           "alias": [
             "san bartolo",
-            "sn bartolo"
+            "sn bartolo",
+            "san bartolo aguas calientes"
           ]
         },
         {
@@ -3566,6 +3631,16 @@
           "alias": [
             "zacapa"
           ]
+        },
+        {
+          "id": 334,
+          "nombre": "SANJORGE",
+          "nombreCorregido": "san jorge",
+          "departamentoId": 22,
+          "alias": [
+            "san jorge"
+          ],
+          "municipioApi": "San Jorge"
         }
       ],
       "alias": [

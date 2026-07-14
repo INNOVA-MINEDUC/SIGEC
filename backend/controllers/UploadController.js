@@ -170,7 +170,8 @@ export const CargaMasiva = async (req, res) => {
     const totalFilas = rawRows.length
     let nuevos      = 0
     let duplicados  = 0
-    const omitidos      = []
+    const omitidos      = []   // TODAS las filas no insertadas, con el motivo exacto
+    const sinUbicacion  = []   // filas SÍ insertadas pero sin departamento/municipio resuelto
     const erroresMuestra = []
 
     // 8. Crear registro de carga ANTES del loop
@@ -197,7 +198,7 @@ export const CargaMasiva = async (req, res) => {
       // Sin nombre: omitir
       if (!nombreCompleto) {
         duplicados++
-        if (omitidos.length < 20) omitidos.push(`SIN_NOMBRE | fila ${filaNum}`)
+        omitidos.push({ fila: filaNum, tipo: 'SIN_NOMBRE', motivo: 'Fila sin nombre completo', nombre: null, cui: cuiRaw })
         console.warn(`  [OMITIDA fila ${filaNum}] Sin nombre completo`)
         continue
       }
@@ -205,13 +206,13 @@ export const CargaMasiva = async (req, res) => {
       // Deduplicar por CUI (si existe) o por nombre
       if (cuiRaw && existingCuis.has(cuiRaw)) {
         duplicados++
-        if (omitidos.length < 20) omitidos.push(`DUPLICADO_CUI | fila ${filaNum} | CUI: ${cuiRaw}`)
+        omitidos.push({ fila: filaNum, tipo: 'DUPLICADO_CUI', motivo: `CUI "${cuiRaw}" ya existe en la BD`, nombre: nombreCompleto, cui: cuiRaw })
         console.warn(`  [OMITIDA fila ${filaNum}] Duplicado por CUI "${cuiRaw}"`)
         continue
       }
       if (!cuiRaw && existingNombres.has(normalizar(nombreCompleto))) {
         duplicados++
-        if (omitidos.length < 20) omitidos.push(`DUPLICADO_NOMBRE | fila ${filaNum} | nombre: "${nombreCompleto}"`)
+        omitidos.push({ fila: filaNum, tipo: 'DUPLICADO_NOMBRE', motivo: `Nombre "${nombreCompleto}" ya existe en la BD`, nombre: nombreCompleto, cui: cuiRaw })
         console.warn(`  [OMITIDA fila ${filaNum}] Duplicado por nombre "${nombreCompleto}"`)
         continue
       }
@@ -286,16 +287,23 @@ export const CargaMasiva = async (req, res) => {
         const tag = cuiFinal ?? 'sin CUI'
         console.log(`  [OK fila ${filaNum}] Caso ${numeroCaso} — "${nombreCompleto}" (${tag}) nivel="${nivelEducativo ?? '-'}" mun_id=${municipio_id ?? 'null'}`)
 
+        if (!departamental_id || !municipio_id) {
+          const problema = [
+            !departamental_id ? `Departamento "${deptoNombre ?? '(vacío)'}" no resolvió en la BD` : null,
+            !municipio_id     ? `Municipio "${municipioNombre ?? '(vacío)'}" no resolvió en la BD`   : null,
+          ].filter(Boolean).join(' | ')
+          sinUbicacion.push({ fila: filaNum, nombre: nombreCompleto, cui: cuiFinal, depto: deptoNombre, municipio: municipioNombre, problema })
+          console.warn(`  [SIN UBICACIÓN fila ${filaNum}] "${nombreCompleto}" | ${problema}`)
+        }
+
       } catch (err) {
         await t.rollback()
-        const razon = err.name === 'SequelizeUniqueConstraintError'
-          ? `UNIQUE_CONSTRAINT | fila ${filaNum} | CUI: ${cuiFinal} | nombre: "${nombreCompleto}"`
-          : `DB_ERROR | fila ${filaNum} | ${err.message}`
-        if (omitidos.length < 20) omitidos.push(razon)
         duplicados++
         if (err.name === 'SequelizeUniqueConstraintError') {
+          omitidos.push({ fila: filaNum, tipo: 'UNIQUE_CONSTRAINT', motivo: 'Restricción única en BD (CUI o nombre ya registrado)', nombre: nombreCompleto, cui: cuiFinal })
           console.warn(`  [OMITIDA fila ${filaNum}] Restricción única — "${nombreCompleto}" (${cuiFinal})`)
         } else {
+          omitidos.push({ fila: filaNum, tipo: 'DB_ERROR', motivo: err.message, nombre: nombreCompleto, cui: cuiFinal })
           console.error(`  [ERROR fila ${filaNum}] ${err.message}`)
           if (erroresMuestra.length < 5) erroresMuestra.push(`[fila ${filaNum}] ${err.message}`)
         }
@@ -306,7 +314,15 @@ export const CargaMasiva = async (req, res) => {
     console.log(`   Total filas:  ${totalFilas}`)
     console.log(`   Nuevos:       ${nuevos}`)
     console.log(`   Duplicados:   ${duplicados}`)
-    if (erroresMuestra.length) console.error('   Errores BD:', erroresMuestra)
+
+    if (omitidos.length) {
+      console.log(`\n   Filas NO ingresadas (${omitidos.length}):`)
+      console.table(omitidos.map(o => ({ fila: o.fila, tipo: o.tipo, nombre: o.nombre, cui: o.cui, motivo: o.motivo })))
+    }
+    if (sinUbicacion.length) {
+      console.log(`\n   Filas ingresadas SIN ubicación resuelta (${sinUbicacion.length}):`)
+      console.table(sinUbicacion.map(u => ({ fila: u.fila, nombre: u.nombre, cui: u.cui, depto: u.depto, municipio: u.municipio, problema: u.problema })))
+    }
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n')
 
     // 10. Actualizar conteos finales
@@ -333,7 +349,8 @@ export const CargaMasiva = async (req, res) => {
       _debug: {
         fila_cabecera:       headerRowNum,
         columnas_detectadas: colsDetectadas,
-        omitidos_muestra:    omitidos,
+        omitidos_muestra:    omitidos.slice(0, 20),
+        sin_ubicacion_muestra: sinUbicacion.slice(0, 20),
         errores_muestra:     erroresMuestra,
       },
     })

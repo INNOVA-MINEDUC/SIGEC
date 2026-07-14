@@ -48,13 +48,13 @@
 
       <div class="sec-item">
         <span class="sec-val">{{ displayKpis.verificadosSire.toLocaleString('es-GT') }}</span>
-        <span class="sec-label">Verificados en el (SIRE)</span>
+        <span class="sec-label">Verificados en el SIRE</span>
         <span class="sec-module">Cantidad de casos cuya información ha sido validada y confirmada en el sistema de registros educativos (SIRE).</span>
       </div>
 
       <div class="sec-item">
         <span class="sec-val sec-val--money">{{ displayKpis.sinVerificarSire.toLocaleString('es-GT') }}</span>
-        <span class="sec-label">Sin verificar en el (SIRE)</span>
+        <span class="sec-label">Sin verificar en el SIRE</span>
         <span class="sec-module">Cantidad de casos que aún no han sido localizados o validados dentro del sistema de registros educativos.</span>
       </div>
 
@@ -288,10 +288,10 @@ const loading               = ref(false)
 const ITEMS_PER_PAGE_OPTIONS = [5, 10, 15, 20]
 
 const ESTADOS_CASO = [
-  'Verificados en el (SIRE)',
-  'Sin verificar en el (SIRE)',
-  'Verificados en el sistema de quejas, comentarios o sugerencias',
-  'Sin quejas',
+  'Verificados en el SIRE',
+  'sin Verificar en el SIRE',
+  'Verificados en el Sistema de Quejas, Comentarios o Sugerencias',
+  'sin Quejas',
 ]
 
 // ── Helpers de estilo ──────────────────────────────────────────────────────────
@@ -356,10 +356,10 @@ onMounted(() => Promise.all([cargarDepartamentales(), fetchCasos(1)]))
 const displayKpis = computed(() => ({
   estudiantes:         serverTotal.value,
   mayoresOSinRegistro: serverStats.value.mayoresOSinRegistro ?? 0,
-  verificadosSire:     serverStats.value['Verificados en el (SIRE)'] ?? 0,
-  sinVerificarSire:    serverStats.value['Sin verificar en el (SIRE)'] ?? 0,
-  verificadosQuejas:   serverStats.value['Verificados en el sistema de quejas, comentarios o sugerencias'] ?? 0,
-  sinQuejas:           serverStats.value['Sin quejas'] ?? 0,
+  verificadosSire:     serverStats.value['Verificados en el SIRE'] ?? 0,
+  sinVerificarSire:    serverStats.value['sin Verificar en el SIRE'] ?? 0,
+  verificadosQuejas:   serverStats.value['Verificados en el Sistema de Quejas, Comentarios o Sugerencias'] ?? 0,
+  sinQuejas:           serverStats.value['sin Quejas'] ?? 0,
 }))
 
 // ── La tabla renderiza exactamente lo que devuelve el servidor ─────────────────
