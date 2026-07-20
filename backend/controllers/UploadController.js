@@ -7,6 +7,7 @@ import CargaArchivo from '../models/CargaArchivo.js'
 import User from '../models/User.js'
 import { registrarAuditoria } from '../utils/auditoria.js'
 import { validarUbicacion } from '../helpers/validarUbicacion.js'
+import { normalizarNivel } from '../helpers/nivelEducativo.js'
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -61,17 +62,9 @@ const parseDate = (val) => {
   return null
 }
 
-// Mapea el valor de Escolaridad del archivo a los niveles del sistema
-const mapEscolaridad = (raw) => {
-  if (!raw) return null
-  const s = normalizar(raw)
-  if (s.includes('preprimaria'))                             return 'Preprimaria'
-  if (s.includes('primaria'))                                return 'Primaria'
-  if (s.includes('diversificado'))                          return 'Media (Diversificado)'
-  if (s.includes('basico') || s.includes('medio') ||
-      s.includes('ciclo basico'))                           return 'Media (Básico)'
-  return clean(raw) // pasar el valor original si no coincide con ningún patrón
-}
+// Mapea el valor de Escolaridad del archivo al vocabulario único del sistema
+// (helpers/nivelEducativo.js), compartido con la carga masiva y el dashboard.
+const mapEscolaridad = (raw) => normalizarNivel(raw)
 
 // ── Carga Masiva ───────────────────────────────────────────────────────────────
 

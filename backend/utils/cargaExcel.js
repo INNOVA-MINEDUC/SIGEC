@@ -8,6 +8,7 @@ import HistorialEducativo from '../models/HistorialEducativo.js'
 import CentroEducativo from '../models/CentroEducativo.js'
 import CargaArchivo from '../models/CargaArchivo.js'
 import { validarUbicacion } from '../helpers/validarUbicacion.js'
+import { normalizarNivel } from '../helpers/nivelEducativo.js'
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -58,15 +59,11 @@ export const parseDate = (val) => {
   return null
 }
 
-export const mapEscolaridad = (raw) => {
-  if (!raw) return null
-  const s = normalizar(raw)
-  if (s.includes('preprimaria'))   return 'Preprimaria'
-  if (s.includes('primaria'))      return 'Primaria'
-  if (s.includes('diversificado')) return 'Media (Diversificado)'
-  if (s.includes('basico') || s.includes('medio') || s.includes('ciclo basico')) return 'Media (Básico)'
-  return clean(raw)
-}
+// El vocabulario de nivel educativo vive en helpers/nivelEducativo.js para que
+// la carga masiva, el registro manual y los filtros del dashboard usen los
+// mismos valores. Devuelve null cuando el texto no corresponde a ningún nivel
+// conocido (antes se guardaba el texto crudo, generando valores como "PRMARIA").
+export const mapEscolaridad = (raw) => normalizarNivel(raw)
 
 export const COLS_OBLIGATORIAS = [
   { patron: 'nombre completo', label: 'Nombre completo' },
@@ -422,6 +419,7 @@ export async function procesarExcelCasos(buffer, {
         edad,
         direccion,
         municipio_id,
+        departamento_id,
         pueblo,
         comunidad_linguistica,
       }, { transaction: t })
@@ -473,7 +471,11 @@ export async function procesarExcelCasos(buffer, {
         no_notificacion:        noNotificacion,
         institucion,
         queja,
-        estado:          'sin Verificar en el SIRE',
+        // Los casos que traen "No. de Queja" en el archivo se marcan dentro del
+        // Sistema de Quejas; el resto se dan por verificados en el SIRE.
+        estado:          queja
+          ? 'Verificados en el Sistema de Quejas, Comentarios o Sugerencias'
+          : 'Verificados en el SIRE',
         departamental_id,
       }, { transaction: t })
 

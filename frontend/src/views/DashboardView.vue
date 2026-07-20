@@ -364,21 +364,23 @@ const GRADOS = [
   { id: 5, nombre: "5to" },
   { id: 6, nombre: "6to" }
 ]
+// El id es el valor canónico guardado en historial_educativo.nivel — el mismo
+// vocabulario que usa la carga masiva. Ver backend/helpers/nivelEducativo.js
 const NIVELES = [
   {
-    id: "preprimaria",
+    id: "Preprimaria",
     nombre: "Nivel de Educación Preprimaria",
   },
   {
-    id: "primaria",
+    id: "Primaria",
     nombre: "Nivel de Educación Primaria",
   },
   {
-    id: "Medio (Básico)",
+    id: "Media (Básico)",
     nombre: "Nivel de Educación Media (Ciclo Básico)",
   },
   {
-    id: "diversificado",
+    id: "Media (Diversificado)",
     nombre: "Nivel de Educación Media (Ciclo Diversificado)",
   },
 ];

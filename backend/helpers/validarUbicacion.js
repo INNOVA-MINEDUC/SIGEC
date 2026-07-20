@@ -36,9 +36,23 @@ const FUSE_OPTIONS_MUNICIPIO = { threshold: 0.3, includeScore: true, ignoreLocat
 // (en vez de asignar una ubicación incorrecta con baja confianza).
 const SCORE_MAX_ACEPTABLE = 0.5
 
+// La capital viene escrita de muchas formas ("Ciudad Capital", "Ciudad de
+// Guatemala", incluso el typo "Ciudad Capita") y sus centros educativos se
+// registran por zona ("Zona 1".."Zona 25"). Todas corresponden al municipio y
+// departamento de Guatemala.
+const CAPITAL_RE = /ciudad\s+capit|ciudad\s+de\s+guatemala|guatemala\s+ciudad/
+const ZONA_RE    = /^zona\s*\d+/
+
+// Longitud mínima del nombre de un municipio para el fallback por contención
+// (evita casar nombres cortos como "jocotan" por accidente dentro de otro texto).
+const MIN_LEN_CONTENCION = 6
+
+const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
 // Singleton: se inicializa solo una vez por proceso
 let fuseDepto = null
 let fuseMunicipios  = null   // Fuse GLOBAL: todos los municipios del país, sin filtrar por departamento
+let municipiosBase = null    // Lista base de municipios (sin alias) para el fallback por contención
 let departamentalPorDepto = null // Map<departamento_id, departamental_id>
 
 async function init() {
@@ -81,16 +95,36 @@ async function init() {
   })
 
   const filasMunicipios = []
+  municipiosBase = []
   for (const m of municipiosList) {
     const nombreBusqueda = normalizar(m.nombre)
     const base = { nombre: m.nombre, municipio_id: m.id, departamento_id: m.departamento_id }
     filasMunicipios.push({ ...base, texto: nombreBusqueda })
+    if (nombreBusqueda.length >= MIN_LEN_CONTENCION) {
+      municipiosBase.push({ ...base, texto: nombreBusqueda })
+    }
     for (const alias of aliasPorNombre.get(nombreBusqueda) ?? []) {
       if (alias && alias !== nombreBusqueda) filasMunicipios.push({ ...base, texto: alias })
     }
   }
 
   fuseMunicipios = new Fuse(filasMunicipios, { keys: ['texto'], ...FUSE_OPTIONS_MUNICIPIO })
+}
+
+// Fallback por contención: cuando la búsqueda difusa no resuelve, se busca un
+// municipio cuyo nombre completo aparezca como palabra dentro del texto (p. ej.
+// "Chichicastenango" dentro de "Santo Tomas Chichicastenango"). Se exige límite
+// de palabra y se prefiere el nombre más largo (el más específico).
+const municipioPorContencion = (textoNorm) => {
+  if (!textoNorm) return null
+  let mejor = null
+  for (const m of municipiosBase) {
+    const re = new RegExp(`(^|\\s)${escapeRegex(m.texto)}(\\s|$)`)
+    if (re.test(textoNorm) && (!mejor || m.texto.length > mejor.texto.length)) {
+      mejor = m
+    }
+  }
+  return mejor
 }
 
 // Devuelve el mejor resultado de una búsqueda Fuse, o null si no hay ninguno
@@ -118,9 +152,22 @@ const mejorCandidato = (resultados) => {
 export async function validarUbicacion(departamentoNombre, municipioNombre) {
   await init()
 
-  // 1. Intentar resolver el municipio en el catálogo global (con alias)
-  if (municipioNombre) {
-    const municipio = mejorCandidato(fuseMunicipios.search(normalizar(municipioNombre)))
+  let depNorm = normalizar(departamentoNombre)
+  let munNorm = normalizar(municipioNombre)
+
+  // 0. Capital: "Ciudad Capital"/"Ciudad de Guatemala" y las zonas de la ciudad
+  //    ("Zona 3") corresponden al municipio y departamento de Guatemala.
+  const esCapital = CAPITAL_RE.test(depNorm) || CAPITAL_RE.test(munNorm)
+  const esZonaCapital = ZONA_RE.test(munNorm) && (esCapital || depNorm.includes('guatemala'))
+  if (esCapital || esZonaCapital) {
+    depNorm = 'guatemala'
+    munNorm = 'guatemala'
+  }
+
+  // 1. Intentar resolver el municipio en el catálogo global (con alias), y si la
+  //    búsqueda difusa no basta, por contención de nombre dentro del texto.
+  if (munNorm) {
+    const municipio = mejorCandidato(fuseMunicipios.search(munNorm)) || municipioPorContencion(munNorm)
     if (municipio) {
       return {
         departamental_id: departamentalPorDepto.get(municipio.departamento_id) ?? null,
@@ -130,12 +177,12 @@ export async function validarUbicacion(departamentoNombre, municipioNombre) {
     }
   }
 
-  // 2. El municipio no resolvió (o no vino) — recurrir al departamento del Excel
-  if (!departamentoNombre) {
+  // 2. El municipio no resolvió (o no vino) — recurrir al departamento
+  if (!depNorm) {
     return { departamental_id: null, departamento_id: null, municipio_id: null }
   }
 
-  const depto = mejorCandidato(fuseDepto.search(normalizar(departamentoNombre)))
+  const depto = mejorCandidato(fuseDepto.search(depNorm))
   if (!depto) {
     return { departamental_id: null, departamento_id: null, municipio_id: null }
   }

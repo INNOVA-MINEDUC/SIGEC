@@ -15,11 +15,7 @@ const DIR_REPORTE = path.dirname(RUTA_EXCEL)
 
 export default {
   async up(_queryInterface, _Sequelize) {
-    // Deshabilitado: la carga inicial vía Excel ya no debe ejecutarse.
-
-    return 
-    const DESHABILITADO = true
-    if (DESHABILITADO) return
+    // Carga inicial de casos desde el Excel semilla (initial_data2.xlsx).
 
     if (!fs.existsSync(RUTA_EXCEL)) {
       console.warn(`\n[seeder] No se encontró el archivo "${RUTA_EXCEL}".`)

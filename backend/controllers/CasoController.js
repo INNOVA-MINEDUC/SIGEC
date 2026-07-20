@@ -14,6 +14,7 @@ import CentroEducativo from "../models/CentroEducativo.js";
 
 import CargaArchivo from "../models/CargaArchivo.js";
 import { registrarAuditoria } from "../utils/auditoria.js";
+import { normalizarNivel, NIVELES_EDUCATIVOS } from "../helpers/nivelEducativo.js";
 
 // Estados institucionales válidos para el campo CasoEmbarazo.estado
 export const ESTADOS_VALIDOS = [
@@ -22,6 +23,21 @@ export const ESTADOS_VALIDOS = [
   'Verificados en el Sistema de Quejas, Comentarios o Sugerencias',
   'sin Quejas',
 ]
+
+// Resuelve el departamento de residencia de la niña: usa el que venga explícito
+// en el payload y, si no, lo deriva del municipio seleccionado. Devuelve null si
+// no hay forma de determinarlo.
+async function resolverDepartamentoNina(datos_nina = {}, transaction = null) {
+  if (datos_nina.departamento_id) return Number(datos_nina.departamento_id)
+  if (datos_nina.municipio_id) {
+    const mun = await Municipio.findByPk(datos_nina.municipio_id, {
+      attributes: ['departamento_id'],
+      transaction,
+    })
+    return mun?.departamento_id ?? null
+  }
+  return null
+}
 
 export const GenerarNumeroCaso = async (req, res) => {
   try {
@@ -72,6 +88,14 @@ export const ObtenerCasos = async (req, res) => {
                 }
 
               ]
+
+            },
+
+            {
+
+              model: Departamento,
+
+              as: 'departamento'
 
             },
 
@@ -175,6 +199,7 @@ const{
 departamental_id,
 estado,
 sinQueja,
+queja,        // 'con' | 'sin' | null  → filtra por presencia de número de queja
 busqueda,
 page    = 1,
 limit   = 10,
@@ -205,8 +230,14 @@ if(estado && estado !== 'Todos'){
 /* condiciones extra con Op.and para poder combinar sinQueja + busqueda */
 const andConditions = []
 
-if(sinQueja===true || sinQueja==='true'){
+/* Sin queja: campo nulo o vacío (compatibilidad con el flag sinQueja) */
+if(queja==='sin' || sinQueja===true || sinQueja==='true'){
   andConditions.push({ [Op.or]: [{ queja: null }, { queja: '' }] })
+}
+
+/* Con queja: campo con valor (no nulo y no vacío) */
+if(queja==='con'){
+  andConditions.push({ [Op.and]: [ { queja: { [Op.ne]: null } }, { queja: { [Op.ne]: '' } } ] })
 }
 
 if(busqueda && busqueda.trim()){
@@ -249,6 +280,7 @@ const includeConfig = [
     include: [
       { model: Municipio, as: 'municipio', required: false,
         include: [{ model: Departamento, as: 'departamento', required: false }] },
+      { model: Departamento, as: 'departamento', required: false },
       { model: HistorialEducativo, as: 'historialEducativo',
         include: [{ model: CentroEducativo, as: 'centroEducativo',
           include: [{ model: Municipio, as: 'municipio' }] }] },
@@ -345,6 +377,21 @@ export const RegistrarCaso = async (req, res) => {
       return res.status(400).json({ success: false, message: `El estado del caso es obligatorio (${ESTADOS_VALIDOS.join(', ')})` })
     }
 
+    // Nivel educativo: se acepta cualquier variante conocida pero se guarda
+    // siempre el valor canónico. Si no corresponde a ningún nivel, se rechaza.
+    const nivelNormalizado = normalizarNivel(situacion_educativa?.nivel)
+    if (situacion_educativa?.nivel && !nivelNormalizado) {
+      await t.rollback()
+      return res.status(400).json({
+        success: false,
+        message: `Nivel educativo no válido: "${situacion_educativa.nivel}". Use uno de: ${NIVELES_EDUCATIVOS.join(', ')}`,
+      })
+    }
+
+    // Departamento de residencia: el que venga explícito, o el del municipio.
+    // Se conserva aunque no haya municipio, para no perder el departamento.
+    const departamentoIdNina = await resolverDepartamentoNina(datos_nina, t)
+
     // 1. Buscar o crear niña por CUI
     // findOrCreate por CUI cuando viene, o crear nuevo cuando CUI es nulo
     let nina
@@ -357,6 +404,7 @@ export const RegistrarCaso = async (req, res) => {
           edad:                  datos_nina.edad || null,
           direccion:             datos_nina.direccion || null,
           municipio_id:          datos_nina.municipio_id || null,
+          departamento_id:       departamentoIdNina,
           pueblo:                datos_nina.pueblo || null,
           comunidad_linguistica: datos_nina.comunidad_linguistica || null,
         },
@@ -370,6 +418,7 @@ export const RegistrarCaso = async (req, res) => {
         edad:                  datos_nina.edad || null,
         direccion:             datos_nina.direccion || null,
         municipio_id:          datos_nina.municipio_id || null,
+        departamento_id:       departamentoIdNina,
         pueblo:                datos_nina.pueblo || null,
         comunidad_linguistica: datos_nina.comunidad_linguistica || null,
       }, { transaction: t })
@@ -435,7 +484,7 @@ export const RegistrarCaso = async (req, res) => {
         status_actual:       se.status_actual || null,
         subsistema:          se.subsistema || null,
         grado:               se.grado || null,
-        nivel:               se.nivel || null,
+        nivel:               nivelNormalizado,
         programa:            se.programa || null,
         etapa:               se.etapa || null,
         resultado:           se.resultado || null,
@@ -500,6 +549,17 @@ export const ObtenerCasosFiltrados = async (req, res) => {
       area
     } = req.query;
 
+    // Validación del nivel educativo: se acepta cualquier variante conocida
+    // (acentos, mayúsculas, nombre largo oficial) y se compara ya normalizada
+    // contra lo guardado, para no depender de una coincidencia byte a byte.
+    const nivelFiltro = nivel ? normalizarNivel(nivel) : null
+    if (nivel && !nivelFiltro) {
+      return res.status(400).json({
+        success: false,
+        message: `Nivel educativo no válido: "${nivel}". Use uno de: ${NIVELES_EDUCATIVOS.join(', ')}`,
+      })
+    }
+
     const casos = await CasoEmbarazo.findAll({
       include: [
         {
@@ -515,6 +575,10 @@ export const ObtenerCasosFiltrados = async (req, res) => {
                   as: "departamento"
                 }
               ]
+            },
+            {
+              model: Departamento,
+              as: "departamento"
             },
             {
               model: HistorialEducativo,
@@ -566,10 +630,11 @@ export const ObtenerCasosFiltrados = async (req, res) => {
       // Departamento: revisar vía nina→municipio→departamento
       //               y también vía caso→departamental→departamento (casos de carga masiva)
       if (departamento) {
-        const filtro   = normD(departamento)
-        const porNina  = normD(departamentoNina?.nombre)
-        const porDepto = normD(caso.departamental?.departamento?.nombre)
-        if (porNina !== filtro && porDepto !== filtro) return false
+        const filtro    = normD(departamento)
+        const porNina   = normD(departamentoNina?.nombre)
+        const porNinaFb = normD(nina?.departamento?.nombre)   // fallback: departamento guardado en la niña
+        const porDepto  = normD(caso.departamental?.departamento?.nombre)
+        if (porNina !== filtro && porNinaFb !== filtro && porDepto !== filtro) return false
       }
 
       // Municipio: solo aplica si la niña tiene municipio registrado
@@ -606,8 +671,8 @@ export const ObtenerCasosFiltrados = async (req, res) => {
         if (!existeGrado) return false;
       }
 
-      if (nivel) {
-        const existeNivel = historial.some((h) => String(h.nivel) === String(nivel));
+      if (nivelFiltro) {
+        const existeNivel = historial.some((h) => normalizarNivel(h.nivel) === nivelFiltro);
         if (!existeNivel) return false;
       }
 
@@ -666,6 +731,7 @@ export const ObtenerCasoPorId = async (req, res) => {
               as: 'municipio',
               include: [{ model: Departamento, as: 'departamento' }]
             },
+            { model: Departamento, as: 'departamento' },
             {
               model: HistorialEducativo,
               as: 'historialEducativo',
@@ -708,6 +774,17 @@ export const ActualizarCaso = async (req, res) => {
       return res.status(400).json({ success: false, message: `Estado no válido: usar uno de: ${ESTADOS_VALIDOS.join(', ')}` })
     }
 
+    // Mismo criterio que al registrar: se normaliza al valor canónico y se
+    // rechaza cualquier nivel que no pertenezca al vocabulario del sistema.
+    const nivelNormalizado = normalizarNivel(situacion_educativa?.nivel)
+    if (situacion_educativa?.nivel && !nivelNormalizado) {
+      await t.rollback()
+      return res.status(400).json({
+        success: false,
+        message: `Nivel educativo no válido: "${situacion_educativa.nivel}". Use uno de: ${NIVELES_EDUCATIVOS.join(', ')}`,
+      })
+    }
+
     const caso = await CasoEmbarazo.findByPk(id, { transaction: t })
     if (!caso) {
       await t.rollback()
@@ -734,7 +811,12 @@ export const ActualizarCaso = async (req, res) => {
       if (datos_nina.fecha_nacimiento)               ninaUpd.fecha_nacimiento      = datos_nina.fecha_nacimiento
       if (datos_nina.edad !== undefined)             ninaUpd.edad                  = datos_nina.edad || null
       if (datos_nina.direccion !== undefined)        ninaUpd.direccion             = datos_nina.direccion || null
-      if (datos_nina.municipio_id !== undefined)          ninaUpd.municipio_id          = datos_nina.municipio_id || null
+      if (datos_nina.municipio_id !== undefined) {
+        ninaUpd.municipio_id    = datos_nina.municipio_id || null
+        ninaUpd.departamento_id = await resolverDepartamentoNina(datos_nina, t)
+      } else if (datos_nina.departamento_id !== undefined) {
+        ninaUpd.departamento_id = datos_nina.departamento_id || null
+      }
       if (datos_nina.pueblo !== undefined)                 ninaUpd.pueblo                = datos_nina.pueblo || null
       if (datos_nina.comunidad_linguistica !== undefined)  ninaUpd.comunidad_linguistica = datos_nina.comunidad_linguistica || null
       if (Object.keys(ninaUpd).length > 0) {
@@ -802,7 +884,7 @@ export const ActualizarCaso = async (req, res) => {
         status_actual:       se.status_actual   || null,
         subsistema:          se.subsistema      || null,
         grado:               se.grado           || null,
-        nivel:               se.nivel           || null,
+        nivel:               nivelNormalizado,
         programa:            se.programa        || null,
         etapa:               se.etapa           || null,
         resultado:           se.resultado       || null,

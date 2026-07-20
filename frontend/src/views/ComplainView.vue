@@ -287,7 +287,7 @@
                   <v-icon size="16" class="input-icon">mdi-podium</v-icon>
                   <select v-model="form.nivel" :class="{ 'empty-select': !form.nivel }">
                     <option value="" disabled selected>Nivel</option>
-                    <option v-for="n in NIVELES" :key="n" :value="n">{{ n }}</option>
+                    <option v-for="n in NIVELES" :key="n.valor" :value="n.valor">{{ n.label }}</option>
                   </select>
                   <v-icon size="16" class="select-chevron">mdi-chevron-down</v-icon>
                 </div>
@@ -521,11 +521,13 @@ const INSTITUCIONES  = ['Ministerio Público', 'Procuraduría General de la Naci
 const STATUS_SISTEMA = ['Inscrita', 'No inscrita', 'Retirada', 'Mayor de 14 años', 'No existe registro']
 const SUBSISTEMAS    = ['Subsistema Escolar', 'Subsistema Extraescolar']
 const GRADOS = ['1ro', '2do', '3ro', '4to', '5to', '6to']
+// Se guarda el valor canónico (igual que la carga masiva y el filtro del
+// dashboard) y se muestra la etiqueta larga institucional.
 const NIVELES = [
-  'Nivel de Educación Preprimaria',
-  'Nivel de Educación Primaria',
-  'Nivel de Educación Media (Ciclo Básico)',
-  'Nivel de Educación (Ciclo Diversificado)',
+  { valor: 'Preprimaria',           label: 'Nivel de Educación Preprimaria' },
+  { valor: 'Primaria',              label: 'Nivel de Educación Primaria' },
+  { valor: 'Media (Básico)',        label: 'Nivel de Educación Media (Ciclo Básico)' },
+  { valor: 'Media (Diversificado)', label: 'Nivel de Educación Media (Ciclo Diversificado)' },
 ]
 const RESULTADOS = ['Promovido', 'No promovido', 'Retirado', 'Cursando actualmente']
 const ETAPAS     = ['Etapa I', 'Etapa II', 'Etapa III', 'Etapa IV']
@@ -577,16 +579,17 @@ const matchCanonical = (valor, opciones) => {
   return opciones.find(op => normalizarTexto(op) === objetivo) || valor
 }
 
-// El nivel educativo en cargas antiguas viene en formato corto ("Primaria",
-// "Media (Básico)") en vez del texto largo actual ("Nivel de Educación Primaria")
+// Lleva cualquier variante de nivel (texto largo, corto o con errores) al valor
+// canónico que guarda la BD. Mismo criterio que backend/helpers/nivelEducativo.js
 const normalizarNivel = (valor) => {
   if (!valor) return ''
   const n = normalizarTexto(valor)
-  if (n.includes('preprimaria'))                       return 'Nivel de Educación Preprimaria'
-  if (n.includes('diversificado'))                     return 'Nivel de Educación (Ciclo Diversificado)'
-  if (n.includes('basico') || n.includes('medio'))     return 'Nivel de Educación Media (Ciclo Básico)'
-  if (n.includes('primaria'))                          return 'Nivel de Educación Primaria'
-  return matchCanonical(valor, NIVELES)
+  if (n.includes('preprimaria') || n.includes('pre primaria')) return 'Preprimaria'
+  if (n.includes('diversificado'))                            return 'Media (Diversificado)'
+  if (n.includes('basico'))                                   return 'Media (Básico)'
+  if (n.includes('primaria'))                                 return 'Primaria'
+  if (n.includes('media') || n.includes('medio'))             return 'Media (Básico)'
+  return ''
 }
 
 // ── Estado ─────────────────────────────────────────────────────────────────────
@@ -806,6 +809,7 @@ async function submitForm() {
           edad:                     form.edad || null,
           direccion:                form.direccionNina || null,
           municipio_id:          form.municipioNina || null,
+          departamento_id:       form.departamentoNina || null,
           pueblo:                form.puebloPertenencia || null,
           comunidad_linguistica: form.comunidadLinguistica || null,
           institucion:           form.institucion || null,
@@ -846,6 +850,7 @@ async function submitForm() {
           edad:                     form.edad,
           direccion:                form.direccionNina,
           municipio_id:          form.municipioNina || null,
+          departamento_id:       form.departamentoNina || null,
           institucion:           form.institucion,
           pueblo:                form.puebloPertenencia || null,
           comunidad_linguistica: form.comunidadLinguistica || null,

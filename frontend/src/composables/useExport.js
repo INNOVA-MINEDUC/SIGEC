@@ -89,6 +89,7 @@ function casoAFilaExcel(caso) {
   const hist   = (nina.historialEducativo || [])[0] || {}
   const centro = hist.centroEducativo || {}
   const dept   = nina.municipio?.departamento?.nombre
+              || nina.departamento?.nombre
               || caso.departamental?.departamento?.nombre || ''
   const mun    = nina.municipio?.nombre || ''
   return [
@@ -129,6 +130,7 @@ function casoAFila(caso) {
   const hist   = (nina.historialEducativo || [])[0] || {}
   const centro = hist.centroEducativo || {}
   const dept   = nina.municipio?.departamento?.nombre
+              || nina.departamento?.nombre
               || caso.departamental?.departamento?.nombre || ''
   const mun    = nina.municipio?.nombre || ''
   return [
@@ -396,6 +398,7 @@ export function exportarPDF(casos, nombre = 'SIGEC_Casos', resumenFiltros = '', 
   const deptCount = {}
   casos.forEach(c => {
     const d = c.nina?.municipio?.departamento?.nombre
+            || c.nina?.departamento?.nombre
             || c.departamental?.departamento?.nombre || 'N/A'
     deptCount[d] = (deptCount[d] || 0) + 1
   })

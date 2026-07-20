@@ -104,13 +104,18 @@
           <!-- Grupo de filtros -->
           <div class="filters-wrapper">
 
-            <v-checkbox
-              v-model="soloSinQueja"
-              label="Solo sin queja"
-              color="primary"
+            <v-select
+              v-model="filtroQueja"
+              :items="quejaOptions"
+              item-title="label"
+              item-value="value"
+              label="Queja"
+              prepend-inner-icon="mdi-flag"
+              variant="outlined"
               density="compact"
               hide-details
-              class="queja-check"
+              rounded="lg"
+              class="filter-select"
               @update:modelValue="handleFilter"
             />
 
@@ -281,8 +286,14 @@ const serverStats      = ref({})
 const search                = ref('')
 const selectedDepartamental = ref(null)
 const selectedEstado        = ref('Todos')
-const soloSinQueja          = ref(false)
+const filtroQueja           = ref('Todos')   // 'Todos' | 'con' | 'sin'
 const itemsPerPage          = ref(10)
+
+const quejaOptions = [
+  { label: 'Todas',      value: 'Todos' },
+  { label: 'Con queja',  value: 'con' },
+  { label: 'Sin queja',  value: 'sin' },
+]
 const loading               = ref(false)
 
 const ITEMS_PER_PAGE_OPTIONS = [5, 10, 15, 20]
@@ -321,7 +332,7 @@ const fetchCasos = async (targetPage = 1) => {
     const { data } = await api.post('/caso', {
       departamental_id: selectedDepartamental.value || null,
       estado:           selectedEstado.value !== 'Todos' ? selectedEstado.value : null,
-      sinQueja:         soloSinQueja.value,
+      queja:            filtroQueja.value !== 'Todos' ? filtroQueja.value : null,
       busqueda:         search.value.trim() || null,
       page:             targetPage,
       limit:            itemsPerPage.value,
@@ -385,7 +396,7 @@ const onSearchInput = () => { if (search.value === '') fetchCasos(1) }
 
 const limpiarFiltros = () => {
   search.value = ''; selectedDepartamental.value = null
-  selectedEstado.value = 'Todos'; soloSinQueja.value = false
+  selectedEstado.value = 'Todos'; filtroQueja.value = 'Todos'
   fetchCasos(1)
 }
 

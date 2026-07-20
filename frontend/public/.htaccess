@@ -1,0 +1,42 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# SPA fallback para Apache
+#
+# La aplicación usa Vue Router en modo history (createWebHistory), así que las
+# rutas como /dashboard o /seguimiento NO existen como archivos en el disco.
+# Al recargar la página el navegador pide esa ruta al servidor; sin estas
+# reglas Apache busca un directorio inexistente y, con el listado deshabilitado,
+# responde 403 Forbidden en vez de entregar la aplicación.
+#
+# Con esto, cualquier ruta que no corresponda a un archivo o directorio real se
+# entrega a index.html y el router de Vue resuelve la navegación en el cliente.
+#
+# Requiere que el VirtualHost permita .htaccess:  AllowOverride FileInfo
+# (o AllowOverride All) sobre el directorio donde se sirve dist/.
+# ─────────────────────────────────────────────────────────────────────────────
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # Los archivos y directorios que sí existen se sirven tal cual
+  # (assets con hash, favicon, imágenes, etc.)
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # Todo lo demás lo resuelve el SPA
+  RewriteRule ^ index.html [L]
+</IfModule>
+
+<IfModule mod_headers.c>
+  # index.html nunca debe quedar cacheado: si el navegador conserva uno viejo
+  # seguirá pidiendo bundles que ya no existen tras un despliegue.
+  <FilesMatch "index\.html$">
+    Header set Cache-Control "no-store, must-revalidate"
+  </FilesMatch>
+</IfModule>
+
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/css text/plain text/xml \
+    application/javascript application/json image/svg+xml
+</IfModule>

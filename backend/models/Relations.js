@@ -225,6 +225,28 @@ as:'municipio'
 
 
 /* ======================================================
+DEPARTAMENTO - NIÑA (departamento de residencia, fallback sin municipio)
+====================================================== */
+
+Departamento.hasMany(Nina,{
+
+foreignKey:'departamento_id',
+
+as:'ninasResidencia'
+
+})
+
+Nina.belongsTo(Departamento,{
+
+foreignKey:'departamento_id',
+
+as:'departamento'
+
+})
+
+
+
+/* ======================================================
 NIÑA - CASOS EMBARAZO
 ====================================================== */
 

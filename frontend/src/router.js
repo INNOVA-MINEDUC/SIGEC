@@ -25,6 +25,8 @@ const routes = [
     path: '/login',
     name: 'login',
     component: LoginView,
+    // Debe ser pública: sin este flag el guard reenvía /login a /login
+    // en bucle cuando no hay token y la app queda en blanco.
     meta: {
       public: true
     }
@@ -116,12 +118,23 @@ const routes = [
     }
   },
 
-  // Ruta de acceso denegado
+  // Acceso denegado (403). Se mantiene /unauthorized porque es a donde
+  // redirige el guard cuando el rol no cumple; /403 queda como alias.
   {
     path: '/unauthorized',
-    name: 'unauthorized',
-    component: () => import('./views/UnauthorizedView.vue'),
+    alias: '/403',
+    name: 'forbidden',
+    component: () => import('./views/ForbiddenView.vue'),
     meta: { requiresAuth: true }
+  },
+
+  // Página no encontrada (404). Debe ir SIEMPRE al final: captura cualquier
+  // ruta no declarada. Es pública para no exigir sesión al mostrar un 404.
+  {
+    path: '/:pathMatch(.*)*',
+    name: 'not-found',
+    component: () => import('./views/NotFoundView.vue'),
+    meta: { public: true }
   }
 ]
 

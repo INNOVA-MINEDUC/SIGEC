@@ -28,11 +28,9 @@
 
 <script setup>
 import { computed } from 'vue'
-import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import logoSisec from '@/assets/LOGO_SISEC.png'
 
-const router = useRouter()
 const auth = useAuthStore()
 
 const BASE_LINKS = [
@@ -54,8 +52,15 @@ const navLinks = computed(() => {
 })
 
 async function logout() {
+  // Se espera a logoutSession para que quede registrado el cierre en auditoría
+  // antes de salir.
   await auth.logoutSession()
-  router.push('/login')
+
+  // Redirección dura (no router.push): fuerza una recarga completa para que no
+  // sobreviva nada del estado en memoria —stores de Pinia, datos ya cargados—
+  // de la sesión anterior. Se usa replace para que el botón "atrás" no regrese
+  // a una vista autenticada.
+  window.location.replace(`${import.meta.env.BASE_URL}login`)
 }
 </script>
 
