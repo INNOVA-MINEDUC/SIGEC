@@ -1,5 +1,4 @@
 import ExcelJS from 'exceljs'
-import path from 'path'
 import { sequelize } from '../config/database.js'
 import '../models/Relations.js'
 import CasoEmbarazo from '../models/CasoEmbarazo.js'
@@ -75,117 +74,6 @@ export const COLS_IMPORTANTES = [
   { patron: 'fecha de nacimiento', label: 'Fecha de Nacimiento' },
 ]
 
-// ── Generador de reporte Excel de fallos ───────────────────────────────────────
-
-async function generarReporteFallos(fallidos, sinUbicacion, colsDetectadas, dirReporte, nombreBase) {
-  const wb = new ExcelJS.Workbook()
-
-  // ── Hoja 1: Registros NO insertados ─────────────────────────────────────────
-  if (fallidos.length > 0) {
-    const ws = wb.addWorksheet('No Insertados')
-
-    const headerRow = ws.addRow([
-      'N° Fila (Excel)',
-      'Motivo del fallo',
-      'Nombre Completo',
-      'CUI',
-      'Departamento (archivo)',
-      'Municipio (archivo)',
-      ...colsDetectadas,
-    ])
-    headerRow.eachCell(cell => {
-      cell.fill  = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF10233F' } }
-      cell.font  = { bold: true, color: { argb: 'FFFFFFFF' }, size: 10 }
-      cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true }
-    })
-    ws.getRow(1).height = 30
-
-    for (const f of fallidos) {
-      const vals = [
-        f.filaNum,
-        f.motivo,
-        f.nombre ?? '',
-        f.cui    ?? '',
-        f.depto  ?? '',
-        f.municipio ?? '',
-        ...colsDetectadas.map(col => {
-          const v = f.rawRow[col]
-          if (v instanceof Date) return v.toISOString().split('T')[0]
-          return v ?? ''
-        }),
-      ]
-      const dataRow = ws.addRow(vals)
-      // Colorear motivo según tipo
-      const motivoCell = dataRow.getCell(2)
-      if (f.tipo === 'duplicado') {
-        motivoCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFF3CD' } }
-      } else if (f.tipo === 'error_bd') {
-        motivoCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8D7DA' } }
-      } else {
-        motivoCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE2E3E5' } }
-      }
-    }
-
-    // Anchos de columna
-    ws.getColumn(1).width = 14
-    ws.getColumn(2).width = 45
-    ws.getColumn(3).width = 35
-    ws.getColumn(4).width = 18
-    ws.getColumn(5).width = 22
-    ws.getColumn(6).width = 22
-    for (let c = 7; c <= 6 + colsDetectadas.length; c++) ws.getColumn(c).width = 18
-
-    ws.autoFilter = { from: 'A1', to: { row: 1, column: 6 + colsDetectadas.length } }
-  }
-
-  // ── Hoja 2: Insertados pero sin ubicación resuelta ──────────────────────────
-  if (sinUbicacion.length > 0) {
-    const ws2 = wb.addWorksheet('Sin Ubicación')
-
-    const h2 = ws2.addRow([
-      'N° Fila (Excel)',
-      'Problema de ubicación',
-      'Nombre Completo',
-      'CUI',
-      'Departamento (archivo)',
-      'Municipio (archivo)',
-      'Fue insertado',
-    ])
-    h2.eachCell(cell => {
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1F3864' } }
-      cell.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 10 }
-      cell.alignment = { vertical: 'middle', horizontal: 'center' }
-    })
-
-    for (const u of sinUbicacion) {
-      ws2.addRow([
-        u.filaNum,
-        u.problema,
-        u.nombre ?? '',
-        u.cui    ?? '',
-        u.depto  ?? '',
-        u.municipio ?? '',
-        'Sí (sin filtro de departamental)',
-      ])
-    }
-
-    ws2.getColumn(1).width = 14
-    ws2.getColumn(2).width = 48
-    ws2.getColumn(3).width = 35
-    ws2.getColumn(4).width = 18
-    ws2.getColumn(5).width = 22
-    ws2.getColumn(6).width = 22
-    ws2.getColumn(7).width = 30
-  }
-
-  // ── Guardar ──────────────────────────────────────────────────────────────────
-  const ts   = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
-  const base = path.basename(nombreBase, path.extname(nombreBase))
-  const outPath = path.join(dirReporte, `reporte_fallos_${base}_${ts}.xlsx`)
-  await wb.xlsx.writeFile(outPath)
-  return outPath
-}
-
 // ── Procesador principal ───────────────────────────────────────────────────────
 
 /**
@@ -195,14 +83,14 @@ async function generarReporteFallos(fallidos, sinUbicacion, colsDetectadas, dirR
  * @param {Buffer} buffer          - Contenido del archivo Excel
  * @param {object} opts
  * @param {string} opts.nombreArchivo  - Nombre del archivo (para logs y reporte)
- * @param {number|null} opts.usuarioId - ID del usuario que carga (puede ser null en seeders)
- * @param {string|null} opts.reporteDir - Directorio donde guardar el Excel de fallos.
- *                                        Si es null no se genera el archivo.
+ * @param {number|null} opts.usuarioId - ID del usuario que carga (puede ser null)
+ *
+ * Los registros no insertados se devuelven en `fallidos` y `sinUbicacion` para
+ * mostrarlos en la interfaz; no se genera ningún archivo.
  */
 export async function procesarExcelCasos(buffer, {
   nombreArchivo = 'archivo.xlsx',
   usuarioId     = null,
-  reporteDir    = null,
 } = {}) {
   // 1. Parsear Excel
   const workbook = new ExcelJS.Workbook()
@@ -546,17 +434,6 @@ export async function procesarExcelCasos(buffer, {
     sinUbicacion.forEach(u => console.warn(`     [fila ${u.filaNum}] "${u.nombre}" | ${u.problema}`))
   }
 
-  // 8. Generar Excel de reporte si se indicó un directorio
-  let reportePath = null
-  if (reporteDir && (fallidos.length > 0 || sinUbicacion.length > 0)) {
-    try {
-      reportePath = await generarReporteFallos(fallidos, sinUbicacion, colsDetectadas, reporteDir, nombreArchivo)
-      console.log(`\n   ✔ Reporte de fallos generado: ${reportePath}`)
-    } catch (e) {
-      console.error(`   ✘ No se pudo generar el reporte: ${e.message}`)
-    }
-  }
-
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n')
 
   await carga.update({ registros_nuevos: nuevos, registros_duplicados: duplicados })
@@ -568,7 +445,6 @@ export async function procesarExcelCasos(buffer, {
     total:    totalFilas,
     nuevos,
     duplicados,
-    reportePath,
     fallidos: fallidos.map(f => ({ fila: f.filaNum, motivo: f.motivo, nombre: f.nombre, cui: f.cui })),
     sinUbicacion: sinUbicacion.map(u => ({ fila: u.filaNum, nombre: u.nombre, problema: u.problema })),
     advertencias: faltanImportantes.length > 0

@@ -46,11 +46,136 @@
                 <input type="file" ref="fileInput" accept=".xlsx,.xls" class="file-input" @change="onFileChange" />
                 <button class="upload-btn" @click="fileInput.click()">Subir archivos</button>
                 <div class="upload-hint">Tamaño hasta 100 MB</div>
+
+                <!-- Importación formato SIRE: flujo independiente del de arriba,
+                     con sus propios estados y su propio endpoint. -->
+                <div class="inicial-row">
+                  <input
+                    type="file"
+                    ref="fileInputInicial"
+                    accept=".xlsx,.xls"
+                    class="file-input"
+                    @change="onArchivoInicial"
+                  />
+                  <button
+                    class="inicial-btn"
+                    :disabled="uploading || validando || cargandoInicial"
+                    @click="fileInputInicial.click()"
+                  >
+                    <v-icon size="14">mdi-database-import</v-icon>
+                    {{ cargandoInicial ? 'Importando…' : 'Importar archivo SIRE' }}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
 
+          <!-- Resultado de la carga inicial (flujo propio, no pisa el de arriba) -->
+          <div v-if="resultadoInicial" class="resultado-card">
+            <div class="inicial-head">
+              <v-icon size="18" color="#10233f">mdi-database-import</v-icon>
+              <span>Carga inicial — {{ resultadoInicial.archivo }}</span>
+            </div>
+            <div class="resultado-grid">
+              <div class="resultado-item">
+                <div class="resultado-num">{{ resultadoInicial.total }}</div>
+                <div class="resultado-label">Total filas</div>
+              </div>
+              <div class="resultado-item success">
+                <div class="resultado-num">{{ resultadoInicial.nuevos }}</div>
+                <div class="resultado-label">Casos registrados</div>
+              </div>
+              <div class="resultado-item warn">
+                <div class="resultado-num">{{ resultadoInicial.duplicados }}</div>
+                <div class="resultado-label">No insertados</div>
+              </div>
+              <div class="resultado-item warn">
+                <div class="resultado-num">{{ resultadoInicial.sinUbicacion?.length ?? 0 }}</div>
+                <div class="resultado-label">Sin ubicación</div>
+              </div>
+            </div>
+            <!-- Registros NO insertados, con el motivo de cada uno -->
+            <div v-if="resultadoInicial.fallidos?.length" class="detalle-bloque">
+              <div class="detalle-titulo">
+                <v-icon size="16" color="#c62828">mdi-close-circle-outline</v-icon>
+                No insertados ({{ resultadoInicial.fallidos.length }})
+              </div>
+              <div class="detalle-scroll">
+                <table class="detalle-tabla">
+                  <thead>
+                    <tr>
+                      <th>Fila</th>
+                      <th>Nombre</th>
+                      <th>CUI</th>
+                      <th>Motivo</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="f in resultadoInicial.fallidos" :key="'f' + f.fila">
+                      <td class="col-fila">{{ f.fila }}</td>
+                      <td>{{ f.nombre || '—' }}</td>
+                      <td>{{ f.cui || '—' }}</td>
+                      <td class="col-motivo">{{ f.motivo }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Insertados pero sin ubicación resuelta -->
+            <div v-if="resultadoInicial.sinUbicacion?.length" class="detalle-bloque">
+              <div class="detalle-titulo">
+                <v-icon size="16" color="#e65100">mdi-map-marker-alert-outline</v-icon>
+                Insertados sin ubicación completa ({{ resultadoInicial.sinUbicacion.length }})
+              </div>
+              <div class="detalle-scroll">
+                <table class="detalle-tabla">
+                  <thead>
+                    <tr>
+                      <th>Fila</th>
+                      <th>Nombre</th>
+                      <th>Problema</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="u in resultadoInicial.sinUbicacion" :key="'u' + u.fila">
+                      <td class="col-fila">{{ u.fila }}</td>
+                      <td>{{ u.nombre || '—' }}</td>
+                      <td class="col-motivo">{{ u.problema }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div
+              v-if="!resultadoInicial.fallidos?.length && !resultadoInicial.sinUbicacion?.length"
+              class="detalle-ok"
+            >
+              <v-icon size="16" color="#2e7d32">mdi-check-circle-outline</v-icon>
+              Todos los registros se importaron sin observaciones.
+            </div>
+
+            <div class="inicial-actions">
+              <button class="clear-btn" @click="resultadoInicial = null">LIMPIAR</button>
+            </div>
+          </div>
+
+          <!-- Error de la carga inicial -->
+          <div v-if="errorInicial" class="validacion-error">
+            <v-icon size="20" color="#c62828">mdi-alert-circle</v-icon>
+            <div>
+              <div class="val-title">No se pudo ejecutar la carga inicial</div>
+              <div class="val-msg">{{ errorInicial }}</div>
+            </div>
+          </div>
+
           <!-- Validando / Cargando -->
+          <div v-if="cargandoInicial" class="uploading-state">
+            <v-progress-circular indeterminate color="#10233f" size="32" />
+            <span>Ejecutando carga inicial, puede tardar unos segundos…</span>
+          </div>
+
           <div v-if="validando || uploading" class="uploading-state">
             <v-progress-circular indeterminate color="#ff9797" size="32" />
             <span>{{ validando ? 'Validando archivo...' : 'Procesando, por favor espere...' }}</span>
@@ -347,6 +472,42 @@ function clearResultado() {
   resultado.value  = null
   validacion.value = null
 }
+
+// ── Carga inicial desde el Excel semilla del servidor ──────────────────────
+// Flujo aparte del de "Subir archivos": no envía archivo, solo dispara el
+// proceso en el backend, que aplica las mismas validaciones de la carga masiva
+// (deduplicación, ubicación con Fuse, nivel canónico, estado según queja).
+const fileInputInicial = ref(null)
+const cargandoInicial  = ref(false)
+const resultadoInicial = ref(null)
+const errorInicial     = ref(null)
+
+async function onArchivoInicial(payload) {
+  const file = payload?.target?.files?.[0]
+  if (!file) return
+
+  cargandoInicial.value  = true
+  errorInicial.value     = null
+  resultadoInicial.value = null
+
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const { data } = await api.post('/upload/inicial', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+
+    resultadoInicial.value = data
+    await fetchHistorial()
+  } catch (error) {
+    errorInicial.value = error.response?.data?.message || error.message
+  } finally {
+    cargandoInicial.value = false
+    // Permite volver a elegir el mismo archivo si se reintenta
+    if (fileInputInicial.value) fileInputInicial.value.value = ''
+  }
+}
 </script>
 
 <style scoped>
@@ -496,6 +657,103 @@ function clearResultado() {
 }
 .upload-btn:hover { opacity: 0.9; }
 .upload-hint { margin-top: 0.5rem; font-size: 0.7rem; color: #9e9e9e; }
+
+/* ── Carga inicial (botón pequeño, secundario al de subir archivos) ── */
+.inicial-row {
+  margin-top: 0.9rem;
+  padding-top: 0.9rem;
+  border-top: 1px dashed #e0e0e0;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+.inicial-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: transparent;
+  color: #10233f;
+  border: 1px solid #10233f;
+  border-radius: 0.4rem;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, opacity 0.2s;
+}
+.inicial-btn:hover:not(:disabled) { background: #10233f; color: #fff; }
+.inicial-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.inicial-head {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #10233f;
+  margin-bottom: 0.75rem;
+}
+.inicial-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+/* ── Detalle de registros no insertados (en pantalla) ── */
+.detalle-bloque {
+  margin-top: 1rem;
+  text-align: left;
+}
+.detalle-titulo {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #10233f;
+  margin-bottom: 0.4rem;
+}
+/* Altura acotada: con cientos de filas la tarjeta no crece sin control */
+.detalle-scroll {
+  max-height: 260px;
+  overflow: auto;
+  border: 1px solid #e0e0e0;
+  border-radius: 0.4rem;
+}
+.detalle-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.72rem;
+}
+.detalle-tabla thead th {
+  position: sticky;
+  top: 0;
+  background: #10233f;
+  color: #fff;
+  text-align: left;
+  padding: 0.4rem 0.55rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.detalle-tabla td {
+  padding: 0.35rem 0.55rem;
+  border-top: 1px solid #eee;
+  color: #4a4a4a;
+  vertical-align: top;
+}
+.detalle-tabla tbody tr:nth-child(even) { background: #fafafa; }
+.col-fila   { width: 3rem; font-variant-numeric: tabular-nums; color: #6d6d6d; }
+.col-motivo { color: #c62828; }
+
+.detalle-ok {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  justify-content: center;
+  margin-top: 0.75rem;
+  font-size: 0.75rem;
+  color: #2e7d32;
+}
 
 /* ── RESULTS ── */
 .result-alert { margin-top: 2rem; border-radius: 0.5rem; }

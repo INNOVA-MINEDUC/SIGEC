@@ -8,6 +8,7 @@ import User from '../models/User.js'
 import { registrarAuditoria } from '../utils/auditoria.js'
 import { validarUbicacion } from '../helpers/validarUbicacion.js'
 import { normalizarNivel } from '../helpers/nivelEducativo.js'
+import { procesarExcelCasos } from '../utils/cargaExcel.js'
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -407,5 +408,70 @@ export const uploadExcel = async (req, res) => {
     })
   } catch (error) {
     return res.status(500).json({ ok: false, message: 'Error procesando Excel', error: error.message })
+  }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   IMPORTACIÓN DE ARCHIVO FORMATO SIRE
+
+   Reemplaza al seeder `20260611120000-cargar-excel-casos.js`: el archivo ya no
+   vive en el servidor ni la carga corre con `db:seed:all`. El administrador
+   sube el Excel desde la vista "Importar Datos" y aquí se procesa con
+   `procesarExcelCasos`, conservando TODAS las validaciones: deduplicación por
+   CUI/nombre, resolución difusa de ubicación con fallback a departamento,
+   nivel educativo canónico y estado según "No. de Queja".
+
+   Los registros que no se pudieron insertar se devuelven en la respuesta para
+   mostrarlos en pantalla; no se genera ningún archivo en el servidor.
+
+   No toca el flujo de `CargaMasiva` (POST /upload/masivo), que sigue atendiendo
+   el botón "Subir archivos" con el formato MSPAS.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+export const CargaInicial = async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ success: false, message: 'No se envió ningún archivo' })
+  }
+
+  try {
+    // Sin `reporteDir`: no se escribe ningún Excel, los fallos van en la respuesta
+    const resultado = await procesarExcelCasos(req.file.buffer, {
+      nombreArchivo: req.file.originalname,
+      usuarioId:     req.user?.id ?? null,
+    })
+
+    if (!resultado.ok) {
+      return res.status(400).json({ success: false, message: resultado.message })
+    }
+
+    registrarAuditoria({
+      usuario_id:  req.user?.id,
+      accion:      'carga_inicial',
+      entidad:     'CargaArchivo',
+      entidad_id:  resultado.carga_id,
+      descripcion: `Importó ${req.file.originalname}: `
+                 + `${resultado.nuevos} nuevos, ${resultado.duplicados} omitidos de ${resultado.total} filas`,
+    })
+
+    return res.json({
+      success:      true,
+      message:      resultado.message,
+      archivo:      req.file.originalname,
+      total:        resultado.total,
+      nuevos:       resultado.nuevos,
+      duplicados:   resultado.duplicados,
+      fallidos:     resultado.fallidos,      // [{ fila, motivo, nombre, cui }]
+      sinUbicacion: resultado.sinUbicacion,  // [{ fila, nombre, problema }]
+      advertencias: resultado.advertencias,
+    })
+
+  } catch (error) {
+    console.error(error)
+    return res.status(500).json({
+      success: false,
+      message: 'Error procesando el archivo',
+      error:   error.message,
+    })
   }
 }

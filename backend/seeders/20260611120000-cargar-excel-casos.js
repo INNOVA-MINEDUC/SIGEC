@@ -1,56 +1,33 @@
 'use strict'
 
-import fs from 'fs'
-import path from 'path'
-import { fileURLToPath } from 'url'
-import { procesarExcelCasos } from '../utils/cargaExcel.js'
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
-
-const RUTA_EXCEL = process.env.SEED_EXCEL_PATH
-  || path.resolve(__dirname, '../seed-data/initial_data2.xlsx')
-
-// El reporte de fallos se guarda en la misma carpeta que el Excel fuente
-const DIR_REPORTE = path.dirname(RUTA_EXCEL)
-
+/**
+ * Carga inicial de casos — DESACTIVADA COMO SEEDER.
+ *
+ * La carga ya no se ejecuta con `db:seed:all` (es decir, `npm run reset` ya no
+ * inserta los casos). Ahora se dispara bajo demanda desde el frontend, en la
+ * vista "Importar Datos", con el botón "Cargar datos iniciales".
+ *
+ *   Endpoint : POST /api/v1/upload/inicial   (solo rol admin)
+ *   Controlador: backend/controllers/UploadController.js  → CargaInicial
+ *   Lógica y validaciones: backend/utils/cargaExcel.js    → procesarExcelCasos
+ *
+ * El motivo del cambio es que la carga deje de ser parte del ciclo de
+ * migraciones/seeders del despliegue y quede bajo control explícito de un
+ * administrador, que además obtiene el Excel con los registros no insertados.
+ *
+ * Este archivo se conserva (en vez de borrarse) porque su nombre ya está
+ * registrado en la tabla `SequelizeData`; eliminarlo dejaría esa referencia
+ * huérfana. Se deja como no-op intencional.
+ */
 export default {
   async up(_queryInterface, _Sequelize) {
-    // Carga inicial de casos desde el Excel semilla (initial_data2.xlsx).
-
-    if (!fs.existsSync(RUTA_EXCEL)) {
-      console.warn(`\n[seeder] No se encontró el archivo "${RUTA_EXCEL}".`)
-      console.warn('   Colóquelo ahí (o defina SEED_EXCEL_PATH) y vuelva a ejecutar.\n')
-      return
-    }
-
-    const buffer    = fs.readFileSync(RUTA_EXCEL)
-    const resultado = await procesarExcelCasos(buffer, {
-      nombreArchivo: path.basename(RUTA_EXCEL),
-      reporteDir:    DIR_REPORTE,   // activa la generación del Excel de fallos
-    })
-
-    if (!resultado.ok) {
-      console.error(`\n[seeder] ${resultado.message}\n`)
-      return
-    }
-
     console.log(
-      `\n[seeder] Carga completada: ${resultado.nuevos} insertados, ` +
-      `${resultado.duplicados} omitidos de ${resultado.total} filas.`
+      '[seeder] Carga inicial omitida: ahora se ejecuta desde la vista ' +
+      '"Importar Datos" (POST /api/v1/upload/inicial).'
     )
-
-    if (resultado.reportePath) {
-      console.log(`[seeder] Reporte de fallos → ${resultado.reportePath}`)
-      console.log(`         Hoja "No Insertados"  : ${resultado.fallidos.length} registros`)
-      console.log(`         Hoja "Sin Ubicación"  : ${resultado.sinUbicacion.length} registros`)
-    } else if (resultado.fallidos.length === 0 && resultado.sinUbicacion.length === 0) {
-      console.log('[seeder] Sin fallos ni advertencias de ubicación — carga perfecta.')
-    }
-
-    console.log()
   },
 
   async down(_queryInterface, _Sequelize) {
-    // No se revierte la carga masiva
+    // No se revierte: la carga no se realiza desde aquí.
   },
 }
