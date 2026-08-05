@@ -265,13 +265,18 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
 import api from '@/helpers/api'
+import { useSeguimientoFiltros } from '@/stores/seguimientoFiltros'
 
 import AppNavbar from '@/components/AppNavbar.vue'
 import AppFooter from '@/components/AppFooter.vue'
 
 const router = useRouter()
+
+// Filtros persistentes: sobreviven a salir y volver a la vista
+const filtrosStore = useSeguimientoFiltros()
 
 // ── Datos paginados del servidor ───────────────────────────────────────────────
 const casos           = ref([])
@@ -282,12 +287,9 @@ const serverPage       = ref(1)
 const serverTotalPages = ref(1)
 const serverStats      = ref({})
 
-// ── Filtros y UI ────────────────────────────────────────────────────────────────
-const search                = ref('')
-const selectedDepartamental = ref(null)
-const selectedEstado        = ref('Todos')
-const filtroQueja           = ref('Todos')   // 'Todos' | 'con' | 'sin'
-const itemsPerPage          = ref(10)
+// ── Filtros y UI (desde el store persistente) ────────────────────────────────
+const { search, selectedDepartamental, selectedEstado, filtroQueja, itemsPerPage, page } =
+  storeToRefs(filtrosStore)
 
 const quejaOptions = [
   { label: 'Todas',      value: 'Todos' },
@@ -342,6 +344,15 @@ const fetchCasos = async (targetPage = 1) => {
     serverPage.value       = data.page       ?? targetPage
     serverTotalPages.value = data.totalPages ?? 1
     serverStats.value      = data.stats      ?? {}
+
+    // La página guardada puede quedar fuera de rango si el total cambió
+    // (p. ej. se registró/eliminó un caso): reencauza a la última válida.
+    if (serverTotal.value > 0 && targetPage > serverTotalPages.value) {
+      loading.value = false
+      return fetchCasos(serverTotalPages.value)
+    }
+
+    page.value             = serverPage.value   // recuerda la página aplicada
   } catch (e) {
     console.error('Error cargando casos:', e)
     casos.value = []
@@ -361,7 +372,8 @@ const cargarDepartamentales = async () => {
   }
 }
 
-onMounted(() => Promise.all([cargarDepartamentales(), fetchCasos(1)]))
+// Al montar se reanuda con los filtros y la página que quedaron guardados
+onMounted(() => Promise.all([cargarDepartamentales(), fetchCasos(page.value)]))
 
 // ── KPIs — vienen del servidor, no de los 10 registros de la página ───────────
 const displayKpis = computed(() => ({
@@ -395,8 +407,7 @@ const handlePageSizeChange = () => fetchCasos(1)
 const onSearchInput = () => { if (search.value === '') fetchCasos(1) }
 
 const limpiarFiltros = () => {
-  search.value = ''; selectedDepartamental.value = null
-  selectedEstado.value = 'Todos'; filtroQueja.value = 'Todos'
+  filtrosStore.reset()
   fetchCasos(1)
 }
 

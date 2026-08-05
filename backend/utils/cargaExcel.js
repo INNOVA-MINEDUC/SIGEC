@@ -105,6 +105,21 @@ export async function procesarExcelCasos(buffer, {
   const existingCuis    = new Set(existingNinas.map(n => String(n.cui ?? '').trim()).filter(Boolean))
   const existingNombres = new Set(existingNinas.map(n => normalizar(String(n.nombre_completo ?? ''))).filter(Boolean))
 
+  // Casos existentes indexados por CUI y por nombre, para poder AGREGAR la queja
+  // a un caso que ya existe sin ella cuando llega un archivo que sí la trae.
+  const casosExistentes = await CasoEmbarazo.findAll({
+    attributes: ['id', 'numero_caso', 'queja', 'estado', 'nina_id'],
+    include: [{ model: Nina, as: 'nina', attributes: ['cui', 'nombre_completo'] }],
+  })
+  const casoPorCui    = new Map()
+  const casoPorNombre = new Map()
+  for (const c of casosExistentes) {
+    const cui = String(c.nina?.cui ?? '').trim()
+    const nom = normalizar(String(c.nina?.nombre_completo ?? ''))
+    if (cui) casoPorCui.set(cui, c)
+    if (nom) casoPorNombre.set(nom, c)
+  }
+
   const existingCentros = await CentroEducativo.findAll({ attributes: ['id', 'codigo_udi'] })
   const centroPorUdi    = new Map(existingCentros.map(c => [normalizar(c.codigo_udi), c.id]))
 
@@ -187,6 +202,22 @@ export async function procesarExcelCasos(buffer, {
   // Arrays para el reporte de fallos
   const fallidos     = []  // registros que NO se insertaron
   const sinUbicacion = []  // registros insertados pero sin departamental/municipio
+  const actualizados = []  // casos que ya existían y a los que se les agregó la queja
+
+  // Agrega la queja a un caso existente que no la tenía y lo pasa al estado de
+  // quejas. Devuelve true si actualizó; false si no había caso o queja, o si el
+  // caso ya tenía queja (en cuyo caso se trata como duplicado normal).
+  const agregarQuejaSiFalta = async (casoExistente, quejaNueva, filaNum, nombre, cui) => {
+    if (!casoExistente || !quejaNueva) return false
+    if (clean(casoExistente.queja)) return false   // ya tiene queja → no se toca
+    await casoExistente.update({
+      queja:  quejaNueva,
+      estado: 'Verificados en el Sistema de Quejas, Comentarios o Sugerencias',
+    })
+    actualizados.push({ filaNum, nombre, cui, queja: quejaNueva, numero_caso: casoExistente.numero_caso })
+    console.log(`  [ACTUALIZADA fila ${filaNum}] queja "${quejaNueva}" agregada al caso ${casoExistente.numero_caso} — "${nombre}"`)
+    return true
+  }
 
   // 5. Crear registro de carga
   const carga = await CargaArchivo.create({
@@ -223,6 +254,10 @@ export async function procesarExcelCasos(buffer, {
     const deptoArchivo    = clean(pick('Dirección Departamental', 'Departamento'))
     const municipioArchivo = clean(pick('Municipio de Residencia', 'Municipio'))
 
+    // Se extrae la queja aquí (antes de la deduplicación) porque un duplicado
+    // que traiga queja puede completar un caso existente que no la tenía.
+    const queja = clean(pick('No. de Queja', 'Numero de queja'))
+
     const registroBase = {
       filaNum,
       nombre:     nombreCompleto,
@@ -241,6 +276,8 @@ export async function procesarExcelCasos(buffer, {
     }
 
     if (cuiRaw && existingCuis.has(cuiRaw)) {
+      // Duplicado: si el caso existente no tenía queja y esta fila la trae, se completa.
+      if (await agregarQuejaSiFalta(casoPorCui.get(cuiRaw), queja, filaNum, nombreCompleto, cuiRaw)) continue
       duplicados++
       fallidos.push({ ...registroBase, tipo: 'duplicado', motivo: `Duplicado: CUI ${cuiRaw} ya existe en la BD` })
       console.warn(`  [OMITIDA fila ${filaNum}] Duplicado por CUI "${cuiRaw}"`)
@@ -248,6 +285,7 @@ export async function procesarExcelCasos(buffer, {
     }
 
     if (!cuiRaw && existingNombres.has(normalizar(nombreCompleto))) {
+      if (await agregarQuejaSiFalta(casoPorNombre.get(normalizar(nombreCompleto)), queja, filaNum, nombreCompleto, cuiRaw)) continue
       duplicados++
       fallidos.push({ ...registroBase, tipo: 'duplicado', motivo: `Duplicado: nombre "${nombreCompleto}" ya existe en la BD` })
       console.warn(`  [OMITIDA fila ${filaNum}] Duplicado por nombre "${nombreCompleto}"`)
@@ -291,7 +329,6 @@ export async function procesarExcelCasos(buffer, {
       problemasUbicacion.push(`Municipio del centro "${centroDeptoNombre}/${centroMunicipioNombre}" no resolvió`)
 
     const numeroCasoArchivo = clean(get('no. de caso'))
-    const queja             = clean(pick('No. de Queja', 'Numero de queja'))
 
     // ── Inserción en BD ─────────────────────────────────────────────────────
     const t = await sequelize.transaction()
@@ -349,7 +386,7 @@ export async function procesarExcelCasos(buffer, {
         numeroCaso = `${String(maxCasoId + nuevos + 1).padStart(5, '0')}-${yearSuffix}`
       }
 
-      await CasoEmbarazo.create({
+      const casoCreado = await CasoEmbarazo.create({
         numero_caso:            numeroCaso,
         nina_id:                nina.id,
         carga_archivo_id:       carga.id,
@@ -385,6 +422,10 @@ export async function procesarExcelCasos(buffer, {
       if (cuiFinal) existingCuis.add(cuiFinal)
       existingNombres.add(normalizar(nombreCompleto))
       existingNumerosCaso.add(numeroCaso)
+      // Registrar el caso recién creado para que un duplicado posterior del
+      // MISMO archivo (misma niña) que traiga queja pueda completarlo.
+      if (cuiFinal) casoPorCui.set(cuiFinal, casoCreado)
+      casoPorNombre.set(normalizar(nombreCompleto), casoCreado)
       nuevos++
 
       // Registrar advertencias de ubicación para la hoja "Sin Ubicación"
@@ -423,8 +464,13 @@ export async function procesarExcelCasos(buffer, {
   console.log(`   Total filas    : ${totalFilas}`)
   console.log(`   Insertados     : ${nuevos}`)
   console.log(`   No insertados  : ${duplicados}  (${fallidos.length} con detalle de fallo)`)
+  console.log(`   Queja agregada : ${actualizados.length} (casos existentes completados con su queja)`)
   console.log(`   Sin ubicación  : ${sinUbicacion.length} (insertados pero con dept/mun no resuelto)`)
 
+  if (actualizados.length > 0) {
+    console.log(`\n   ── Queja agregada a casos existentes (${actualizados.length}) ──`)
+    actualizados.forEach(a => console.log(`     [fila ${a.filaNum}] caso ${a.numero_caso} — "${a.nombre}" → queja ${a.queja}`))
+  }
   if (fallidos.length > 0) {
     console.warn(`\n   ── No insertados (${fallidos.length}) ──`)
     fallidos.forEach(f => console.warn(`     [fila ${f.filaNum}] ${f.motivo}`))
@@ -445,7 +491,9 @@ export async function procesarExcelCasos(buffer, {
     total:    totalFilas,
     nuevos,
     duplicados,
+    actualizados: actualizados.length,
     fallidos: fallidos.map(f => ({ fila: f.filaNum, motivo: f.motivo, nombre: f.nombre, cui: f.cui })),
+    actualizadosDetalle: actualizados.map(a => ({ fila: a.filaNum, numero_caso: a.numero_caso, nombre: a.nombre, cui: a.cui, queja: a.queja })),
     sinUbicacion: sinUbicacion.map(u => ({ fila: u.filaNum, nombre: u.nombre, problema: u.problema })),
     advertencias: faltanImportantes.length > 0
       ? [`El archivo no incluye: ${faltanImportantes.join(', ')}`] : [],

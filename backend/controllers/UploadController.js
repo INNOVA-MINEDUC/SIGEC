@@ -74,6 +74,11 @@ export const CargaMasiva = async (req, res) => {
     return res.status(400).json({ ok: false, message: 'No se envió ningún archivo' })
   }
 
+  // Fecha de ingreso elegida por el usuario en el frontend. Si viene, es LA
+  // fecha de ingreso de todos los casos de esta carga; las demás fechas
+  // (primera consulta, etc.) siguen tomándose del archivo.
+  const fechaIngresoManual = parseDate(req.body?.fecha_ingreso)
+
   try {
     // 1. Parsear Excel
     const workbook = new ExcelJS.Workbook()
@@ -255,7 +260,7 @@ export const CargaMasiva = async (req, res) => {
           numero_caso:            numeroCaso,
           nina_id:                nina.id,
           carga_archivo_id:       carga.id,
-          fecha_ingreso:          fechaContacto,
+          fecha_ingreso:          fechaIngresoManual ?? fechaContacto,
           fecha_primera_consulta: fechaContacto,
           forma_deteccion:        'MSPAS',
           no_notificacion:        noNotificacion,
@@ -451,7 +456,8 @@ export const CargaInicial = async (req, res) => {
       entidad:     'CargaArchivo',
       entidad_id:  resultado.carga_id,
       descripcion: `Importó ${req.file.originalname}: `
-                 + `${resultado.nuevos} nuevos, ${resultado.duplicados} omitidos de ${resultado.total} filas`,
+                 + `${resultado.nuevos} nuevos, ${resultado.actualizados} con queja agregada, `
+                 + `${resultado.duplicados} omitidos de ${resultado.total} filas`,
     })
 
     return res.json({
@@ -461,8 +467,10 @@ export const CargaInicial = async (req, res) => {
       total:        resultado.total,
       nuevos:       resultado.nuevos,
       duplicados:   resultado.duplicados,
-      fallidos:     resultado.fallidos,      // [{ fila, motivo, nombre, cui }]
-      sinUbicacion: resultado.sinUbicacion,  // [{ fila, nombre, problema }]
+      actualizados: resultado.actualizados,          // nº de casos completados con su queja
+      fallidos:     resultado.fallidos,              // [{ fila, motivo, nombre, cui }]
+      actualizadosDetalle: resultado.actualizadosDetalle, // [{ fila, numero_caso, nombre, cui, queja }]
+      sinUbicacion: resultado.sinUbicacion,          // [{ fila, nombre, problema }]
       advertencias: resultado.advertencias,
     })
 

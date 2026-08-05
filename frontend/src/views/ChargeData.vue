@@ -43,8 +43,9 @@
                 <img src="@/assets/upload_icon.png" alt="Upload icon" class="upload-img" />
                 <div class="upload-text">Arrastre y suelte su archivo</div>
                 <div class="upload-or">o</div>
+
                 <input type="file" ref="fileInput" accept=".xlsx,.xls" class="file-input" @change="onFileChange" />
-                <button class="upload-btn" @click="fileInput.click()">Subir archivos</button>
+                <button class="upload-btn" @click="abrirModalFecha">Subir archivos</button>
                 <div class="upload-hint">Tamaño hasta 100 MB</div>
 
                 <!-- Importación formato SIRE: flujo independiente del de arriba,
@@ -85,6 +86,10 @@
                 <div class="resultado-num">{{ resultadoInicial.nuevos }}</div>
                 <div class="resultado-label">Casos registrados</div>
               </div>
+              <div class="resultado-item info">
+                <div class="resultado-num">{{ resultadoInicial.actualizados ?? 0 }}</div>
+                <div class="resultado-label">Queja agregada</div>
+              </div>
               <div class="resultado-item warn">
                 <div class="resultado-num">{{ resultadoInicial.duplicados }}</div>
                 <div class="resultado-label">No insertados</div>
@@ -122,6 +127,36 @@
               </div>
             </div>
 
+            <!-- Casos existentes a los que se les agregó la queja -->
+            <div v-if="resultadoInicial.actualizadosDetalle?.length" class="detalle-bloque">
+              <div class="detalle-titulo">
+                <v-icon size="16" color="#1565c0">mdi-flag-plus-outline</v-icon>
+                Queja agregada a casos existentes ({{ resultadoInicial.actualizadosDetalle.length }})
+              </div>
+              <div class="detalle-scroll">
+                <table class="detalle-tabla">
+                  <thead>
+                    <tr>
+                      <th>Fila</th>
+                      <th>No. Caso</th>
+                      <th>Nombre</th>
+                      <th>CUI</th>
+                      <th>Queja agregada</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="a in resultadoInicial.actualizadosDetalle" :key="'a' + a.fila">
+                      <td class="col-fila">{{ a.fila }}</td>
+                      <td>{{ a.numero_caso }}</td>
+                      <td>{{ a.nombre || '—' }}</td>
+                      <td>{{ a.cui || '—' }}</td>
+                      <td class="col-queja">{{ a.queja }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
             <!-- Insertados pero sin ubicación resuelta -->
             <div v-if="resultadoInicial.sinUbicacion?.length" class="detalle-bloque">
               <div class="detalle-titulo">
@@ -149,7 +184,7 @@
             </div>
 
             <div
-              v-if="!resultadoInicial.fallidos?.length && !resultadoInicial.sinUbicacion?.length"
+              v-if="!resultadoInicial.fallidos?.length && !resultadoInicial.sinUbicacion?.length && !resultadoInicial.actualizadosDetalle?.length"
               class="detalle-ok"
             >
               <v-icon size="16" color="#2e7d32">mdi-check-circle-outline</v-icon>
@@ -243,6 +278,32 @@
       </div>
     </section>
 
+    <!-- ── Modal: fecha de ingreso antes de subir MSPAS ── -->
+    <div v-if="modalFecha" class="modal-overlay" @click.self="cerrarModalFecha">
+      <div class="modal-box" role="dialog" aria-modal="true">
+        <div class="modal-head">
+          <v-icon size="20" color="#10233f">mdi-calendar-check</v-icon>
+          <span>Fecha de ingreso del caso</span>
+        </div>
+        <p class="modal-text">
+          Esta fecha se guardará como fecha de ingreso de todos los casos del archivo que vas a subir.
+        </p>
+        <input
+          type="date"
+          class="modal-date"
+          v-model="fechaIngresoMasivo"
+          :max="hoyISO"
+          @keydown.enter="confirmarFecha"
+        />
+        <div class="modal-actions">
+          <button class="modal-btn ghost" @click="cerrarModalFecha">Cancelar</button>
+          <button class="modal-btn primary" :disabled="!fechaIngresoMasivo" @click="confirmarFecha">
+            Continuar
+          </button>
+        </div>
+      </div>
+    </div>
+
     <AppFooter />
   </div>
 </template>
@@ -262,6 +323,28 @@ const resultado     = ref(null)
 const lastUpload    = ref(null)
 const uploadHistory = ref([])
 const validacion    = ref(null)   // { error, advertencias, nombreArchivo }
+
+// Fecha de ingreso para la carga MSPAS (botón azul), elegida en un modal
+const fechaIngresoMasivo = ref('')
+const modalFecha = ref(false)
+const hoyISO = new Date().toISOString().slice(0, 10)
+
+// Botón azul → abre el modal de fecha (no el selector de archivo directamente)
+function abrirModalFecha() {
+  fechaIngresoMasivo.value = ''
+  modalFecha.value = true
+}
+
+function cerrarModalFecha() {
+  modalFecha.value = false
+}
+
+// Con la fecha ya elegida se cierra el modal y se abre el selector de archivos
+function confirmarFecha() {
+  if (!fechaIngresoMasivo.value) return
+  modalFecha.value = false
+  fileInput.value.click()
+}
 
 // ── Constants ──────────────────────────────────────────
 const historyHeaders = [
@@ -436,6 +519,8 @@ async function onFileChange(payload) {
   try {
     const formData = new FormData()
     formData.append('file', file)
+    // Fecha de ingreso elegida por el usuario para todos los casos de esta carga
+    if (fechaIngresoMasivo.value) formData.append('fecha_ingreso', fechaIngresoMasivo.value)
 
     const response = await api.post('/upload/masivo', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
@@ -744,6 +829,71 @@ async function onArchivoInicial(payload) {
 .detalle-tabla tbody tr:nth-child(even) { background: #fafafa; }
 .col-fila   { width: 3rem; font-variant-numeric: tabular-nums; color: #6d6d6d; }
 .col-motivo { color: #c62828; }
+.col-queja  { color: #1565c0; font-weight: 600; }
+
+/* ── Modal de fecha de ingreso (carga MSPAS) ── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(16, 35, 63, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+.modal-box {
+  background: #fff;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  width: 100%;
+  max-width: 360px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+}
+.modal-head {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #10233f;
+  margin-bottom: 0.5rem;
+}
+.modal-text {
+  font-size: 0.8rem;
+  color: #6d6d6d;
+  line-height: 1.5;
+  margin-bottom: 1rem;
+}
+.modal-date {
+  width: 100%;
+  border: 1px solid #cfd6e0;
+  border-radius: 0.45rem;
+  padding: 0.55rem 0.7rem;
+  font-size: 0.9rem;
+  color: #333;
+  margin-bottom: 1.25rem;
+}
+.modal-date:focus { outline: none; border-color: #10233f; }
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+}
+.modal-btn {
+  border-radius: 0.45rem;
+  padding: 0.5rem 1.1rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: opacity 0.2s;
+}
+.modal-btn.primary { background: #10233f; color: #fff; }
+.modal-btn.primary:disabled { opacity: 0.45; cursor: not-allowed; }
+.modal-btn.primary:not(:disabled):hover { opacity: 0.9; }
+.modal-btn.ghost { background: transparent; color: #6d6d6d; border-color: #d0d0d0; }
+.modal-btn.ghost:hover { background: #f4f4f4; }
 
 .detalle-ok {
   display: flex;
@@ -797,9 +947,11 @@ async function onArchivoInicial(payload) {
 }
 .resultado-item.success { background: #e8f5e9; }
 .resultado-item.warn    { background: #fff3e0; }
+.resultado-item.info    { background: #e3f0fb; }
 .resultado-num   { font-size: 2rem; font-weight: 700; color: #333; }
 .resultado-item.success .resultado-num { color: #2e7d32; }
 .resultado-item.warn    .resultado-num { color: #e65100; }
+.resultado-item.info    .resultado-num { color: #1565c0; }
 .resultado-label { font-size: 0.75rem; color: #9e9e9e; margin-top: 0.25rem; }
 
 /* ── HISTORY ── */
