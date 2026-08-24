@@ -1,6 +1,6 @@
 import multer from 'multer'
 import express from 'express'
-import { uploadExcel, CargaMasiva, ObtenerHistorial } from '../controllers/UploadController.js'
+import { uploadExcel, CargaMasiva, ObtenerHistorial, CargaInicial } from '../controllers/UploadController.js'
 import { verifyToken }  from '../middleware/verifyToken.js'
 import { requireRole } from '../middleware/requireRole.js'
 
@@ -21,5 +21,9 @@ const router = express.Router()
 router.get('/historial',  verifyToken, requireRole('admin'), ObtenerHistorial)
 router.post('/excel',     upload.single('file'), uploadExcel)
 router.post('/masivo',    verifyToken, requireRole('admin'), upload.single('file'), CargaMasiva)
+
+// Importación de archivo en formato SIRE (reemplaza al seeder de carga inicial).
+// El administrador sube el Excel; los fallos se devuelven en la respuesta.
+router.post('/inicial',   verifyToken, requireRole('admin'), upload.single('file'), CargaInicial)
 
 export default router

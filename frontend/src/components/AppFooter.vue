@@ -2,7 +2,9 @@
   <footer class="footer">
     <div class="footer-container">
       <div class="footer-logo">
-        <img :src="logoDigecade1" alt="Logo DCE" class="footer-logo-img" />
+        <img src="/imgs/logo2.png" alt="Logo DCE" class="footer-logo-img" />
+        <img src="/imgs/logo3.png" alt="Logo DCE" class="footer-logo-img" />
+        <img src="/imgs/logo1.png" alt="Logo DCE" class="footer-logo-img" />
       </div>
       <div class="footer-grid">
         <!-- Col 1 -->
@@ -34,7 +36,7 @@
           </div>
         </div>
       </div>
-      <div class="footer-bottom">@ 2023 ByteSpace. All rights reserved.</div>
+      <div class="footer-bottom">Ministerio de Educación 2026. All rights reserved.</div>
     </div>
   </footer>
 </template>
@@ -45,7 +47,7 @@ import logoDigecade1 from '@/assets/LOGOS_DCE1.png'
 
 <style scoped>
 .footer {
-  background-color: #ff9797;
+  background-color: #10233f;
   color: white;
   padding: 1rem 0 1.5rem;
   margin-top: 4rem;
@@ -58,13 +60,14 @@ import logoDigecade1 from '@/assets/LOGOS_DCE1.png'
 }
 .footer-logo {
   display: flex;
-  align-items: center;
+  flex-direction: row;
+  justify-content: start;
   gap: 1rem;
   margin-bottom: 3rem;
   padding-top: 3rem;
 }
 .footer-logo-img {
-  height: 48px;
+  height: 5rem;
   width: auto;
   object-fit: contain;
 }
@@ -105,6 +108,6 @@ import logoDigecade1 from '@/assets/LOGOS_DCE1.png'
   text-align: right;
   font-size: 0.75rem;
   opacity: 0.8;
-  border-top: 1px solid #ffffff;
+  border-top: 1px solid #f472b6;
 }
 </style>

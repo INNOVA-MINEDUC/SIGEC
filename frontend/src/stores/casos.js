@@ -77,7 +77,7 @@ export const useCasosStore = defineStore('casos', () => {
         : false
     )
 
-  // Casos filtrados por estado: 'pendiente' | 'faltante' | 'completado'
+  // Casos filtrados por estado institucional (ver ESTADOS_CASO en las vistas)
   const casosPorEstado = (estado) =>
     casos.value.filter(c => c.estado === estado)
 

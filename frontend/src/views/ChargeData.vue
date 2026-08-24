@@ -7,8 +7,8 @@
       <img src="@/assets/hero_charge_data.jpg" alt="Hero background" class="hero-bg" />
       <div class="hero-overlay"></div>
       <div class="hero-content">
-        <h1 class="hero-title">Importar Datos</h1>
-        <p class="hero-subtitle">Sube y Administra tus archivos web</p>
+        <h1 class="hero-title">Importar datos</h1>
+        <p class="hero-subtitle">sube y administra tus archivos web</p>
       </div>
     </section>
 
@@ -20,12 +20,12 @@
 
             <!-- Left Column -->
             <div class="card-left">
-              <div class="section-label">IMPORTAR EXCEL</div>
-              <h2 class="section-heading">Datos del Ministerio<br />de Salud</h2>
+              <div class="section-label">Importar excel</div>
+              <h2 class="section-heading">Ministerio de salud pública y asistencia social<br />(MSPAS)</h2>
 
               <div v-if="lastUpload" class="last-upload-card">
                 <div class="last-upload-header">
-                  <v-icon size="18" color="#ff9797">mdi-circle</v-icon>
+                  <v-icon size="18" color="primary">mdi-circle</v-icon>
                   <span class="last-upload-title">Última carga</span>
                 </div>
                 <div class="last-upload-grid last-upload-grid--wide">
@@ -43,14 +43,174 @@
                 <img src="@/assets/upload_icon.png" alt="Upload icon" class="upload-img" />
                 <div class="upload-text">Arrastre y suelte su archivo</div>
                 <div class="upload-or">o</div>
+
                 <input type="file" ref="fileInput" accept=".xlsx,.xls" class="file-input" @change="onFileChange" />
-                <button class="upload-btn" @click="fileInput.click()">Subir Archivos</button>
+                <button class="upload-btn" @click="abrirModalFecha">Subir archivos</button>
                 <div class="upload-hint">Tamaño hasta 100 MB</div>
+
+                <!-- Importación formato SIRE: flujo independiente del de arriba,
+                     con sus propios estados y su propio endpoint. -->
+                <div class="inicial-row">
+                  <input
+                    type="file"
+                    ref="fileInputInicial"
+                    accept=".xlsx,.xls"
+                    class="file-input"
+                    @change="onArchivoInicial"
+                  />
+                  <button
+                    class="inicial-btn"
+                    :disabled="uploading || validando || cargandoInicial"
+                    @click="fileInputInicial.click()"
+                  >
+                    <v-icon size="14">mdi-database-import</v-icon>
+                    {{ cargandoInicial ? 'Importando…' : 'Importar archivo SIRE' }}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
 
+          <!-- Resultado de la carga inicial (flujo propio, no pisa el de arriba) -->
+          <div v-if="resultadoInicial" class="resultado-card">
+            <div class="inicial-head">
+              <v-icon size="18" color="#10233f">mdi-database-import</v-icon>
+              <span>Carga inicial — {{ resultadoInicial.archivo }}</span>
+            </div>
+            <div class="resultado-grid">
+              <div class="resultado-item">
+                <div class="resultado-num">{{ resultadoInicial.total }}</div>
+                <div class="resultado-label">Total filas</div>
+              </div>
+              <div class="resultado-item success">
+                <div class="resultado-num">{{ resultadoInicial.nuevos }}</div>
+                <div class="resultado-label">Casos registrados</div>
+              </div>
+              <div class="resultado-item info">
+                <div class="resultado-num">{{ resultadoInicial.actualizados ?? 0 }}</div>
+                <div class="resultado-label">Queja agregada</div>
+              </div>
+              <div class="resultado-item warn">
+                <div class="resultado-num">{{ resultadoInicial.duplicados }}</div>
+                <div class="resultado-label">No insertados</div>
+              </div>
+              <div class="resultado-item warn">
+                <div class="resultado-num">{{ resultadoInicial.sinUbicacion?.length ?? 0 }}</div>
+                <div class="resultado-label">Sin ubicación</div>
+              </div>
+            </div>
+            <!-- Registros NO insertados, con el motivo de cada uno -->
+            <div v-if="resultadoInicial.fallidos?.length" class="detalle-bloque">
+              <div class="detalle-titulo">
+                <v-icon size="16" color="#c62828">mdi-close-circle-outline</v-icon>
+                No insertados ({{ resultadoInicial.fallidos.length }})
+              </div>
+              <div class="detalle-scroll">
+                <table class="detalle-tabla">
+                  <thead>
+                    <tr>
+                      <th>Fila</th>
+                      <th>Nombre</th>
+                      <th>CUI</th>
+                      <th>Motivo</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="f in resultadoInicial.fallidos" :key="'f' + f.fila">
+                      <td class="col-fila">{{ f.fila }}</td>
+                      <td>{{ f.nombre || '—' }}</td>
+                      <td>{{ f.cui || '—' }}</td>
+                      <td class="col-motivo">{{ f.motivo }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Casos existentes a los que se les agregó la queja -->
+            <div v-if="resultadoInicial.actualizadosDetalle?.length" class="detalle-bloque">
+              <div class="detalle-titulo">
+                <v-icon size="16" color="#1565c0">mdi-flag-plus-outline</v-icon>
+                Queja agregada a casos existentes ({{ resultadoInicial.actualizadosDetalle.length }})
+              </div>
+              <div class="detalle-scroll">
+                <table class="detalle-tabla">
+                  <thead>
+                    <tr>
+                      <th>Fila</th>
+                      <th>No. Caso</th>
+                      <th>Nombre</th>
+                      <th>CUI</th>
+                      <th>Queja agregada</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="a in resultadoInicial.actualizadosDetalle" :key="'a' + a.fila">
+                      <td class="col-fila">{{ a.fila }}</td>
+                      <td>{{ a.numero_caso }}</td>
+                      <td>{{ a.nombre || '—' }}</td>
+                      <td>{{ a.cui || '—' }}</td>
+                      <td class="col-queja">{{ a.queja }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Insertados pero sin ubicación resuelta -->
+            <div v-if="resultadoInicial.sinUbicacion?.length" class="detalle-bloque">
+              <div class="detalle-titulo">
+                <v-icon size="16" color="#e65100">mdi-map-marker-alert-outline</v-icon>
+                Insertados sin ubicación completa ({{ resultadoInicial.sinUbicacion.length }})
+              </div>
+              <div class="detalle-scroll">
+                <table class="detalle-tabla">
+                  <thead>
+                    <tr>
+                      <th>Fila</th>
+                      <th>Nombre</th>
+                      <th>Problema</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="u in resultadoInicial.sinUbicacion" :key="'u' + u.fila">
+                      <td class="col-fila">{{ u.fila }}</td>
+                      <td>{{ u.nombre || '—' }}</td>
+                      <td class="col-motivo">{{ u.problema }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div
+              v-if="!resultadoInicial.fallidos?.length && !resultadoInicial.sinUbicacion?.length && !resultadoInicial.actualizadosDetalle?.length"
+              class="detalle-ok"
+            >
+              <v-icon size="16" color="#2e7d32">mdi-check-circle-outline</v-icon>
+              Todos los registros se importaron sin observaciones.
+            </div>
+
+            <div class="inicial-actions">
+              <button class="clear-btn" @click="resultadoInicial = null">LIMPIAR</button>
+            </div>
+          </div>
+
+          <!-- Error de la carga inicial -->
+          <div v-if="errorInicial" class="validacion-error">
+            <v-icon size="20" color="#c62828">mdi-alert-circle</v-icon>
+            <div>
+              <div class="val-title">No se pudo ejecutar la carga inicial</div>
+              <div class="val-msg">{{ errorInicial }}</div>
+            </div>
+          </div>
+
           <!-- Validando / Cargando -->
+          <div v-if="cargandoInicial" class="uploading-state">
+            <v-progress-circular indeterminate color="#10233f" size="32" />
+            <span>Ejecutando carga inicial, puede tardar unos segundos…</span>
+          </div>
+
           <div v-if="validando || uploading" class="uploading-state">
             <v-progress-circular indeterminate color="#ff9797" size="32" />
             <span>{{ validando ? 'Validando archivo...' : 'Procesando, por favor espere...' }}</span>
@@ -111,11 +271,38 @@
             :headers="historyHeaders"
             :items="uploadHistory"
             density="comfortable"
+             items-per-page-text="Registros por página"
           />
           <div v-else class="empty-state">No hay cargas registradas aún</div>
         </div>
       </div>
     </section>
+
+    <!-- ── Modal: fecha de ingreso antes de subir MSPAS ── -->
+    <div v-if="modalFecha" class="modal-overlay" @click.self="cerrarModalFecha">
+      <div class="modal-box" role="dialog" aria-modal="true">
+        <div class="modal-head">
+          <v-icon size="20" color="#10233f">mdi-calendar-check</v-icon>
+          <span>Fecha de ingreso del caso</span>
+        </div>
+        <p class="modal-text">
+          Esta fecha se guardará como fecha de ingreso de todos los casos del archivo que vas a subir.
+        </p>
+        <input
+          type="date"
+          class="modal-date"
+          v-model="fechaIngresoMasivo"
+          :max="hoyISO"
+          @keydown.enter="confirmarFecha"
+        />
+        <div class="modal-actions">
+          <button class="modal-btn ghost" @click="cerrarModalFecha">Cancelar</button>
+          <button class="modal-btn primary" :disabled="!fechaIngresoMasivo" @click="confirmarFecha">
+            Continuar
+          </button>
+        </div>
+      </div>
+    </div>
 
     <AppFooter />
   </div>
@@ -137,14 +324,72 @@ const lastUpload    = ref(null)
 const uploadHistory = ref([])
 const validacion    = ref(null)   // { error, advertencias, nombreArchivo }
 
+// Fecha de ingreso para la carga MSPAS (botón azul), elegida en un modal
+const fechaIngresoMasivo = ref('')
+const modalFecha = ref(false)
+const hoyISO = new Date().toISOString().slice(0, 10)
+
+// Botón azul → abre el modal de fecha (no el selector de archivo directamente)
+function abrirModalFecha() {
+  fechaIngresoMasivo.value = ''
+  modalFecha.value = true
+}
+
+function cerrarModalFecha() {
+  modalFecha.value = false
+}
+
+// Con la fecha ya elegida se cierra el modal y se abre el selector de archivos
+function confirmarFecha() {
+  if (!fechaIngresoMasivo.value) return
+  modalFecha.value = false
+  fileInput.value.click()
+}
+
 // ── Constants ──────────────────────────────────────────
 const historyHeaders = [
-  { title: 'Archivo',    key: 'nombre_archivo' },
-  { title: 'Total',      key: 'total_registros' },
-  { title: 'Nuevos',     key: 'registros_nuevos' },
-  { title: 'Duplicados', key: 'registros_duplicados' },
-  { title: 'Subido por', key: 'usuario_nombre' },
-  { title: 'Fecha',      key: 'fecha_fmt' },
+  {
+    title: 'Archivo',
+    key: 'nombre_archivo',
+    headerProps: {
+      style: 'background-color: #10233f; color: white;'
+    }
+  },
+  {
+    title: 'Total',
+    key: 'total_registros',
+    headerProps: {
+      style: 'background-color: #10233f; color: white;'
+    }
+  },
+  {
+    title: 'Nuevos',
+    key: 'registros_nuevos',
+    headerProps: {
+      style: 'background-color: #10233f; color: white;'
+    }
+  },
+  {
+    title: 'Duplicados',
+    key: 'registros_duplicados',
+    headerProps: {
+      style: 'background-color: #10233f; color: white;'
+    }
+  },
+  {
+    title: 'Subido por',
+    key: 'usuario_nombre',
+    headerProps: {
+      style: 'background-color: #10233f; color: white;'
+    }
+  },
+  {
+    title: 'Fecha',
+    key: 'fecha_fmt',
+    headerProps: {
+      style: 'background-color: #10233f; color: white;'
+    }
+  },
 ]
 
 // Columnas esperadas en el archivo MSPAS
@@ -274,6 +519,8 @@ async function onFileChange(payload) {
   try {
     const formData = new FormData()
     formData.append('file', file)
+    // Fecha de ingreso elegida por el usuario para todos los casos de esta carga
+    if (fechaIngresoMasivo.value) formData.append('fecha_ingreso', fechaIngresoMasivo.value)
 
     const response = await api.post('/upload/masivo', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
@@ -310,6 +557,42 @@ function clearResultado() {
   resultado.value  = null
   validacion.value = null
 }
+
+// ── Carga inicial desde el Excel semilla del servidor ──────────────────────
+// Flujo aparte del de "Subir archivos": no envía archivo, solo dispara el
+// proceso en el backend, que aplica las mismas validaciones de la carga masiva
+// (deduplicación, ubicación con Fuse, nivel canónico, estado según queja).
+const fileInputInicial = ref(null)
+const cargandoInicial  = ref(false)
+const resultadoInicial = ref(null)
+const errorInicial     = ref(null)
+
+async function onArchivoInicial(payload) {
+  const file = payload?.target?.files?.[0]
+  if (!file) return
+
+  cargandoInicial.value  = true
+  errorInicial.value     = null
+  resultadoInicial.value = null
+
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const { data } = await api.post('/upload/inicial', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+
+    resultadoInicial.value = data
+    await fetchHistorial()
+  } catch (error) {
+    errorInicial.value = error.response?.data?.message || error.message
+  } finally {
+    cargandoInicial.value = false
+    // Permite volver a elegir el mismo archivo si se reintenta
+    if (fileInputInicial.value) fileInputInicial.value.value = ''
+  }
+}
 </script>
 
 <style scoped>
@@ -324,7 +607,11 @@ function clearResultado() {
 /* ── HERO ── */
 .hero             { position: relative; width: 100%; overflow: hidden; height: 500px; }
 .hero-bg          { width: 100%; height: 100%; object-fit: cover; object-position: center; }
-.hero-overlay     { position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(255,151,151,0) 0%, rgba(255,151,151,0.2) 40%, rgba(255,151,151,0.95) 100%); }
+.hero-overlay     { position: absolute; inset: 0;
+  background: linear-gradient(to bottom,
+      rgba(16, 35, 63, 0) 0%,
+      rgba(16, 35, 63, 0.2) 40%,
+      rgba(16, 35, 63, 0.95) 100%); }
 .hero-content     { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 3.5rem; padding-inline: 1.5rem; text-align: center; }
 .hero-title       { color: white; text-shadow: 0 4px 12px rgba(0,0,0,0.3); font-size: 64px; font-weight: 700; line-height: 1.15; max-width: 900px; margin-bottom: 0; }
 .hero-subtitle    { margin-top: 0.5rem; color: white; font-size: 1.5rem; font-weight: 700; text-shadow: 0 2px 8px rgba(0,0,0,0.3); max-width: 700px; }
@@ -352,7 +639,7 @@ function clearResultado() {
 
 /* ── LEFT COLUMN ── */
 .section-label {
-  color: #ff9797;
+  color: primary;
   font-size: 20px;
   font-weight: 700;
   letter-spacing: 1px;
@@ -443,7 +730,7 @@ function clearResultado() {
 }
 .file-input  { display: none; }
 .upload-btn {
-  background-color: #ff9797;
+  background-color: #10233f;
   color: white;
   border-radius: 0.5rem;
   border: none;
@@ -455,6 +742,168 @@ function clearResultado() {
 }
 .upload-btn:hover { opacity: 0.9; }
 .upload-hint { margin-top: 0.5rem; font-size: 0.7rem; color: #9e9e9e; }
+
+/* ── Carga inicial (botón pequeño, secundario al de subir archivos) ── */
+.inicial-row {
+  margin-top: 0.9rem;
+  padding-top: 0.9rem;
+  border-top: 1px dashed #e0e0e0;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+.inicial-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: transparent;
+  color: #10233f;
+  border: 1px solid #10233f;
+  border-radius: 0.4rem;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, opacity 0.2s;
+}
+.inicial-btn:hover:not(:disabled) { background: #10233f; color: #fff; }
+.inicial-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.inicial-head {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #10233f;
+  margin-bottom: 0.75rem;
+}
+.inicial-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+/* ── Detalle de registros no insertados (en pantalla) ── */
+.detalle-bloque {
+  margin-top: 1rem;
+  text-align: left;
+}
+.detalle-titulo {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #10233f;
+  margin-bottom: 0.4rem;
+}
+/* Altura acotada: con cientos de filas la tarjeta no crece sin control */
+.detalle-scroll {
+  max-height: 260px;
+  overflow: auto;
+  border: 1px solid #e0e0e0;
+  border-radius: 0.4rem;
+}
+.detalle-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.72rem;
+}
+.detalle-tabla thead th {
+  position: sticky;
+  top: 0;
+  background: #10233f;
+  color: #fff;
+  text-align: left;
+  padding: 0.4rem 0.55rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.detalle-tabla td {
+  padding: 0.35rem 0.55rem;
+  border-top: 1px solid #eee;
+  color: #4a4a4a;
+  vertical-align: top;
+}
+.detalle-tabla tbody tr:nth-child(even) { background: #fafafa; }
+.col-fila   { width: 3rem; font-variant-numeric: tabular-nums; color: #6d6d6d; }
+.col-motivo { color: #c62828; }
+.col-queja  { color: #1565c0; font-weight: 600; }
+
+/* ── Modal de fecha de ingreso (carga MSPAS) ── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(16, 35, 63, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+.modal-box {
+  background: #fff;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  width: 100%;
+  max-width: 360px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+}
+.modal-head {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #10233f;
+  margin-bottom: 0.5rem;
+}
+.modal-text {
+  font-size: 0.8rem;
+  color: #6d6d6d;
+  line-height: 1.5;
+  margin-bottom: 1rem;
+}
+.modal-date {
+  width: 100%;
+  border: 1px solid #cfd6e0;
+  border-radius: 0.45rem;
+  padding: 0.55rem 0.7rem;
+  font-size: 0.9rem;
+  color: #333;
+  margin-bottom: 1.25rem;
+}
+.modal-date:focus { outline: none; border-color: #10233f; }
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+}
+.modal-btn {
+  border-radius: 0.45rem;
+  padding: 0.5rem 1.1rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: opacity 0.2s;
+}
+.modal-btn.primary { background: #10233f; color: #fff; }
+.modal-btn.primary:disabled { opacity: 0.45; cursor: not-allowed; }
+.modal-btn.primary:not(:disabled):hover { opacity: 0.9; }
+.modal-btn.ghost { background: transparent; color: #6d6d6d; border-color: #d0d0d0; }
+.modal-btn.ghost:hover { background: #f4f4f4; }
+
+.detalle-ok {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  justify-content: center;
+  margin-top: 0.75rem;
+  font-size: 0.75rem;
+  color: #2e7d32;
+}
 
 /* ── RESULTS ── */
 .result-alert { margin-top: 2rem; border-radius: 0.5rem; }
@@ -498,9 +947,11 @@ function clearResultado() {
 }
 .resultado-item.success { background: #e8f5e9; }
 .resultado-item.warn    { background: #fff3e0; }
+.resultado-item.info    { background: #e3f0fb; }
 .resultado-num   { font-size: 2rem; font-weight: 700; color: #333; }
 .resultado-item.success .resultado-num { color: #2e7d32; }
 .resultado-item.warn    .resultado-num { color: #e65100; }
+.resultado-item.info    .resultado-num { color: #1565c0; }
 .resultado-label { font-size: 0.75rem; color: #9e9e9e; margin-top: 0.25rem; }
 
 /* ── HISTORY ── */

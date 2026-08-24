@@ -16,9 +16,10 @@ let series
 let legend
 
 const buildData = () => [
-  { casos: "Completados",  value: casosStore.casosPorEstado("completado").length },
-  { casos: "Incompletos",  value: casosStore.casosPorEstado("pendiente").length },
-  { casos: "Faltantes",    value: casosStore.casosPorEstado("faltante").length   }
+  { casos: "Verificados en el SIRE",      value: casosStore.casosPorEstado("Verificados en el SIRE").length },
+  { casos: "Sin Verificar en el SIRE",    value: casosStore.casosPorEstado("sin Verificar en el SIRE").length },
+  { casos: "Verificados en Quejas",       value: casosStore.casosPorEstado("Verificados en el Sistema de Quejas, Comentarios o Sugerencias").length },
+  { casos: "Sin Quejas",                  value: casosStore.casosPorEstado("sin Quejas").length },
 ]
 
 onMounted(() => {
@@ -45,9 +46,10 @@ onMounted(() => {
   series.ticks.template.setAll({ forceHidden: true, visible: false })
 
   series.get("colors").set("colors", [
-    am5.color("#ff9797"),
-    am5.color("#ffb3b3"),
-    am5.color("#d0d0d0")
+    am5.color("#10233f"),
+    am5.color("#1F3864"),
+    am5.color("#6d6d6d"),
+    am5.color("#b0b0b0")
   ])
 
   series.slices.template.setAll({
@@ -102,5 +104,6 @@ onBeforeUnmount(() => {
 #chartdivdona {
   width: 100%;
   height: 300px;
+  filter: drop-shadow(2px 20px 12px);
 }
 </style>

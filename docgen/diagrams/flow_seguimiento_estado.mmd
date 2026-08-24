@@ -1,0 +1,21 @@
+flowchart TD
+    A([Inicio: Usuario accede<br/>a vista de Seguimiento]) --> B[Frontend solicita<br/>GET /api/v1/caso<br/>con filtros opcionales]
+    B --> C[CasoController.ObtenerCasosFiltrados]
+    C --> D[Aplica filtros recibidos:<br/>departamento, municipio,<br/>departamental, estado,<br/>rango de fechas, busqueda]
+    D --> E[Consulta CASO_EMBARAZO<br/>con joins a NINA,<br/>CENTRO_EDUCATIVO, ubicacion]
+    E --> F[Responde lista paginada<br/>de casos]
+    F --> G[Frontend renderiza tabla<br/>y graficos del dashboard]
+    G --> H{Usuario selecciona<br/>un caso para actualizar}
+    H -- No --> Z1([Fin])
+    H -- Si --> I[Abre formulario de edicion<br/>con estado actual del caso]
+    I --> J[Usuario modifica estado<br/>o datos de seguimiento]
+    J --> K[PUT /api/v1/caso/:id]
+    K --> L[Middleware verifyToken<br/>+ attachUser]
+    L --> M[CasoController.ActualizarCaso]
+    M --> N{Datos validos?}
+    N -- No --> O([400 Bad Request]) --> Z2([Fin])
+    N -- Si --> P[Actualiza CASO_EMBARAZO<br/>en base de datos]
+    P --> Q[Registrar auditoria<br/>accion: actualizar_caso]
+    Q --> R[Responder 200 OK<br/>con caso actualizado]
+    R --> S[Frontend refresca tabla<br/>y graficos]
+    S --> Z3([Fin])

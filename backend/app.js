@@ -11,7 +11,7 @@ import auditoriaRoutes from './routes/auditoria.routes.js'
 // import niñasRoutes from './routes/niña.routes.js'
 // import quejasRoutes from './routes/queja.routes.js'
 import dotenv from 'dotenv'
-dotenv.config()
+dotenv.config({ path: process.env.NODE_ENV === 'production' ? '.env.prod' : '.env.dev' })
 
 const app = express();
 

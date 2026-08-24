@@ -1,0 +1,21 @@
+flowchart TD
+    A([Inicio: Usuario admin<br/>accede a Auditoria]) --> B[Frontend solicita<br/>GET /api/v1/auditoria<br/>con filtros: accion, desde, hasta]
+    B --> C[Middleware verifyToken<br/>+ requireRole admin]
+    C --> D{Rol autorizado?}
+    D -- No --> E([403 Prohibido]) --> ZE([Fin])
+    D -- Si --> F[AuditoriaController.listar]
+    F --> G[Consulta AUDITORIA<br/>con join a USER<br/>paginado y filtrado]
+    G --> H[Responde registros<br/>+ info de paginacion]
+    H --> I[Frontend muestra tabla<br/>de bitacora]
+    I --> J{Usuario elige<br/>exportar?}
+    J -- No --> Z1([Fin])
+    J -- Si, Excel --> K1[Frontend obtiene<br/>TODOS los registros filtrados<br/>iterando paginas]
+    J -- Si, PDF --> K2[Frontend obtiene<br/>TODOS los registros filtrados<br/>iterando paginas]
+    K1 --> L1[useExport.exportarAuditoriaExcel<br/>genera libro con ExcelJS<br/>+ encabezado MINEDUC/SIGEC]
+    L1 --> M1[Descarga archivo .xlsx]
+    K2 --> L2[useExport.exportarAuditoriaPDF<br/>genera PDF con jsPDF<br/>+ encabezado MINEDUC/SIGEC]
+    L2 --> M2[Descarga archivo .pdf]
+    M1 --> N[Registrar auditoria<br/>accion: descargar_excel]
+    M2 --> O[Registrar auditoria<br/>accion: descargar_pdf]
+    N --> Z2([Fin])
+    O --> Z2

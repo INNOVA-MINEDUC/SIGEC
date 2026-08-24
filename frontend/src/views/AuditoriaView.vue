@@ -16,15 +16,15 @@
 
         <div class="audit-header">
           <div>
-            <h2 class="section-title">Bitácora de Auditoría</h2>
+            <h2 class="section-title">Bitácora de auditoría</h2>
             <p class="section-subtitle">Consulta quién realizó cada acción dentro del sistema.</p>
           </div>
           <div class="export-actions">
-            <button class="export-btn excel-btn" :disabled="exportando" @click="exportarExcelAuditoria">
+            <button class="btn-export excel" :disabled="exportando" @click="exportarExcelAuditoria">
               <v-icon size="16" class="mr-1">mdi-file-excel-outline</v-icon>
               {{ exportando === 'excel' ? 'Generando...' : 'Excel' }}
             </button>
-            <button class="export-btn pdf-btn" :disabled="exportando" @click="exportarPdfAuditoria">
+            <button class="btn-export pdf" :disabled="exportando" @click="exportarPdfAuditoria">
               <v-icon size="16" class="mr-1">mdi-file-pdf-box</v-icon>
               {{ exportando === 'pdf' ? 'Generando...' : 'PDF' }}
             </button>
@@ -36,11 +36,19 @@
           <div class="filters-row">
             <div class="select-wrapper">
               <label class="filter-label">Acción</label>
-              <select v-model="accionFiltro" class="audit-select" @change="cargar(1)">
-                <option value="">Todas</option>
-                <option v-for="op in ACCIONES" :key="op.value" :value="op.value">{{ op.label }}</option>
-              </select>
-              <v-icon size="16" class="select-icon">mdi-chevron-down</v-icon>
+           <v-select
+  v-model="accionFiltro"
+  :items="ACCIONES"
+  item-title="label"
+  item-value="value"
+  label="Acción"
+  variant="outlined"
+  density="compact"
+  color="#10233f"
+  base-color="#10233f"
+  clearable
+  @update:modelValue="cargar(1)"
+/>
             </div>
 
             <div class="date-field">
@@ -126,6 +134,9 @@ const hasta        = ref('')
 const exportando   = ref(false)
 
 const ACCIONES = [
+  { value: '', label: 'Todas' },
+  { value: 'inicio_sesion',       label: 'Inicio de sesión' },
+  { value: 'cierre_sesion',       label: 'Cierre de sesión' },
   { value: 'crear_caso',          label: 'Caso creado' },
   { value: 'actualizar_caso',     label: 'Caso actualizado' },
   { value: 'crear_usuario',       label: 'Usuario creado' },
@@ -245,7 +256,10 @@ onMounted(() => cargar(1))
 .hero-bg   { width: 100%; height: 100%; object-fit: cover; object-position: center top; }
 .hero-overlay {
   position: absolute; inset: 0;
-  background: linear-gradient(to bottom, rgba(255,151,151,0) 0%, rgba(255,151,151,0.2) 40%, rgba(255,151,151,0.95) 100%);
+  background: linear-gradient(to bottom,
+      rgba(16, 35, 63, 0) 0%,
+      rgba(16, 35, 63, 0.2) 40%,
+      rgba(16, 35, 63, 0.95) 100%);
 }
 .hero-content {
   position: absolute; inset: 0;
@@ -256,9 +270,9 @@ onMounted(() => cargar(1))
 .hero-title    { color: white; text-shadow: 0 4px 12px rgba(0,0,0,0.3); font-size: 64px; font-weight: 700; line-height: 1.15; margin-bottom: 0; }
 
 /* HEADER */
-.audit-header    { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 1rem; }
-.section-title   { font-size: 24px; font-weight: 700; color: #555555; margin-bottom: 0.25rem; line-height: 1.2; }
-.section-subtitle { font-size: 14px; color: #ff9797; margin: 0; }
+.audit-header    { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 1rem; background-color: #10233f; padding: 2rem; border-radius: 20px; }
+.section-title   { font-size: 24px; font-weight: 700; color: #fff; margin-bottom: 0.25rem; line-height: 1.2; }
+.section-subtitle { font-size: 14px; color: #17c4e8; margin: 0; }
 
 /* EXPORT BUTTONS */
 .export-actions { display: flex; gap: 0.6rem; }
@@ -290,13 +304,24 @@ onMounted(() => cargar(1))
 /* TABLE */
 .table-responsive { width: 100%; overflow-x: auto; }
 .audit-table { width: 100%; border-collapse: collapse; text-align: left; }
-.audit-table th { background-color: #fcfcfc; color: #888888; font-size: 11px; font-weight: 600; text-transform: capitalize; padding: 0.8rem 1.5rem; white-space: nowrap; border-bottom: 1px solid #f0f0f0; }
+.audit-table th { background-color: #10233f; color: #fff; font-size: 11px; font-weight: 600; text-transform: capitalize; padding: 0.8rem 1.5rem; white-space: nowrap; border-bottom: 1px solid #f0f0f0; }
 .audit-table td { padding: 1rem 1.5rem; border-bottom: 1px solid #f0f0f0; vertical-align: middle; font-size: 13px; }
 .audit-table tr:last-child td { border-bottom: none; }
 
 .user-name  { font-weight: 700; color: #1a1a1a; font-size: 13px; line-height: 1.2; }
 .user-email { font-size: 12px; color: #a0a0a0; margin-top: 0.1rem; }
 .text-gray  { color: #1a1a1a; font-size: 13px; }
+
+.btn-export {
+  display: flex; align-items: center; gap: 0.35rem;
+  border: none; padding: 0.45rem 0.9rem; border-radius: 0.5rem;
+  font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
+}
+.btn-export:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-export.excel { background: #e6f4ea; color: #137333; }
+.btn-export.excel:hover:not(:disabled) { background: #c8e6c9; }
+.btn-export.pdf   { background: #fce4e4; color: #b71c1c; }
+.btn-export.pdf:hover:not(:disabled) { background: #ffcdd2; }
 
 /* BADGES */
 .accion-badge { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 9999px; font-size: 11px; font-weight: 600; white-space: nowrap; background-color: #f5f5f5; color: #6d6d6d; }
@@ -306,6 +331,8 @@ onMounted(() => cargar(1))
 .accion-desactivar_usuario                       { background-color: #fdecea; color: #c0392b; }
 .accion-descargar_pdf, .accion-descargar_excel   { background-color: #e8f0fe; color: #1967d2; }
 .accion-carga_masiva                             { background-color: #f3e8fd; color: #7b1fa2; }
+.accion-inicio_sesion                            { background-color: #e6f4ea; color: #137333; }
+.accion-cierre_sesion                            { background-color: #f1f1f1; color: #6d6d6d; }
 
 /* PAGINATION */
 .pagination-row { display: flex; align-items: center; justify-content: center; gap: 1rem; padding: 1rem 1.5rem; border-top: 1px solid #f0f0f0; }

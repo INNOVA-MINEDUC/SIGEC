@@ -1,30 +1,48 @@
 <template>
-  <div id="chartdivcasos"></div>
+  <div class="chart-casos">
+    <div class="chart-header">
+      <span class="chart-title">Casos por edad</span>
+      <span class="chart-total">{{ total }} {{ total === 1 ? 'caso' : 'casos' }}</span>
+    </div>
+
+    <div class="chart-rows">
+      <div
+        v-for="item in data"
+        :key="item.edad"
+        class="chart-row"
+      >
+        <div class="chart-label">{{ item.edad }}</div>
+
+        <div class="chart-track">
+          <div
+            class="chart-bar"
+            :style="{ width: barWidth(item.value) + '%' }"
+          ></div>
+          <span class="chart-value" :class="{ 'chart-value-zero': item.value === 0 }">{{ item.value }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup>
-import { onMounted, onBeforeUnmount, watch } from "vue"
-import * as am5 from "@amcharts/amcharts5"
-import * as am5xy from "@amcharts/amcharts5/xy"
-import am5themes_Animated from "@amcharts/amcharts5/themes/Animated"
+import { computed } from "vue"
 import { useCasosStore } from '@/stores/casos'
 
 const casosStore = useCasosStore()
 
-let root
-let series
-let yAxis
-
+// Rangos de 14 (arriba) a <9 (abajo)
 const RANGOS = [
-  { label: "Mayores de 16", min: 16, max: 99 },
-  { label: "15 años",       min: 15, max: 15 },
-  { label: "14 años",       min: 14, max: 14 },
-  { label: "13 años",       min: 13, max: 13 },
-  { label: "Menores de 12", min: 0,  max: 12 },
+  { label: "14 años",  min: 14, max: 14 },
+  { label: "13 años",  min: 13, max: 13 },
+  { label: "12 años",  min: 12, max: 12 },
+  { label: "11 años",  min: 11, max: 11 },
+  { label: "10 años",  min: 10, max: 10 },
+  { label: "9 años",   min: 9,  max: 9  },
+  { label: "Menor de 9 años", min: 0,  max: 8  },
 ]
 
-// Orden fijo: de menor a mayor edad (Menores de 12 arriba, Mayores de 16 abajo)
-const buildData = () =>
+const data = computed(() =>
   RANGOS.map(r => ({
     edad: r.label,
     value: casosStore.casos.filter(c => {
@@ -32,134 +50,114 @@ const buildData = () =>
       return edad >= r.min && edad <= r.max
     }).length
   }))
+)
 
-const updateChart = () => {
-  if (!series || !yAxis) return
-  const data = buildData()
-  // setAll fuerza al eje X a recalcular su máximo con los nuevos datos
-  yAxis.data.setAll(data)
-  series.data.setAll(data)
+const total = computed(() => data.value.reduce((sum, d) => sum + d.value, 0))
+
+// 25% de margen extra para que la barra más alta no toque el borde
+const maxValue = computed(() => {
+  const max = Math.max(...data.value.map(d => d.value), 0)
+  return max === 0 ? 1 : max * 1.25
+})
+
+const barWidth = (value) => {
+  if (value <= 0) return 1.2 // barra mínima visible
+  return Math.min((value / maxValue.value) * 100, 100)
 }
-
-onMounted(() => {
-  root = am5.Root.new("chartdivcasos")
-  root._logo?.dispose()
-  root.setThemes([am5themes_Animated.new(root)])
-
-  const chart = root.container.children.push(
-    am5xy.XYChart.new(root, {
-      panX: false,
-      panY: false,
-      wheelX: "none",
-      wheelY: "none",
-      paddingLeft: 0,
-      paddingBottom: 0
-    })
-  )
-  chart.zoomOutButton.set("forceHidden", true)
-
-  // Eje Y — orden fijo, sin reordenamiento
-  const yRenderer = am5xy.AxisRendererY.new(root, {
-    minGridDistance: 20,
-    inversed: true,
-    minorGridEnabled: false
-  })
-  // Sin líneas horizontales
-  yRenderer.grid.template.set("visible", false)
-
-  yAxis = chart.yAxes.push(
-    am5xy.CategoryAxis.new(root, {
-      maxDeviation: 0,
-      categoryField: "edad",
-      renderer: yRenderer
-    })
-  )
-
-  // Eje X — sin etiquetas, solo líneas verticales
-  const xRenderer = am5xy.AxisRendererX.new(root, {
-    strokeOpacity: 0,
-    minGridDistance: 60
-  })
-  // Líneas verticales visibles
-  xRenderer.grid.template.setAll({ strokeOpacity: 0.1, stroke: am5.color("#ff9797") })
-
-  const xAxis = chart.xAxes.push(
-    am5xy.ValueAxis.new(root, {
-      maxDeviation: 0,
-      min: 0,
-      strictMinMax: true,
-      extraMax: 0.25,   // espacio extra para que la etiqueta exterior no se corte
-      renderer: xRenderer
-    })
-  )
-
-  // Ocultar etiquetas del eje X
-  xAxis.get("renderer").labels.template.set("visible", false)
-
-  // Serie
-  series = chart.series.push(
-    am5xy.ColumnSeries.new(root, {
-      xAxis,
-      yAxis,
-      valueXField: "value",
-      categoryYField: "edad",
-      tooltip: am5.Tooltip.new(root, {
-        pointerOrientation: "left",
-        labelText: "{categoryY}: [bold]{valueX}[/] casos"
-      })
-    })
-  )
-
-  series.columns.template.setAll({
-    cornerRadiusBR: 6,
-    cornerRadiusTR: 6,
-    strokeOpacity: 0,
-    fill: am5.color("#ff9797"),
-    stroke: am5.color("#ff9797"),
-    maxHeight: 16,
-    minWidth: 4,    // barra mínima visible aunque sólo haya 1 caso
-  })
-
-  // Etiqueta fuera de la barra (a la derecha), siempre visible
-  series.bullets.push(() => {
-    const label = am5.Label.new(root, {
-      text: "{valueX}",
-      fill: am5.color("#e05555"),
-      centerX: 0,           // se ancla al extremo derecho de la barra
-      centerY: am5.p50,
-      populateText: true,
-      fontSize: 11,
-      fontWeight: "700",
-      paddingLeft: 6,
-    })
-    // Ocultar la etiqueta cuando el valor es 0 (queda limpio)
-    label.adapters.add("visible", (_v, target) =>
-      (target.dataItem?.get("valueX") ?? 0) > 0
-    )
-    return am5.Bullet.new(root, { locationX: 1, sprite: label })
-  })
-
-  // Datos iniciales en orden fijo
-  const initialData = buildData()
-  yAxis.data.setAll(initialData)
-  series.data.setAll(initialData)
-
-  series.appear(1000)
-  chart.appear(1000, 100)
-})
-
-watch(() => casosStore.casos, () => {
-  updateChart()
-}, { deep: true })
-
-onBeforeUnmount(() => {
-  if (root) root.dispose()
-})
 </script>
 
 <style scoped>
-#chartdivcasos {
+.chart-casos {
   width: 100%;
   height: 400px;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.chart-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.chart-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #10233f;
+}
+
+.chart-total {
+  font-size: 12px;
+  font-weight: 600;
+  color: #8a93a3;
+}
+
+.chart-rows {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+}
+
+.chart-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 20px;
+  border-radius: 6px;
+  transition: background-color 0.2s ease;
+}
+
+.chart-row:hover {
+  background-color: rgba(16, 35, 63, 0.05);
+}
+
+.chart-label {
+  width: 56px;
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #10233f;
+  text-align: right;
+}
+
+.chart-track {
+  position: relative;
+  flex: 1;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  background-image: repeating-linear-gradient(
+    to right,
+    rgba(16, 35, 63, 0.1) 0,
+    rgba(16, 35, 63, 0.1) 1px,
+    transparent 1px,
+    transparent 16.6%
+  );
+}
+
+.chart-bar {
+  height: 18px;
+  min-width: 5px;
+  background: linear-gradient(to right, #10233f, #1f3864);
+  border-radius: 0 7px 7px 0;
+  box-shadow: 0 1px 3px rgba(16, 35, 63, 0.3);
+  transition: width 0.8s ease;
+}
+
+.chart-value {
+  margin-left: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #10233f;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.chart-value-zero {
+  color: #b0b0b0;
+  font-weight: 500;
 }
 </style>

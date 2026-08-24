@@ -3,11 +3,11 @@
     <AppNavbar />
 
     <section class="hero-dash">
-      <img :src="heroImage" alt="Gestión de Usuarios" class="hero-bg" />
+      <img src="/imgs/img8.jpg" alt="Gestión de Usuarios" class="hero-bg" />
       <div class="hero-overlay"></div>
       <div class="hero-content">
         <p class="hero-top-text">Administra los privilegios y los miembros.</p>
-        <h1 class="hero-title">Gestión de Usuarios</h1>
+        <h1 class="hero-title">Gestión de usuarios</h1>
       </div>
     </section>
 
@@ -16,10 +16,10 @@
 
         <div class="users-header">
           <div>
-            <h2 class="section-title">Gestión de Usuarios</h2>
+            <h2 class="section-title">Gestión de usuarios</h2>
             <p class="section-subtitle">Administra los privilegios y el estado de los miembros.</p>
           </div>
-          <button class="btn-pink" @click="openDialog()">Nuevo Usuario</button>
+          <button class="btn-pink" @click="openDialog()">Nuevo usuario</button>
         </div>
 
         <div class="card-box mt-6">
@@ -32,12 +32,14 @@
             <div class="role-filter">
               <label class="filter-label">Filtrar por rol</label>
               <div class="select-wrapper">
-                <select v-model="roleFilter" class="role-select">
-                  <option value="">Todos</option>
-                  <option value="admin">Admin</option>
-                  <option value="moderator">Moderador</option>
-                  <option value="user">Usuario</option>
-                </select>
+            <v-select
+  v-model="roleFilter"
+  :items="roles"
+  label="Filtrar por rol"
+  variant="outlined"
+  density="compact"
+  clearable
+/>
                 <v-icon size="16" class="select-icon">mdi-chevron-down</v-icon>
               </div>
             </div>
@@ -46,7 +48,7 @@
           <div class="table-responsive">
             <table class="users-table">
               <thead>
-                <tr>
+                <tr >
                   <th>Usuario</th>
                   <th>Rol</th>
                   <th>Estado</th>
@@ -65,8 +67,8 @@
                     </div>
                   </td>
                   <td>
-                    <span :class="['role-badge', 'role-' + (user.role?.name?.toLowerCase() || 'user')]">
-                      {{ user.role?.name === 'admin' ? 'Admin' : 'Usuario' }}
+                    <span :class="['role-badge', 'role-' + (user.role?.toLowerCase() || 'user')]">
+                      {{ ROLE_LABELS[user.role?.toLowerCase()] || 'Usuario' }}
                     </span>
                   </td>
                   <td>
@@ -109,7 +111,8 @@
                 label="Rol"
                 variant="outlined"
                 density="comfortable"
-                color="#ff9797"
+                color="#10233f"
+  base-color="#10233f"
               />
             </v-col>
             <v-col cols="12">
@@ -120,7 +123,9 @@
                 :append-inner-icon="showPassword ? 'mdi-eye-off' : 'mdi-eye'"
                 @click:append-inner="showPassword = !showPassword"
                 hint="Si no se asigna una contraseña se usará la por defecto: Guatemala123"
-                persistent-hint variant="outlined" density="comfortable" color="#ff9797"
+                persistent-hint variant="outlined" density="comfortable" 
+                color="#10233f"
+  base-color="#10233f"
               />
             </v-col>
           </v-row>
@@ -128,7 +133,7 @@
         <v-card-actions class="px-6 pb-6 pt-0">
           <v-spacer />
           <v-btn variant="text"  color="grey-darken-2" @click="closeDialog" class="text-none font-weight-medium">Cancelar</v-btn>
-          <v-btn color="#ff9797" variant="flat"         @click="saveUser"   class="text-none font-weight-medium px-6 text-white">Guardar</v-btn>
+          <v-btn color="#10233f" variant="flat"         @click="saveUser"   class="text-none font-weight-medium px-6 text-white">Guardar</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -171,6 +176,15 @@ import AppFooter from '@/components/AppFooter.vue'
 import { useUserStore } from '@/stores/users'
 import heroImage from '@/assets/ninas embarazadas -39.png'
 
+const roles = [
+  { title: 'Todos', value: '' },
+  { title: 'Admin', value: 'admin' },
+  { title: 'Moderador', value: 'moderator' },
+  { title: 'Usuario', value: 'user' },
+]
+
+const ROLE_LABELS = { admin: 'Admin', moderator: 'Moderador', user: 'Usuario' }
+
 const userStore = useUserStore()
 
 // ── State ──────────────────────────────────────────────
@@ -202,7 +216,7 @@ const filteredUsers = computed(() => {
   
   return usersList.filter(u => {
     const matchesSearch = (u.name?.toLowerCase().includes(s) || u.email?.toLowerCase().includes(s))
-    const matchesRole = !r || u.role?.name?.toLowerCase() === r
+    const matchesRole = !r || u.role?.toLowerCase() === r
     return matchesSearch && matchesRole
   })
 })
@@ -268,7 +282,10 @@ onMounted(() => {
 .hero-bg   { width: 100%; height: 100%; object-fit: cover; object-position: center top; }
 .hero-overlay {
   position: absolute; inset: 0;
-  background: linear-gradient(to bottom, rgba(255,151,151,0) 0%, rgba(255,151,151,0.2) 40%, rgba(255,151,151,0.95) 100%);
+background: linear-gradient(to bottom,
+      rgba(16, 35, 63, 0) 0%,
+      rgba(16, 35, 63, 0.2) 40%,
+      rgba(16, 35, 63, 0.95) 100%);
 }
 .hero-content {
   position: absolute; inset: 0;
@@ -279,10 +296,10 @@ onMounted(() => {
 .hero-title    { color: white; text-shadow: 0 4px 12px rgba(0,0,0,0.3); font-size: 64px; font-weight: 700; line-height: 1.15; margin-bottom: 0; }
 
 /* HEADER */
-.users-header    { display: flex; justify-content: space-between; align-items: flex-end; }
-.section-title   { font-size: 24px; font-weight: 700; color: #555555; margin-bottom: 0.25rem; line-height: 1.2; }
-.section-subtitle { font-size: 14px; color: #ff9797; margin: 0; }
-.btn-pink { background-color: #ff9797; color: white; font-weight: 600; font-size: 14px; padding: 0.6rem 1.5rem; border-radius: 9999px; border: none; cursor: pointer; transition: opacity 0.2s; box-shadow: 0 2px 4px rgba(255,151,151,0.4); }
+.users-header    { display: flex; justify-content: space-between; align-items: flex-end; background-color: #10233f; padding: 2rem; border-radius: 20px;}
+.section-title   { font-size: 24px; font-weight: 700; color: #fff; margin-bottom: 0.25rem; line-height: 1.2; }
+.section-subtitle { font-size: 14px; color: #17c4e8; margin: 0; }
+.btn-pink { background-color: #10233f; color: white; font-weight: 600; font-size: 14px; padding: 0.6rem 1.5rem; border-radius: 9999px; border: none; cursor: pointer; transition: opacity 0.2s; box-shadow: 0 2px 4px rgb(23, 196, 232); }
 .btn-pink:hover { opacity: 0.9; }
 
 /* CARD */
@@ -303,20 +320,21 @@ onMounted(() => {
 /* TABLE */
 .table-responsive { width: 100%; overflow-x: auto; }
 .users-table { width: 100%; border-collapse: collapse; text-align: left; }
-.users-table th { background-color: #fcfcfc; color: #888888; font-size: 11px; font-weight: 600; text-transform: capitalize; padding: 0.8rem 1.5rem; white-space: nowrap; border-bottom: 1px solid #f0f0f0; }
+.users-table th { background-color: #10233f; color: #fff; font-size: 13px; font-weight: 600; text-transform: capitalize; padding: 0.8rem 1.5rem; white-space: nowrap; border-bottom: 1px solid #f0f0f0; }
 .users-table td { padding: 1.2rem 1.5rem; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
 .users-table tr:last-child td { border-bottom: none; }
 
 /* USER INFO */
 .user-info    { display: flex; align-items: center; gap: 1rem; }
-.avatar-bubble { width: 36px; height: 36px; border-radius: 50%; background-color: #fff0f0; color: #ff7b7b; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; flex-shrink: 0; }
+.avatar-bubble { width: 36px; height: 36px; border-radius: 50%; background-color: #bccee8; color: #10233f; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; flex-shrink: 0; }
 .user-name    { font-weight: 700; color: #1a1a1a; font-size: 13px; line-height: 1.2; }
 .user-email   { font-size: 12px; color: #a0a0a0; margin-top: 0.1rem; }
 
 /* BADGES */
 .role-badge   { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 9999px; font-size: 11px; font-weight: 600; }
-.role-admin   { background-color: #ff9797; color: #ffffff; }
-.role-user    { background-color: #f5f5f5; color: #6d6d6d; }
+.role-admin     { background-color: #10233f; color: #ffffff; }
+.role-moderator { background-color: #ff9797; color: #ffffff; }
+.role-user      { background-color: #f5f5f5; color: #6d6d6d; }
 
 .text-gray { color: #1a1a1a; font-size: 13px; font-weight: 500; }
 
@@ -329,8 +347,8 @@ onMounted(() => {
 /* ACTIONS */
 .actions-cell { white-space: nowrap; }
 .action-btn   { background: none; border: none; cursor: pointer; padding: 0.25rem; border-radius: 4px; transition: background-color 0.2s; margin-left: 0.5rem; }
-.edit-btn     { color: #ff9797; }
-.edit-btn:hover   { background-color: #fff0f0; }
+.edit-btn     { color: #17c4e8; }
+.edit-btn:hover   { background-color: #d8f0fc; }
 .delete-btn   { color: #ef4444; }
 .delete-btn:hover { background-color: #fef2f2; }
 .text-right   { text-align: right; }

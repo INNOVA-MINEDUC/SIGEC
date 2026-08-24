@@ -36,6 +36,13 @@ municipio_id:{
 type:DataTypes.INTEGER
 },
 
+// Departamento de residencia. Se conserva aunque el municipio no resuelva,
+// para no perder "el departamento al que pertenece" la niña.
+departamento_id:{
+type:DataTypes.INTEGER,
+allowNull:true
+},
+
 pueblo:{
 type:DataTypes.STRING(100),
 allowNull:true

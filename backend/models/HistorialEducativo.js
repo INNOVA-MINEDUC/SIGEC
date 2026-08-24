@@ -40,6 +40,18 @@ type:DataTypes.STRING(255)
 
 anio:{
 type:DataTypes.INTEGER
+},
+
+subsistema:{
+type:DataTypes.STRING(50)
+},
+
+programa:{
+type:DataTypes.STRING(255)
+},
+
+etapa:{
+type:DataTypes.STRING(100)
 }
 
 },{

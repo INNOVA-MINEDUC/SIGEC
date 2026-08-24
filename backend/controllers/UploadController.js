@@ -2,21 +2,25 @@ import ExcelJS from 'exceljs'
 import { sequelize } from '../config/database.js'
 import CasoEmbarazo from '../models/CasoEmbarazo.js'
 import Nina from '../models/Nina.js'
-import Municipio from '../models/Municipio.js'
-import Departamental from '../models/Departamental.js'
-import Departamento from '../models/Departamento.js'
 import HistorialEducativo from '../models/HistorialEducativo.js'
 import CargaArchivo from '../models/CargaArchivo.js'
 import User from '../models/User.js'
 import { registrarAuditoria } from '../utils/auditoria.js'
+import { validarUbicacion } from '../helpers/validarUbicacion.js'
+import { normalizarNivel } from '../helpers/nivelEducativo.js'
+import { procesarExcelCasos } from '../utils/cargaExcel.js'
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
 const normalizar = (texto) =>
   String(texto ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim()
 
-// Elimina artículos iniciales: "El Petén" → "peten", "La Libertad" → "libertad"
-const quitarArticulo = (str) => str.replace(/^(el|la|los|las)\s+/, '')
+
+// Convierte texto a Title Case: "MARIA JOSE GARCIA" → "Maria Jose Garcia"
+const toTitleCase = (str) => {
+  if (!str) return str
+  return String(str).toLowerCase().replace(/(?:^|[\s\-\/])\S/g, c => c.toUpperCase())
+}
 
 // Valores que equivalen a "sin dato" en los archivos MSPAS
 const VACIOS = new Set(['no indica', 'sin dato', 'n/a', 'n.a.', 'nd', 'ninguno', '-', '--', 's/d', 'no aplica'])
@@ -59,17 +63,9 @@ const parseDate = (val) => {
   return null
 }
 
-// Mapea el valor de Escolaridad del archivo a los niveles del sistema
-const mapEscolaridad = (raw) => {
-  if (!raw) return null
-  const s = normalizar(raw)
-  if (s.includes('preprimaria'))                             return 'Preprimaria'
-  if (s.includes('primaria'))                                return 'Primaria'
-  if (s.includes('diversificado'))                          return 'Media (Diversificado)'
-  if (s.includes('basico') || s.includes('medio') ||
-      s.includes('ciclo basico'))                           return 'Media (Básico)'
-  return clean(raw) // pasar el valor original si no coincide con ningún patrón
-}
+// Mapea el valor de Escolaridad del archivo al vocabulario único del sistema
+// (helpers/nivelEducativo.js), compartido con la carga masiva y el dashboard.
+const mapEscolaridad = (raw) => normalizarNivel(raw)
 
 // ── Carga Masiva ───────────────────────────────────────────────────────────────
 
@@ -77,6 +73,11 @@ export const CargaMasiva = async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ ok: false, message: 'No se envió ningún archivo' })
   }
+
+  // Fecha de ingreso elegida por el usuario en el frontend. Si viene, es LA
+  // fecha de ingreso de todos los casos de esta carga; las demás fechas
+  // (primera consulta, etc.) siguen tomándose del archivo.
+  const fechaIngresoManual = parseDate(req.body?.fecha_ingreso)
 
   try {
     // 1. Parsear Excel
@@ -87,32 +88,7 @@ export const CargaMasiva = async (req, res) => {
       return res.status(400).json({ ok: false, message: 'El archivo no contiene hojas' })
     }
 
-    // 2. Pre-cargar departamentales (con su departamento_id)
-    const departamentales = await Departamental.findAll({
-      include: [{ model: Departamento, as: 'departamento' }]
-    })
-    // deptMap: nombre_normalizado → { departamental_id, departamento_id }
-    const deptMap = {}
-    departamentales.forEach(d => {
-      if (!d.departamento) return
-      const norm = normalizar(d.departamento.nombre)
-      const entry = { departamental_id: d.id, departamento_id: d.departamento_id }
-      deptMap[norm] = entry
-      deptMap[quitarArticulo(norm)] = entry
-    })
-
-    // 3. Pre-cargar municipios — mapa: `{departamento_id}|{nombre_norm}` → municipio_id
-    const municipiosList = await Municipio.findAll({ attributes: ['id', 'nombre', 'departamento_id'] })
-    const municipioMap = {}
-    municipiosList.forEach(m => {
-      const norm = normalizar(m.nombre)
-      const key  = `${m.departamento_id}|${norm}`
-      const key2 = `${m.departamento_id}|${quitarArticulo(norm)}`
-      municipioMap[key]  = m.id
-      municipioMap[key2] = m.id
-    })
-
-    // 4. Identificadores existentes para deduplicación
+    // 2. Identificadores existentes para deduplicación
     const existingNinas   = await Nina.findAll({ attributes: ['cui', 'nombre_completo'] })
     const existingCuis    = new Set(existingNinas.map(n => String(n.cui ?? '').trim()).filter(Boolean))
     const existingNombres = new Set(existingNinas.map(n => normalizar(String(n.nombre_completo ?? ''))).filter(Boolean))
@@ -193,7 +169,8 @@ export const CargaMasiva = async (req, res) => {
     const totalFilas = rawRows.length
     let nuevos      = 0
     let duplicados  = 0
-    const omitidos      = []
+    const omitidos      = []   // TODAS las filas no insertadas, con el motivo exacto
+    const sinUbicacion  = []   // filas SÍ insertadas pero sin departamento/municipio resuelto
     const erroresMuestra = []
 
     // 8. Crear registro de carga ANTES del loop
@@ -215,12 +192,12 @@ export const CargaMasiva = async (req, res) => {
       const get    = (col) => row[normalizar(col)] ?? null
 
       const cuiRaw         = clean(get('CUI RENAP')) || clean(get('cui')) || null
-      const nombreCompleto = clean(get('Nombre completo'))
+      const nombreCompleto = toTitleCase(clean(get('Nombre completo')))
 
       // Sin nombre: omitir
       if (!nombreCompleto) {
         duplicados++
-        if (omitidos.length < 20) omitidos.push(`SIN_NOMBRE | fila ${filaNum}`)
+        omitidos.push({ fila: filaNum, tipo: 'SIN_NOMBRE', motivo: 'Fila sin nombre completo', nombre: null, cui: cuiRaw })
         console.warn(`  [OMITIDA fila ${filaNum}] Sin nombre completo`)
         continue
       }
@@ -228,13 +205,13 @@ export const CargaMasiva = async (req, res) => {
       // Deduplicar por CUI (si existe) o por nombre
       if (cuiRaw && existingCuis.has(cuiRaw)) {
         duplicados++
-        if (omitidos.length < 20) omitidos.push(`DUPLICADO_CUI | fila ${filaNum} | CUI: ${cuiRaw}`)
+        omitidos.push({ fila: filaNum, tipo: 'DUPLICADO_CUI', motivo: `CUI "${cuiRaw}" ya existe en la BD`, nombre: nombreCompleto, cui: cuiRaw })
         console.warn(`  [OMITIDA fila ${filaNum}] Duplicado por CUI "${cuiRaw}"`)
         continue
       }
       if (!cuiRaw && existingNombres.has(normalizar(nombreCompleto))) {
         duplicados++
-        if (omitidos.length < 20) omitidos.push(`DUPLICADO_NOMBRE | fila ${filaNum} | nombre: "${nombreCompleto}"`)
+        omitidos.push({ fila: filaNum, tipo: 'DUPLICADO_NOMBRE', motivo: `Nombre "${nombreCompleto}" ya existe en la BD`, nombre: nombreCompleto, cui: cuiRaw })
         console.warn(`  [OMITIDA fila ${filaNum}] Duplicado por nombre "${nombreCompleto}"`)
         continue
       }
@@ -243,37 +220,16 @@ export const CargaMasiva = async (req, res) => {
       const cuiFinal    = cuiRaw ?? null
       const fechaNacStr = parseDate(get('Fecha Nacimiento'))
 
-      // ── Resolución de departamental y departamento ──────────────────────────
-      const deptoNombre      = clean(get('Departamento'))
-      const deptoNorm        = deptoNombre ? normalizar(deptoNombre) : null
-      const deptEntry        = deptoNorm
-        ? (deptMap[deptoNorm] ?? deptMap[quitarArticulo(deptoNorm)] ?? null)
-        : null
-      const departamental_id = deptEntry?.departamental_id ?? null
-      const departamento_id  = deptEntry?.departamento_id  ?? null
-
-      // ── Resolución de municipio ─────────────────────────────────────────────
-      // Solo se asigna si el municipio del archivo coincide con uno del mismo
-      // departamento que la departamental. Si no coincide, se deja null.
-      let municipio_id = null
+      // ── Resolución de departamental, departamento y municipio ───────────────
+      const deptoNombre     = clean(get('Departamento'))
       const municipioNombre = clean(get('Municipio')) || clean(get('municipio'))
-      if (municipioNombre && departamento_id) {
-        const mNorm = normalizar(municipioNombre)
-        municipio_id =
-          municipioMap[`${departamento_id}|${mNorm}`] ??
-          municipioMap[`${departamento_id}|${quitarArticulo(mNorm)}`] ??
-          null
-        if (municipio_id) {
-          console.log(`     municipio: "${municipioNombre}" → id=${municipio_id} (depto_id=${departamento_id})`)
-        } else {
-          console.log(`     municipio: "${municipioNombre}" no encontrado en depto_id=${departamento_id}`)
-        }
-      }
+      const { departamental_id, departamento_id, municipio_id } =
+        await validarUbicacion(deptoNombre, municipioNombre)
 
       // ── Pueblo y comunidad lingüística como texto ───────────────────────────
-      const pueblo               = clean(get('Pueblo'))               || null
-      const comunidad_linguistica = clean(get('Comunidad Linguistica')) ||
-                                    clean(get('Comunidad Lingüística')) || null
+      const pueblo               = toTitleCase(clean(get('Pueblo')))               || null
+      const comunidad_linguistica = toTitleCase(clean(get('Comunidad Linguistica')) ||
+                                    clean(get('Comunidad Lingüística'))) || null
 
       // ── Escolaridad → nivel ─────────────────────────────────────────────────
       const nivelEducativo = mapEscolaridad(get('Escolaridad') ?? get('escolaridad'))
@@ -282,7 +238,7 @@ export const CargaMasiva = async (req, res) => {
       try {
         const edadRaw = get('Edad Años')
         const edad    = edadRaw ? parseInt(String(edadRaw), 10) || null : null
-        const direccion = clean(get('Dirección'))
+        const direccion = toTitleCase(clean(get('Dirección')))
 
         const nina = await Nina.create({
           cui:                    cuiFinal,
@@ -304,13 +260,13 @@ export const CargaMasiva = async (req, res) => {
           numero_caso:            numeroCaso,
           nina_id:                nina.id,
           carga_archivo_id:       carga.id,
-          fecha_ingreso:          fechaContacto,
+          fecha_ingreso:          fechaIngresoManual ?? fechaContacto,
           fecha_primera_consulta: fechaContacto,
           forma_deteccion:        'MSPAS',
           no_notificacion:        noNotificacion,
           institucion,
           queja:                  null,
-          estado:                 'faltante',
+          estado:                 'sin Verificar en el SIRE',
           departamental_id,
         }, { transaction: t })
 
@@ -330,16 +286,23 @@ export const CargaMasiva = async (req, res) => {
         const tag = cuiFinal ?? 'sin CUI'
         console.log(`  [OK fila ${filaNum}] Caso ${numeroCaso} — "${nombreCompleto}" (${tag}) nivel="${nivelEducativo ?? '-'}" mun_id=${municipio_id ?? 'null'}`)
 
+        if (!departamental_id || !municipio_id) {
+          const problema = [
+            !departamental_id ? `Departamento "${deptoNombre ?? '(vacío)'}" no resolvió en la BD` : null,
+            !municipio_id     ? `Municipio "${municipioNombre ?? '(vacío)'}" no resolvió en la BD`   : null,
+          ].filter(Boolean).join(' | ')
+          sinUbicacion.push({ fila: filaNum, nombre: nombreCompleto, cui: cuiFinal, depto: deptoNombre, municipio: municipioNombre, problema })
+          console.warn(`  [SIN UBICACIÓN fila ${filaNum}] "${nombreCompleto}" | ${problema}`)
+        }
+
       } catch (err) {
         await t.rollback()
-        const razon = err.name === 'SequelizeUniqueConstraintError'
-          ? `UNIQUE_CONSTRAINT | fila ${filaNum} | CUI: ${cuiFinal} | nombre: "${nombreCompleto}"`
-          : `DB_ERROR | fila ${filaNum} | ${err.message}`
-        if (omitidos.length < 20) omitidos.push(razon)
         duplicados++
         if (err.name === 'SequelizeUniqueConstraintError') {
+          omitidos.push({ fila: filaNum, tipo: 'UNIQUE_CONSTRAINT', motivo: 'Restricción única en BD (CUI o nombre ya registrado)', nombre: nombreCompleto, cui: cuiFinal })
           console.warn(`  [OMITIDA fila ${filaNum}] Restricción única — "${nombreCompleto}" (${cuiFinal})`)
         } else {
+          omitidos.push({ fila: filaNum, tipo: 'DB_ERROR', motivo: err.message, nombre: nombreCompleto, cui: cuiFinal })
           console.error(`  [ERROR fila ${filaNum}] ${err.message}`)
           if (erroresMuestra.length < 5) erroresMuestra.push(`[fila ${filaNum}] ${err.message}`)
         }
@@ -350,7 +313,15 @@ export const CargaMasiva = async (req, res) => {
     console.log(`   Total filas:  ${totalFilas}`)
     console.log(`   Nuevos:       ${nuevos}`)
     console.log(`   Duplicados:   ${duplicados}`)
-    if (erroresMuestra.length) console.error('   Errores BD:', erroresMuestra)
+
+    if (omitidos.length) {
+      console.log(`\n   Filas NO ingresadas (${omitidos.length}):`)
+      console.table(omitidos.map(o => ({ fila: o.fila, tipo: o.tipo, nombre: o.nombre, cui: o.cui, motivo: o.motivo })))
+    }
+    if (sinUbicacion.length) {
+      console.log(`\n   Filas ingresadas SIN ubicación resuelta (${sinUbicacion.length}):`)
+      console.table(sinUbicacion.map(u => ({ fila: u.fila, nombre: u.nombre, cui: u.cui, depto: u.depto, municipio: u.municipio, problema: u.problema })))
+    }
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n')
 
     // 10. Actualizar conteos finales
@@ -377,7 +348,8 @@ export const CargaMasiva = async (req, res) => {
       _debug: {
         fila_cabecera:       headerRowNum,
         columnas_detectadas: colsDetectadas,
-        omitidos_muestra:    omitidos,
+        omitidos_muestra:    omitidos.slice(0, 20),
+        sin_ubicacion_muestra: sinUbicacion.slice(0, 20),
         errores_muestra:     erroresMuestra,
       },
     })
@@ -441,5 +413,73 @@ export const uploadExcel = async (req, res) => {
     })
   } catch (error) {
     return res.status(500).json({ ok: false, message: 'Error procesando Excel', error: error.message })
+  }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   IMPORTACIÓN DE ARCHIVO FORMATO SIRE
+
+   Reemplaza al seeder `20260611120000-cargar-excel-casos.js`: el archivo ya no
+   vive en el servidor ni la carga corre con `db:seed:all`. El administrador
+   sube el Excel desde la vista "Importar Datos" y aquí se procesa con
+   `procesarExcelCasos`, conservando TODAS las validaciones: deduplicación por
+   CUI/nombre, resolución difusa de ubicación con fallback a departamento,
+   nivel educativo canónico y estado según "No. de Queja".
+
+   Los registros que no se pudieron insertar se devuelven en la respuesta para
+   mostrarlos en pantalla; no se genera ningún archivo en el servidor.
+
+   No toca el flujo de `CargaMasiva` (POST /upload/masivo), que sigue atendiendo
+   el botón "Subir archivos" con el formato MSPAS.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+export const CargaInicial = async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ success: false, message: 'No se envió ningún archivo' })
+  }
+
+  try {
+    // Sin `reporteDir`: no se escribe ningún Excel, los fallos van en la respuesta
+    const resultado = await procesarExcelCasos(req.file.buffer, {
+      nombreArchivo: req.file.originalname,
+      usuarioId:     req.user?.id ?? null,
+    })
+
+    if (!resultado.ok) {
+      return res.status(400).json({ success: false, message: resultado.message })
+    }
+
+    registrarAuditoria({
+      usuario_id:  req.user?.id,
+      accion:      'carga_inicial',
+      entidad:     'CargaArchivo',
+      entidad_id:  resultado.carga_id,
+      descripcion: `Importó ${req.file.originalname}: `
+                 + `${resultado.nuevos} nuevos, ${resultado.actualizados} con queja agregada, `
+                 + `${resultado.duplicados} omitidos de ${resultado.total} filas`,
+    })
+
+    return res.json({
+      success:      true,
+      message:      resultado.message,
+      archivo:      req.file.originalname,
+      total:        resultado.total,
+      nuevos:       resultado.nuevos,
+      duplicados:   resultado.duplicados,
+      actualizados: resultado.actualizados,          // nº de casos completados con su queja
+      fallidos:     resultado.fallidos,              // [{ fila, motivo, nombre, cui }]
+      actualizadosDetalle: resultado.actualizadosDetalle, // [{ fila, numero_caso, nombre, cui, queja }]
+      sinUbicacion: resultado.sinUbicacion,          // [{ fila, nombre, problema }]
+      advertencias: resultado.advertencias,
+    })
+
+  } catch (error) {
+    console.error(error)
+    return res.status(500).json({
+      success: false,
+      message: 'Error procesando el archivo',
+      error:   error.message,
+    })
   }
 }

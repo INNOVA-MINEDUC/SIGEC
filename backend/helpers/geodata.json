@@ -9,98 +9,183 @@
           "id": 1,
           "nombre": "CHAHAL",
           "nombreCorregido": "chahal",
-          "departamentoId": 1
+          "departamentoId": 1,
+          "alias": [
+            "chahal"
+          ]
         },
         {
           "id": 2,
           "nombre": "CHISEC",
           "nombreCorregido": "chisec",
-          "departamentoId": 1
+          "departamentoId": 1,
+          "alias": [
+            "chisec"
+          ]
         },
         {
           "id": 3,
           "nombre": "COBÁN",
           "nombreCorregido": "cobán",
-          "departamentoId": 1
+          "departamentoId": 1,
+          "alias": [
+            "cobán",
+            "coban"
+          ]
         },
         {
           "id": 4,
           "nombre": "FRAYBARTOLOMÉDELASCASAS",
           "nombreCorregido": "fray bartolomé de las casas",
-          "departamentoId": 1
+          "departamentoId": 1,
+          "alias": [
+            "fray bartolomé de las casas",
+            "fray bartolome de las casas"
+          ]
         },
         {
           "id": 5,
           "nombre": "LANQUÍN",
           "nombreCorregido": "lanquín",
-          "departamentoId": 1
+          "departamentoId": 1,
+          "alias": [
+            "lanquín",
+            "lanquin"
+          ]
         },
         {
           "id": 6,
           "nombre": "PANZÓS",
           "nombreCorregido": "panzós",
-          "departamentoId": 1
+          "departamentoId": 1,
+          "alias": [
+            "panzós",
+            "panzos"
+          ]
         },
         {
           "id": 7,
           "nombre": "SANCRISTÓBALVERAPAZ",
           "nombreCorregido": "san cristóbal verapaz",
-          "departamentoId": 1
+          "departamentoId": 1,
+          "alias": [
+            "san cristóbal verapaz",
+            "san cristobal verapaz",
+            "sn cristóbal verapaz",
+            "sn cristobal verapaz"
+          ]
         },
         {
           "id": 8,
           "nombre": "SANJUANCHAMELCO",
           "nombreCorregido": "san juan chamelco",
-          "departamentoId": 1
+          "departamentoId": 1,
+          "alias": [
+            "san juan chamelco",
+            "sn juan chamelco"
+          ]
         },
         {
           "id": 9,
           "nombre": "SANPEDROCARCHÁ",
           "nombreCorregido": "san pedro carchá",
-          "departamentoId": 1
+          "departamentoId": 1,
+          "alias": [
+            "san pedro carchá",
+            "san pedro carcha",
+            "sn pedro carchá",
+            "sn pedro carcha"
+          ]
         },
         {
           "id": 10,
           "nombre": "SANTACRUZVERAPAZ",
           "nombreCorregido": "santa cruz verapaz",
-          "departamentoId": 1
+          "departamentoId": 1,
+          "alias": [
+            "santa cruz verapaz",
+            "sta cruz verapaz"
+          ]
         },
         {
           "id": 11,
           "nombre": "SANTAMARÍACAHABÓN",
           "nombreCorregido": "santa maría cahabón",
-          "departamentoId": 1
+          "departamentoId": 1,
+          "alias": [
+            "santa maría cahabón",
+            "santa maria cahabon",
+            "sta maría cahabón",
+            "sta maria cahabon",
+            "cahabón",
+            "cahabon"
+          ]
         },
         {
           "id": 12,
           "nombre": "SENAHÚ",
           "nombreCorregido": "senahú",
-          "departamentoId": 1
+          "departamentoId": 1,
+          "alias": [
+            "senahú",
+            "senahu"
+          ]
         },
         {
           "id": 13,
           "nombre": "TACTIC",
           "nombreCorregido": "tactic",
-          "departamentoId": 1
+          "departamentoId": 1,
+          "alias": [
+            "tactic"
+          ]
         },
         {
           "id": 14,
           "nombre": "TAMAHÚ",
           "nombreCorregido": "tamahú",
-          "departamentoId": 1
+          "departamentoId": 1,
+          "alias": [
+            "tamahú",
+            "tamahu"
+          ]
         },
         {
           "id": 15,
           "nombre": "TUCURÚ",
           "nombreCorregido": "san miguel tucurú",
-          "departamentoId": 1
+          "departamentoId": 1,
+          "alias": [
+            "san miguel tucurú",
+            "san miguel tucuru",
+            "sn miguel tucurú",
+            "sn miguel tucuru"
+          ]
         },
-          {
+        {
           "id": 1,
           "nombre": "SATACATALINALATINTA",
           "nombreCorregido": "santa catalina la tinta",
-          "departamentoId": 1
+          "departamentoId": 1,
+          "alias": [
+            "santa catalina la tinta",
+            "sta catalina la tinta"
+          ]
+        },
+        {
+          "id": 332,
+          "nombre": "RAXRUHÁ",
+          "nombreCorregido": "raxruhá",
+          "departamentoId": 1,
+          "alias": [
+            "raxruhá",
+            "raxruha"
+          ],
+          "municipioApi": "Raxruhá"
         }
+      ],
+      "alias": [
+        "alta verapaz"
       ]
     },
     {
@@ -112,50 +197,85 @@
           "id": 16,
           "nombre": "CUBULCO",
           "nombreCorregido": "cubulco",
-          "departamentoId": 2
+          "departamentoId": 2,
+          "alias": [
+            "cubulco"
+          ]
         },
         {
           "id": 17,
           "nombre": "GRANADOS",
           "nombreCorregido": "granados",
-          "departamentoId": 2
+          "departamentoId": 2,
+          "alias": [
+            "granados"
+          ]
         },
         {
           "id": 18,
           "nombre": "PURULHÁ",
           "nombreCorregido": "purulhá",
-          "departamentoId": 2
+          "departamentoId": 2,
+          "alias": [
+            "purulhá",
+            "purulha"
+          ]
         },
         {
           "id": 19,
           "nombre": "RABINAL",
           "nombreCorregido": "rabinal",
-          "departamentoId": 2
+          "departamentoId": 2,
+          "alias": [
+            "rabinal"
+          ]
         },
         {
           "id": 20,
           "nombre": "SALAMÁ",
           "nombreCorregido": "salamá",
-          "departamentoId": 2
+          "departamentoId": 2,
+          "alias": [
+            "salamá",
+            "salama"
+          ]
         },
         {
           "id": 21,
           "nombre": "SANJERÓNIMO",
           "nombreCorregido": "san jerónimo",
-          "departamentoId": 2
+          "departamentoId": 2,
+          "alias": [
+            "san jerónimo",
+            "san jeronimo",
+            "sn jerónimo",
+            "sn jeronimo"
+          ]
         },
         {
           "id": 22,
           "nombre": "SANMIGUELCHICAJ",
           "nombreCorregido": "san miguel chicaj",
-          "departamentoId": 2
+          "departamentoId": 2,
+          "alias": [
+            "san miguel chicaj",
+            "sn miguel chicaj"
+          ]
         },
         {
           "id": 23,
           "nombre": "SANTACRUZELCHOL",
           "nombreCorregido": "santa cruz el chol",
-          "departamentoId": 2
+          "departamentoId": 2,
+          "alias": [
+            "santa cruz el chol",
+            "sta cruz el chol",
+            "el chol"
+          ]
         }
+      ],
+      "alias": [
+        "baja verapaz"
       ]
     },
     {
@@ -167,98 +287,166 @@
           "id": 24,
           "nombre": "ACATENANGO",
           "nombreCorregido": "acatenango",
-          "departamentoId": 3
+          "departamentoId": 3,
+          "alias": [
+            "acatenango"
+          ]
         },
         {
           "id": 25,
           "nombre": "CHIMALTENANGO",
           "nombreCorregido": "chimaltenango",
-          "departamentoId": 3
+          "departamentoId": 3,
+          "alias": [
+            "chimaltenango"
+          ]
         },
         {
           "id": 26,
           "nombre": "COMALAPA",
           "nombreCorregido": "comalapa",
-          "departamentoId": 3
+          "departamentoId": 3,
+          "alias": [
+            "comalapa"
+          ]
         },
         {
           "id": 27,
           "nombre": "ELTEJAR",
           "nombreCorregido": "el tejar",
-          "departamentoId": 3
+          "departamentoId": 3,
+          "alias": [
+            "el tejar"
+          ]
         },
         {
           "id": 28,
           "nombre": "PARRAMOS",
           "nombreCorregido": "parramos",
-          "departamentoId": 3
+          "departamentoId": 3,
+          "alias": [
+            "parramos"
+          ]
         },
         {
           "id": 29,
           "nombre": "PATZICÍA",
           "nombreCorregido": "patzicía",
-          "departamentoId": 3
+          "departamentoId": 3,
+          "alias": [
+            "patzicía",
+            "patzicia"
+          ]
         },
         {
           "id": 30,
           "nombre": "PATZÚN",
           "nombreCorregido": "patzún",
-          "departamentoId": 3
+          "departamentoId": 3,
+          "alias": [
+            "patzún",
+            "patzun"
+          ]
         },
         {
           "id": 31,
           "nombre": "POCHUTA",
           "nombreCorregido": "san miguel pochuta",
-          "departamentoId": 3
+          "departamentoId": 3,
+          "alias": [
+            "san miguel pochuta",
+            "sn miguel pochuta"
+          ]
         },
         {
           "id": 32,
           "nombre": "SANANDRÉSITZAPA",
           "nombreCorregido": "san andrés itzapa",
-          "departamentoId": 3
+          "departamentoId": 3,
+          "alias": [
+            "san andrés itzapa",
+            "san andres itzapa",
+            "sn andrés itzapa",
+            "sn andres itzapa"
+          ]
         },
         {
           "id": 33,
           "nombre": "SANJOSÉPOAQUIL",
           "nombreCorregido": "san josé poaquil",
-          "departamentoId": 3
+          "departamentoId": 3,
+          "alias": [
+            "san josé poaquil",
+            "san jose poaquil",
+            "sn josé poaquil",
+            "sn jose poaquil"
+          ]
         },
         {
           "id": 34,
           "nombre": "SANMARTÍNJILOTEPEQUE",
           "nombreCorregido": "san martín jilotepeque",
-          "departamentoId": 3
+          "departamentoId": 3,
+          "alias": [
+            "san martín jilotepeque",
+            "san martin jilotepeque",
+            "sn martín jilotepeque",
+            "sn martin jilotepeque"
+          ]
         },
         {
           "id": 35,
           "nombre": "SANTAAPOLONIA",
           "nombreCorregido": "santa apolonia",
-          "departamentoId": 3
+          "departamentoId": 3,
+          "alias": [
+            "santa apolonia",
+            "sta apolonia"
+          ]
         },
         {
           "id": 36,
           "nombre": "SANTACRUZBALANYÁ",
           "nombreCorregido": "santa cruz balanyá",
-          "departamentoId": 3
+          "departamentoId": 3,
+          "alias": [
+            "santa cruz balanyá",
+            "santa cruz balanya",
+            "sta cruz balanyá",
+            "sta cruz balanya"
+          ]
         },
         {
           "id": 37,
           "nombre": "TECPÁNGUATEMALA",
           "nombreCorregido": "tecpán guatemala",
-          "departamentoId": 3
+          "departamentoId": 3,
+          "alias": [
+            "tecpán guatemala",
+            "tecpan guatemala"
+          ]
         },
         {
           "id": 38,
           "nombre": "YEPOCAPA",
           "nombreCorregido": "yepocapa",
-          "departamentoId": 3
+          "departamentoId": 3,
+          "alias": [
+            "yepocapa"
+          ]
         },
         {
           "id": 39,
           "nombre": "ZARAGOZA",
           "nombreCorregido": "zaragoza",
-          "departamentoId": 3
+          "departamentoId": 3,
+          "alias": [
+            "zaragoza"
+          ]
         }
+      ],
+      "alias": [
+        "chimaltenango"
       ]
     },
     {
@@ -270,68 +458,114 @@
           "id": 40,
           "nombre": "CAMOTÁN",
           "nombreCorregido": "camotán",
-          "departamentoId": 4
+          "departamentoId": 4,
+          "alias": [
+            "camotán",
+            "camotan"
+          ]
         },
         {
           "id": 41,
           "nombre": "CHIQUIMULA",
           "nombreCorregido": "chiquimula",
-          "departamentoId": 4
+          "departamentoId": 4,
+          "alias": [
+            "chiquimula"
+          ]
         },
         {
           "id": 42,
           "nombre": "CONCEPCIÓNLASMINAS",
           "nombreCorregido": "concepción las minas",
-          "departamentoId": 4
+          "departamentoId": 4,
+          "alias": [
+            "concepción las minas",
+            "concepcion las minas"
+          ]
         },
         {
           "id": 43,
           "nombre": "ESQUIPULAS",
           "nombreCorregido": "esquipulas",
-          "departamentoId": 4
+          "departamentoId": 4,
+          "alias": [
+            "esquipulas"
+          ]
         },
         {
           "id": 44,
           "nombre": "IPALA",
           "nombreCorregido": "ipala",
-          "departamentoId": 4
+          "departamentoId": 4,
+          "alias": [
+            "ipala"
+          ]
         },
         {
           "id": 45,
           "nombre": "JOCOTÁN",
           "nombreCorregido": "jocotán",
-          "departamentoId": 4
+          "departamentoId": 4,
+          "alias": [
+            "jocotán",
+            "jocotan"
+          ]
         },
         {
           "id": 46,
           "nombre": "OLOPA",
           "nombreCorregido": "olopa",
-          "departamentoId": 4
+          "departamentoId": 4,
+          "alias": [
+            "olopa"
+          ]
         },
         {
           "id": 47,
           "nombre": "QUEZALTEPEQUE",
           "nombreCorregido": "quezaltepeque",
-          "departamentoId": 4
+          "departamentoId": 4,
+          "alias": [
+            "quezaltepeque"
+          ]
         },
         {
           "id": 48,
           "nombre": "SANJACINTO",
           "nombreCorregido": "san jacinto",
-          "departamentoId": 4
+          "departamentoId": 4,
+          "alias": [
+            "san jacinto",
+            "sn jacinto"
+          ]
         },
         {
           "id": 49,
           "nombre": "SANJOSÉLAARADA",
           "nombreCorregido": "san josé la arada",
-          "departamentoId": 4
+          "departamentoId": 4,
+          "alias": [
+            "san josé la arada",
+            "san jose la arada",
+            "sn josé la arada",
+            "sn jose la arada"
+          ]
         },
         {
           "id": 50,
           "nombre": "SANJUANERMITA",
           "nombreCorregido": "san juan ermita",
-          "departamentoId": 4
+          "departamentoId": 4,
+          "alias": [
+            "san juan ermita",
+            "sn juan ermita",
+            "san juan la ermita",
+            "sn juan la ermita"
+          ]
         }
+      ],
+      "alias": [
+        "chiquimula"
       ]
     },
     {
@@ -343,50 +577,86 @@
           "id": 51,
           "nombre": "ELJÍCARO",
           "nombreCorregido": "el jícaro",
-          "departamentoId": 5
+          "departamentoId": 5,
+          "alias": [
+            "el jícaro",
+            "el jicaro"
+          ]
         },
         {
           "id": 52,
           "nombre": "GUASTATOYA",
           "nombreCorregido": "guastatoya",
-          "departamentoId": 5
+          "departamentoId": 5,
+          "alias": [
+            "guastatoya"
+          ]
         },
         {
           "id": 53,
           "nombre": "MORAZÁN",
           "nombreCorregido": "morazán",
-          "departamentoId": 5
+          "departamentoId": 5,
+          "alias": [
+            "morazán",
+            "morazan"
+          ]
         },
         {
           "id": 54,
           "nombre": "SANAGUSTÍNACASAGUASTLÁN",
           "nombreCorregido": "san agustín acasaguastlán",
-          "departamentoId": 5
+          "departamentoId": 5,
+          "alias": [
+            "san agustín acasaguastlán",
+            "san agustin acasaguastlan",
+            "sn agustín acasaguastlán",
+            "sn agustin acasaguastlan"
+          ]
         },
         {
           "id": 55,
           "nombre": "SANANTONIOLAPAZ",
           "nombreCorregido": "san antonio la paz",
-          "departamentoId": 5
+          "departamentoId": 5,
+          "alias": [
+            "san antonio la paz",
+            "sn antonio la paz"
+          ]
         },
         {
           "id": 56,
           "nombre": "SANCRISTÓBALACASAGUASTLÁN",
           "nombreCorregido": "san cristóbal acasaguastlán",
-          "departamentoId": 5
+          "departamentoId": 5,
+          "alias": [
+            "san cristóbal acasaguastlán",
+            "san cristobal acasaguastlan",
+            "sn cristóbal acasaguastlán",
+            "sn cristobal acasaguastlan"
+          ]
         },
         {
           "id": 57,
           "nombre": "SANARATE",
           "nombreCorregido": "sanarate",
-          "departamentoId": 5
+          "departamentoId": 5,
+          "alias": [
+            "sanarate"
+          ]
         },
         {
           "id": 58,
           "nombre": "SANSARE",
           "nombreCorregido": "sansare",
-          "departamentoId": 5
+          "departamentoId": 5,
+          "alias": [
+            "sansare"
+          ]
         }
+      ],
+      "alias": [
+        "el progreso"
       ]
     },
     {
@@ -398,80 +668,142 @@
           "id": 59,
           "nombre": "ESCUINTLA",
           "nombreCorregido": "escuintla",
-          "departamentoId": 6
+          "departamentoId": 6,
+          "alias": [
+            "escuintla"
+          ]
         },
         {
           "id": 60,
           "nombre": "GUANAGAZAPA",
           "nombreCorregido": "guanagazapa",
-          "departamentoId": 6
+          "departamentoId": 6,
+          "alias": [
+            "guanagazapa"
+          ]
         },
         {
           "id": 61,
           "nombre": "IZTAPA",
           "nombreCorregido": "iztapa",
-          "departamentoId": 6
+          "departamentoId": 6,
+          "alias": [
+            "iztapa"
+          ]
         },
         {
           "id": 62,
           "nombre": "LADEMOCRACIA",
           "nombreCorregido": "la democracia",
-          "departamentoId": 6
+          "departamentoId": 6,
+          "alias": [
+            "la democracia"
+          ]
         },
         {
           "id": 63,
           "nombre": "LAGOMERA",
           "nombreCorregido": "la gomera",
-          "departamentoId": 6
+          "departamentoId": 6,
+          "alias": [
+            "la gomera"
+          ]
         },
         {
           "id": 64,
           "nombre": "MASAGUA",
           "nombreCorregido": "masagua",
-          "departamentoId": 6
+          "departamentoId": 6,
+          "alias": [
+            "masagua"
+          ]
         },
         {
           "id": 65,
           "nombre": "NUEVACONCEPCIÓN",
           "nombreCorregido": "nueva concepción",
-          "departamentoId": 6
+          "departamentoId": 6,
+          "alias": [
+            "nueva concepción",
+            "nueva concepcion"
+          ]
         },
         {
           "id": 66,
           "nombre": "PALÍN",
           "nombreCorregido": "palín",
-          "departamentoId": 6
+          "departamentoId": 6,
+          "alias": [
+            "palín",
+            "palin"
+          ]
         },
         {
           "id": 67,
           "nombre": "SANJOSÉ",
           "nombreCorregido": "san josé",
-          "departamentoId": 6
+          "departamentoId": 6,
+          "alias": [
+            "san josé",
+            "san jose",
+            "sn josé",
+            "sn jose"
+          ]
         },
         {
           "id": 68,
           "nombre": "SANVICENTEPACAYA",
           "nombreCorregido": "san vicente pacaya",
-          "departamentoId": 6
+          "departamentoId": 6,
+          "alias": [
+            "san vicente pacaya",
+            "sn vicente pacaya"
+          ]
         },
         {
           "id": 69,
           "nombre": "SANTALUCÍACOTZUMALGUAPA",
           "nombreCorregido": "santa lucía cotzumalguapa",
-          "departamentoId": 6
+          "departamentoId": 6,
+          "alias": [
+            "santa lucía cotzumalguapa",
+            "santa lucia cotzumalguapa",
+            "sta lucía cotzumalguapa",
+            "sta lucia cotzumalguapa"
+          ]
         },
         {
           "id": 70,
           "nombre": "SIQUINALÁ",
           "nombreCorregido": "siquinalá",
-          "departamentoId": 6
+          "departamentoId": 6,
+          "alias": [
+            "siquinalá",
+            "siquinala"
+          ]
         },
         {
           "id": 71,
           "nombre": "TIQUISATE",
           "nombreCorregido": "tiquisate",
-          "departamentoId": 6
+          "departamentoId": 6,
+          "alias": [
+            "tiquisate"
+          ]
+        },
+        {
+          "id": 336,
+          "nombre": "SIPACATE",
+          "nombreCorregido": "sipacate",
+          "departamentoId": 6,
+          "alias": [
+            "sipacate"
+          ],
+          "municipioApi": "Sipacate"
         }
+      ],
+      "alias": [
+        "escuintla"
       ]
     },
     {
@@ -483,104 +815,178 @@
           "id": 72,
           "nombre": "AMATITLÁN",
           "nombreCorregido": "amatitlán",
-          "departamentoId": 7
+          "departamentoId": 7,
+          "alias": [
+            "amatitlán",
+            "amatitlan"
+          ]
         },
         {
           "id": 73,
           "nombre": "CHINAUTLA",
           "nombreCorregido": "chinautla",
-          "departamentoId": 7
+          "departamentoId": 7,
+          "alias": [
+            "chinautla"
+          ]
         },
         {
           "id": 74,
           "nombre": "CHUARRANCHO",
           "nombreCorregido": "chuarrancho",
-          "departamentoId": 7
+          "departamentoId": 7,
+          "alias": [
+            "chuarrancho"
+          ]
         },
         {
           "id": 75,
           "nombre": "FRAIJANES",
           "nombreCorregido": "fraijanes",
-          "departamentoId": 7
+          "departamentoId": 7,
+          "alias": [
+            "fraijanes"
+          ]
         },
         {
           "id": 76,
           "nombre": "MIXCO",
           "nombreCorregido": "mixco",
-          "departamentoId": 7
+          "departamentoId": 7,
+          "alias": [
+            "mixco"
+          ]
         },
         {
           "id": 77,
           "nombre": "PALENCIA",
           "nombreCorregido": "palencia",
-          "departamentoId": 7
+          "departamentoId": 7,
+          "alias": [
+            "palencia"
+          ]
         },
         {
           "id": 78,
           "nombre": "PETAPA",
           "nombreCorregido": "petapa",
-          "departamentoId": 7
+          "departamentoId": 7,
+          "alias": [
+            "petapa"
+          ]
         },
         {
           "id": 79,
           "nombre": "SANJOSÉDELGOLFO",
           "nombreCorregido": "san josé del golfo",
-          "departamentoId": 7
+          "departamentoId": 7,
+          "alias": [
+            "san josé del golfo",
+            "san jose del golfo",
+            "sn josé del golfo",
+            "sn jose del golfo"
+          ]
         },
         {
           "id": 80,
           "nombre": "SANJOSÉPINULA",
           "nombreCorregido": "san josé pinula",
-          "departamentoId": 7
+          "departamentoId": 7,
+          "alias": [
+            "san josé pinula",
+            "san jose pinula",
+            "sn josé pinula",
+            "sn jose pinula"
+          ]
         },
         {
           "id": 81,
           "nombre": "SANJUANSACATEPÉQUEZ",
           "nombreCorregido": "san juan sacatepéquez",
-          "departamentoId": 7
+          "departamentoId": 7,
+          "alias": [
+            "san juan sacatepéquez",
+            "san juan sacatepequez",
+            "sn juan sacatepéquez",
+            "sn juan sacatepequez"
+          ]
         },
         {
           "id": 82,
           "nombre": "SANPEDROAYAMPUC",
           "nombreCorregido": "san pedro ayampuc",
-          "departamentoId": 7
+          "departamentoId": 7,
+          "alias": [
+            "san pedro ayampuc",
+            "sn pedro ayampuc"
+          ]
         },
         {
           "id": 83,
           "nombre": "SANPEDROSACATEPÉQUEZ",
           "nombreCorregido": "san pedro sacatepéquez",
-          "departamentoId": 7
+          "departamentoId": 7,
+          "alias": [
+            "san pedro sacatepéquez",
+            "san pedro sacatepequez",
+            "sn pedro sacatepéquez",
+            "sn pedro sacatepequez"
+          ]
         },
         {
           "id": 84,
           "nombre": "SANRAYMUNDO",
           "nombreCorregido": "san raymundo",
-          "departamentoId": 7
+          "departamentoId": 7,
+          "alias": [
+            "san raymundo",
+            "sn raymundo"
+          ]
         },
         {
           "id": 85,
           "nombre": "SANTACATARINAPINULA",
           "nombreCorregido": "santa catarina pinula",
-          "departamentoId": 7
+          "departamentoId": 7,
+          "alias": [
+            "santa catarina pinula",
+            "sta catarina pinula"
+          ]
         },
         {
           "id": 86,
           "nombre": "VILLACANALES",
           "nombreCorregido": "villa canales",
-          "departamentoId": 7
+          "departamentoId": 7,
+          "alias": [
+            "villa canales"
+          ]
         },
         {
           "id": 87,
           "nombre": "VILLANUEVA",
           "nombreCorregido": "villa nueva",
-          "departamentoId": 7
+          "departamentoId": 7,
+          "alias": [
+            "villa nueva"
+          ]
         },
         {
           "id": 88,
           "nombre": "GUATEMALA",
           "nombreCorregido": "guatemala",
-          "departamentoId": 7
+          "departamentoId": 7,
+          "alias": [
+            "guatemala"
+          ]
         }
+      ],
+      "alias": [
+        "guatemala",
+        "guatemala oriente",
+        "guatemala sur",
+        "guatemala norte",
+        "guatemala occidente"
       ]
     },
     {
@@ -592,194 +998,342 @@
           "id": 89,
           "nombre": "AGUACATÁN",
           "nombreCorregido": "aguacatán",
-          "departamentoId": 8
+          "departamentoId": 8,
+          "alias": [
+            "aguacatán",
+            "aguacatan"
+          ]
         },
         {
           "id": 90,
           "nombre": "CHIANTLA",
           "nombreCorregido": "chiantla",
-          "departamentoId": 8
+          "departamentoId": 8,
+          "alias": [
+            "chiantla"
+          ]
         },
         {
           "id": 91,
           "nombre": "COLOTENANGO",
           "nombreCorregido": "colotenango",
-          "departamentoId": 8
+          "departamentoId": 8,
+          "alias": [
+            "colotenango"
+          ]
         },
         {
           "id": 92,
           "nombre": "CONCEPCIÓNHUISTA",
           "nombreCorregido": "concepción huista",
-          "departamentoId": 8
+          "departamentoId": 8,
+          "alias": [
+            "concepción huista",
+            "concepcion huista"
+          ]
         },
         {
           "id": 93,
           "nombre": "CUILCO",
           "nombreCorregido": "cuilco",
-          "departamentoId": 8
+          "departamentoId": 8,
+          "alias": [
+            "cuilco"
+          ]
         },
         {
           "id": 94,
           "nombre": "HUEHUETENANGO",
           "nombreCorregido": "huehuetenango",
-          "departamentoId": 8
+          "departamentoId": 8,
+          "alias": [
+            "huehuetenango"
+          ]
         },
         {
           "id": 95,
           "nombre": "JACALTENANGO",
           "nombreCorregido": "jacaltenango",
-          "departamentoId": 8
+          "departamentoId": 8,
+          "alias": [
+            "jacaltenango"
+          ]
         },
         {
           "id": 96,
           "nombre": "LADEMOCRACIA",
           "nombreCorregido": "la democracia",
-          "departamentoId": 8
+          "departamentoId": 8,
+          "alias": [
+            "la democracia"
+          ]
         },
         {
           "id": 97,
           "nombre": "LALIBERTAD",
           "nombreCorregido": "la libertad",
-          "departamentoId": 8
+          "departamentoId": 8,
+          "alias": [
+            "la libertad"
+          ]
         },
         {
           "id": 98,
           "nombre": "MALACATANCITO",
           "nombreCorregido": "malacatancito",
-          "departamentoId": 8
+          "departamentoId": 8,
+          "alias": [
+            "malacatancito"
+          ]
         },
         {
           "id": 99,
           "nombre": "NENTÓN",
           "nombreCorregido": "nentón",
-          "departamentoId": 8
+          "departamentoId": 8,
+          "alias": [
+            "nentón",
+            "nenton"
+          ]
         },
         {
           "id": 100,
           "nombre": "SANANTONIOHUISTA",
           "nombreCorregido": "san antonio huista",
-          "departamentoId": 8
+          "departamentoId": 8,
+          "alias": [
+            "san antonio huista",
+            "sn antonio huista"
+          ]
         },
         {
           "id": 101,
           "nombre": "SANGASPARIXCHIL",
           "nombreCorregido": "san gaspar ixchil",
-          "departamentoId": 8
+          "departamentoId": 8,
+          "alias": [
+            "san gaspar ixchil",
+            "sn gaspar ixchil"
+          ]
         },
         {
           "id": 102,
           "nombre": "SANILDEFONSOIXTAHUACÁN",
           "nombreCorregido": "san ildefonso ixtahuacán",
-          "departamentoId": 8
+          "departamentoId": 8,
+          "alias": [
+            "san ildefonso ixtahuacán",
+            "san ildefonso ixtahuacan",
+            "sn ildefonso ixtahuacán",
+            "sn ildefonso ixtahuacan"
+          ]
         },
         {
           "id": 103,
           "nombre": "SANJUANATITÁN",
           "nombreCorregido": "san juan atitán",
-          "departamentoId": 8
+          "departamentoId": 8,
+          "alias": [
+            "san juan atitán",
+            "san juan atitan",
+            "sn juan atitán",
+            "sn juan atitan"
+          ]
         },
         {
           "id": 104,
           "nombre": "SANJUANIXCOY",
           "nombreCorregido": "san juan ixcoy",
-          "departamentoId": 8
+          "departamentoId": 8,
+          "alias": [
+            "san juan ixcoy",
+            "sn juan ixcoy"
+          ]
         },
         {
           "id": 105,
           "nombre": "SANMATEOIXTATÁN",
           "nombreCorregido": "san mateo ixtatán",
-          "departamentoId": 8
+          "departamentoId": 8,
+          "alias": [
+            "san mateo ixtatán",
+            "san mateo ixtatan",
+            "sn mateo ixtatán",
+            "sn mateo ixtatan"
+          ]
         },
         {
           "id": 106,
           "nombre": "SANMIGUELACATÁN",
           "nombreCorregido": "san miguel acatán",
-          "departamentoId": 8
+          "departamentoId": 8,
+          "alias": [
+            "san miguel acatán",
+            "san miguel acatan",
+            "sn miguel acatán",
+            "sn miguel acatan"
+          ]
         },
         {
           "id": 107,
           "nombre": "SANPEDRONECTA",
           "nombreCorregido": "san pedro necta",
-          "departamentoId": 8
+          "departamentoId": 8,
+          "alias": [
+            "san pedro necta",
+            "sn pedro necta"
+          ]
         },
         {
           "id": 108,
           "nombre": "SANRAFAELLAINDEPENDENCIA",
           "nombreCorregido": "san rafael la independencia",
-          "departamentoId": 8
+          "departamentoId": 8,
+          "alias": [
+            "san rafael la independencia",
+            "sn rafael la independencia"
+          ]
         },
         {
           "id": 109,
           "nombre": "SANRAFAELPETZAL",
           "nombreCorregido": "san rafael petzal",
-          "departamentoId": 8
+          "departamentoId": 8,
+          "alias": [
+            "san rafael petzal",
+            "sn rafael petzal"
+          ]
         },
         {
           "id": 110,
           "nombre": "SANSEBASTIÁNCOATÁN",
           "nombreCorregido": "san sebastián coatán",
-          "departamentoId": 8
+          "departamentoId": 8,
+          "alias": [
+            "san sebastián coatán",
+            "san sebastian coatan",
+            "sn sebastián coatán",
+            "sn sebastian coatan"
+          ]
         },
         {
           "id": 111,
           "nombre": "SANSEBASTIÁNHUEHUETENANGO",
           "nombreCorregido": "san sebastián huehuetenango",
-          "departamentoId": 8
+          "departamentoId": 8,
+          "alias": [
+            "san sebastián huehuetenango",
+            "san sebastian huehuetenango",
+            "sn sebastián huehuetenango",
+            "sn sebastian huehuetenango"
+          ]
         },
         {
           "id": 112,
           "nombre": "SANTAANAHUISTA",
           "nombreCorregido": "santa ana huista",
-          "departamentoId": 8
+          "departamentoId": 8,
+          "alias": [
+            "santa ana huista",
+            "sta ana huista"
+          ]
         },
         {
           "id": 113,
           "nombre": "SANTABÁRBARA",
           "nombreCorregido": "santa bárbara",
-          "departamentoId": 8
+          "departamentoId": 8,
+          "alias": [
+            "santa bárbara",
+            "santa barbara",
+            "sta bárbara",
+            "sta barbara"
+          ]
         },
         {
           "id": 114,
           "nombre": "SANTACRUZBARILLAS",
           "nombreCorregido": "santa cruz barillas",
-          "departamentoId": 8
+          "departamentoId": 8,
+          "alias": [
+            "santa cruz barillas",
+            "sta cruz barillas",
+            "barillas"
+          ]
         },
         {
           "id": 115,
           "nombre": "SANTAEULALIA",
           "nombreCorregido": "santa eulalia",
-          "departamentoId": 8
+          "departamentoId": 8,
+          "alias": [
+            "santa eulalia",
+            "sta eulalia"
+          ]
         },
         {
           "id": 116,
           "nombre": "SANTIAGOCHIMALTENANGO",
           "nombreCorregido": "santiago chimaltenango",
-          "departamentoId": 8
+          "departamentoId": 8,
+          "alias": [
+            "santiago chimaltenango"
+          ]
         },
         {
           "id": 117,
           "nombre": "SOLOMA",
           "nombreCorregido": "soloma",
-          "departamentoId": 8
+          "departamentoId": 8,
+          "alias": [
+            "soloma",
+            "san pedro soloma"
+          ]
         },
         {
           "id": 118,
           "nombre": "TECTITÁN",
           "nombreCorregido": "tectitán",
-          "departamentoId": 8
+          "departamentoId": 8,
+          "alias": [
+            "tectitán",
+            "tectitan"
+          ]
         },
         {
           "id": 119,
           "nombre": "TODOSSANTOSCUCHUMATÁN",
           "nombreCorregido": "todos santos cuchumatán",
-          "departamentoId": 8
+          "departamentoId": 8,
+          "alias": [
+            "todos santos cuchumatán",
+            "todos santos cuchumatan"
+          ]
         },
         {
           "id": 119,
           "nombre": "UNIÓNCANTINIL",
           "nombreCorregido": "unión cantinil",
-          "departamentoId": 8
+          "departamentoId": 8,
+          "alias": [
+            "unión cantinil",
+            "union cantinil"
+          ]
+        },
+        {
+          "id": 337,
+          "nombre": "PETATÁN",
+          "nombreCorregido": "petatán",
+          "departamentoId": 8,
+          "alias": [
+            "petatán",
+            "petatan"
+          ],
+          "municipioApi": "Petatán"
         }
+      ],
+      "alias": [
+        "huehuetenango"
       ]
     },
     {
@@ -791,38 +1345,50 @@
           "id": 120,
           "nombre": "ELESTOR",
           "nombreCorregido": "el estor",
-          "departamentoId": 9
+          "departamentoId": 9,
+          "alias": [
+            "el estor"
+          ]
         },
         {
           "id": 121,
           "nombre": "LIVINGSTON",
           "nombreCorregido": "livingston",
-          "departamentoId": 9
+          "departamentoId": 9,
+          "alias": [
+            "livingston"
+          ]
         },
         {
           "id": 122,
           "nombre": "LOSAMATES",
           "nombreCorregido": "los amates",
-          "departamentoId": 9
+          "departamentoId": 9,
+          "alias": [
+            "los amates"
+          ]
         },
         {
           "id": 123,
           "nombre": "MORALES",
           "nombreCorregido": "morales",
-          "departamentoId": 9
+          "departamentoId": 9,
+          "alias": [
+            "morales"
+          ]
         },
         {
           "id": 124,
           "nombre": "PUERTOBARRIOS",
           "nombreCorregido": "puerto barrios",
-          "departamentoId": 9
-        },
-        {
-          "id": 125,
-          "nombre": "SANLUIS",
-          "nombreCorregido": "san luis",
-          "departamentoId": 9
+          "departamentoId": 9,
+          "alias": [
+            "puerto barrios"
+          ]
         }
+      ],
+      "alias": [
+        "izabal"
       ]
     },
     {
@@ -834,44 +1400,74 @@
           "id": 126,
           "nombre": "JALAPA",
           "nombreCorregido": "jalapa",
-          "departamentoId": 10
+          "departamentoId": 10,
+          "alias": [
+            "jalapa"
+          ]
         },
         {
           "id": 127,
           "nombre": "MATAQUESCUINTLA",
           "nombreCorregido": "mataquescuintla",
-          "departamentoId": 10
+          "departamentoId": 10,
+          "alias": [
+            "mataquescuintla"
+          ]
         },
         {
           "id": 128,
           "nombre": "MONJAS",
           "nombreCorregido": "monjas",
-          "departamentoId": 10
+          "departamentoId": 10,
+          "alias": [
+            "monjas"
+          ]
         },
         {
           "id": 129,
           "nombre": "SANCARLOSALZATATE",
           "nombreCorregido": "san carlos alzatate",
-          "departamentoId": 10
+          "departamentoId": 10,
+          "alias": [
+            "san carlos alzatate",
+            "sn carlos alzatate"
+          ]
         },
         {
           "id": 130,
           "nombre": "SANLUISJILOTEPEQUE",
           "nombreCorregido": "san luis jilotepeque",
-          "departamentoId": 10
+          "departamentoId": 10,
+          "alias": [
+            "san luis jilotepeque",
+            "sn luis jilotepeque"
+          ]
         },
         {
           "id": 131,
           "nombre": "SANMANUELCHAPARRÓN",
           "nombreCorregido": "san manuel chaparrón",
-          "departamentoId": 10
+          "departamentoId": 10,
+          "alias": [
+            "san manuel chaparrón",
+            "san manuel chaparron",
+            "sn manuel chaparrón",
+            "sn manuel chaparron"
+          ]
         },
         {
           "id": 132,
           "nombre": "SANPEDROPINULA",
           "nombreCorregido": "san pedro pinula",
-          "departamentoId": 10
+          "departamentoId": 10,
+          "alias": [
+            "san pedro pinula",
+            "sn pedro pinula"
+          ]
         }
+      ],
+      "alias": [
+        "jalapa"
       ]
     },
     {
@@ -883,104 +1479,164 @@
           "id": 133,
           "nombre": "AGUABLANCA",
           "nombreCorregido": "agua blanca",
-          "departamentoId": 11
+          "departamentoId": 11,
+          "alias": [
+            "agua blanca"
+          ]
         },
         {
           "id": 134,
           "nombre": "ASUNCIÓNMITA",
           "nombreCorregido": "asunción mita",
-          "departamentoId": 11
+          "departamentoId": 11,
+          "alias": [
+            "asunción mita",
+            "asuncion mita"
+          ]
         },
         {
           "id": 135,
           "nombre": "ATESCATEMPA",
           "nombreCorregido": "atescatempa",
-          "departamentoId": 11
+          "departamentoId": 11,
+          "alias": [
+            "atescatempa"
+          ]
         },
         {
           "id": 136,
           "nombre": "COMAPA",
           "nombreCorregido": "comapa",
-          "departamentoId": 11
+          "departamentoId": 11,
+          "alias": [
+            "comapa"
+          ]
         },
         {
           "id": 137,
           "nombre": "CONGUACO",
           "nombreCorregido": "conguaco",
-          "departamentoId": 11
+          "departamentoId": 11,
+          "alias": [
+            "conguaco"
+          ]
         },
         {
           "id": 138,
           "nombre": "ELADELANTO",
           "nombreCorregido": "el adelanto",
-          "departamentoId": 11
+          "departamentoId": 11,
+          "alias": [
+            "el adelanto"
+          ]
         },
         {
           "id": 139,
           "nombre": "ELPROGRESO",
           "nombreCorregido": "el progreso",
-          "departamentoId": 11
+          "departamentoId": 11,
+          "alias": [
+            "el progreso"
+          ]
         },
         {
           "id": 140,
           "nombre": "JALPATAGUA",
           "nombreCorregido": "jalpatagua",
-          "departamentoId": 11
+          "departamentoId": 11,
+          "alias": [
+            "jalpatagua"
+          ]
         },
         {
           "id": 141,
           "nombre": "JEREZ",
           "nombreCorregido": "jerez",
-          "departamentoId": 11
+          "departamentoId": 11,
+          "alias": [
+            "jerez"
+          ]
         },
         {
           "id": 142,
           "nombre": "JUTIAPA",
           "nombreCorregido": "jutiapa",
-          "departamentoId": 11
+          "departamentoId": 11,
+          "alias": [
+            "jutiapa"
+          ]
         },
         {
           "id": 143,
           "nombre": "MOYUTA",
           "nombreCorregido": "moyuta",
-          "departamentoId": 11
+          "departamentoId": 11,
+          "alias": [
+            "moyuta"
+          ]
         },
         {
           "id": 144,
           "nombre": "PASACO",
           "nombreCorregido": "pasaco",
-          "departamentoId": 11
+          "departamentoId": 11,
+          "alias": [
+            "pasaco"
+          ]
         },
         {
           "id": 145,
           "nombre": "QUEZADA",
           "nombreCorregido": "quesada",
-          "departamentoId": 11
+          "departamentoId": 11,
+          "alias": [
+            "quesada"
+          ]
         },
         {
           "id": 146,
           "nombre": "SANJOSÉACATEMPA",
           "nombreCorregido": "san josé acatempa",
-          "departamentoId": 11
+          "departamentoId": 11,
+          "alias": [
+            "san josé acatempa",
+            "san jose acatempa",
+            "sn josé acatempa",
+            "sn jose acatempa"
+          ]
         },
         {
           "id": 147,
           "nombre": "SANTACATARINAMITA",
           "nombreCorregido": "santa catarina mita",
-          "departamentoId": 11
+          "departamentoId": 11,
+          "alias": [
+            "santa catarina mita",
+            "sta catarina mita"
+          ]
         },
         {
           "id": 148,
           "nombre": "YUPILTEPEQUE",
           "nombreCorregido": "yupiltepeque",
-          "departamentoId": 11
+          "departamentoId": 11,
+          "alias": [
+            "yupiltepeque"
+          ]
         },
         {
           "id": 149,
           "nombre": "ZAPOTITLÁN",
           "nombreCorregido": "zapotitlán",
-          "departamentoId": 11
+          "departamentoId": 11,
+          "alias": [
+            "zapotitlán",
+            "zapotitlan"
+          ]
         }
+      ],
+      "alias": [
+        "jutiapa"
       ]
     },
     {
@@ -992,80 +1648,145 @@
           "id": 150,
           "nombre": "DOLORES",
           "nombreCorregido": "dolores",
-          "departamentoId": 12
+          "departamentoId": 12,
+          "alias": [
+            "dolores"
+          ]
         },
         {
           "id": 151,
           "nombre": "FLORES",
           "nombreCorregido": "flores",
-          "departamentoId": 12
+          "departamentoId": 12,
+          "alias": [
+            "flores"
+          ]
         },
         {
           "id": 152,
           "nombre": "LALIBERTAD",
           "nombreCorregido": "la libertad",
-          "departamentoId": 12
+          "departamentoId": 12,
+          "alias": [
+            "la libertad"
+          ]
         },
         {
           "id": 153,
           "nombre": "MELCHORDEMENCOS",
           "nombreCorregido": "melchor de mencos",
-          "departamentoId": 12
+          "departamentoId": 12,
+          "alias": [
+            "melchor de mencos"
+          ]
         },
         {
           "id": 154,
           "nombre": "POPTÚN",
           "nombreCorregido": "poptún",
-          "departamentoId": 12
+          "departamentoId": 12,
+          "alias": [
+            "poptún",
+            "poptun"
+          ]
         },
         {
           "id": 155,
           "nombre": "SANANDRÉS",
           "nombreCorregido": "san andrés",
-          "departamentoId": 12
+          "departamentoId": 12,
+          "alias": [
+            "san andrés",
+            "san andres",
+            "sn andrés",
+            "sn andres"
+          ]
         },
         {
           "id": 156,
           "nombre": "SANBENITO",
           "nombreCorregido": "san benito",
-          "departamentoId": 12
+          "departamentoId": 12,
+          "alias": [
+            "san benito",
+            "sn benito"
+          ]
         },
         {
           "id": 157,
           "nombre": "SANFRANCISCO",
           "nombreCorregido": "san francisco",
-          "departamentoId": 12
+          "departamentoId": 12,
+          "alias": [
+            "san francisco",
+            "sn francisco"
+          ]
         },
         {
           "id": 158,
           "nombre": "SANJOSÉ",
           "nombreCorregido": "san josé",
-          "departamentoId": 12
+          "departamentoId": 12,
+          "alias": [
+            "san josé",
+            "san jose",
+            "sn josé",
+            "sn jose"
+          ]
         },
         {
           "id": 159,
           "nombre": "SANLUIS",
           "nombreCorregido": "san luis",
-          "departamentoId": 12
+          "departamentoId": 12,
+          "alias": [
+            "san luis",
+            "sn luis"
+          ]
         },
         {
           "id": 160,
           "nombre": "SANTAANA",
           "nombreCorregido": "santa ana",
-          "departamentoId": 12
+          "departamentoId": 12,
+          "alias": [
+            "santa ana",
+            "sta ana"
+          ]
         },
         {
           "id": 161,
           "nombre": "SAYAXCHÉ",
           "nombreCorregido": "sayaxché",
-          "departamentoId": 12
+          "departamentoId": 12,
+          "alias": [
+            "sayaxché",
+            "sayaxche"
+          ]
         },
         {
           "id": 162,
           "nombre": "ELCHAL",
           "nombreCorregido": "el chal",
-          "departamentoId": 12
+          "departamentoId": 12,
+          "alias": [
+            "el chal"
+          ]
+        },
+        {
+          "id": 335,
+          "nombre": "LASCRUCES",
+          "nombreCorregido": "las cruces",
+          "departamentoId": 12,
+          "alias": [
+            "las cruces"
+          ],
+          "municipioApi": "Las Cruces"
         }
+      ],
+      "alias": [
+        "petén",
+        "peten"
       ]
     },
     {
@@ -1077,146 +1798,239 @@
           "id": 162,
           "nombre": "ALMOLONGA",
           "nombreCorregido": "almolonga",
-          "departamentoId": 13
+          "departamentoId": 13,
+          "alias": [
+            "almolonga"
+          ]
         },
         {
           "id": 163,
           "nombre": "CABRICÁN",
           "nombreCorregido": "cabricán",
-          "departamentoId": 13
+          "departamentoId": 13,
+          "alias": [
+            "cabricán",
+            "cabrican"
+          ]
         },
         {
           "id": 164,
           "nombre": "CAJOLÁ",
           "nombreCorregido": "cajolá",
-          "departamentoId": 13
+          "departamentoId": 13,
+          "alias": [
+            "cajolá",
+            "cajola"
+          ]
         },
         {
           "id": 165,
           "nombre": "CANTEL",
           "nombreCorregido": "cantel",
-          "departamentoId": 13
+          "departamentoId": 13,
+          "alias": [
+            "cantel"
+          ]
         },
         {
           "id": 166,
           "nombre": "COATEPEQUE",
           "nombreCorregido": "coatepeque",
-          "departamentoId": 13
+          "departamentoId": 13,
+          "alias": [
+            "coatepeque"
+          ]
         },
         {
           "id": 167,
           "nombre": "COLOMBA",
           "nombreCorregido": "colomba",
-          "departamentoId": 13
+          "departamentoId": 13,
+          "alias": [
+            "colomba"
+          ]
         },
         {
           "id": 168,
           "nombre": "CONCEPCIÓNCHIQUIRICHAPA",
           "nombreCorregido": "concepción chiquirichapa",
-          "departamentoId": 13
+          "departamentoId": 13,
+          "alias": [
+            "concepción chiquirichapa",
+            "concepcion chiquirichapa"
+          ]
         },
         {
           "id": 169,
           "nombre": "ELPALMAR",
           "nombreCorregido": "el palmar",
-          "departamentoId": 13
+          "departamentoId": 13,
+          "alias": [
+            "el palmar"
+          ]
         },
         {
           "id": 170,
           "nombre": "FLORESCOSTACUCA",
           "nombreCorregido": "flores costa cuca",
-          "departamentoId": 13
+          "departamentoId": 13,
+          "alias": [
+            "flores costa cuca"
+          ]
         },
         {
           "id": 171,
           "nombre": "GÉNOVA",
           "nombreCorregido": "génova",
-          "departamentoId": 13
+          "departamentoId": 13,
+          "alias": [
+            "génova",
+            "genova"
+          ]
         },
         {
           "id": 172,
           "nombre": "HUITÁN",
           "nombreCorregido": "huitán",
-          "departamentoId": 13
+          "departamentoId": 13,
+          "alias": [
+            "huitán",
+            "huitan"
+          ]
         },
         {
           "id": 173,
           "nombre": "LAESPERANZA",
           "nombreCorregido": "la esperanza",
-          "departamentoId": 13
+          "departamentoId": 13,
+          "alias": [
+            "la esperanza"
+          ]
         },
         {
           "id": 174,
           "nombre": "OLINTEPEQUE",
           "nombreCorregido": "olintepeque",
-          "departamentoId": 13
+          "departamentoId": 13,
+          "alias": [
+            "olintepeque"
+          ]
         },
         {
           "id": 175,
           "nombre": "OSTUNCALCO",
           "nombreCorregido": "ostuncalco",
-          "departamentoId": 13
+          "departamentoId": 13,
+          "alias": [
+            "ostuncalco",
+            "san juan ostuncalco"
+          ]
         },
         {
           "id": 176,
           "nombre": "PALESTINADELOSALTOS",
           "nombreCorregido": "palestina de los altos",
-          "departamentoId": 13
+          "departamentoId": 13,
+          "alias": [
+            "palestina de los altos"
+          ]
         },
         {
           "id": 177,
           "nombre": "QUETZALTENANGO",
           "nombreCorregido": "quetzaltenango",
-          "departamentoId": 13
+          "departamentoId": 13,
+          "alias": [
+            "quetzaltenango"
+          ]
         },
         {
           "id": 178,
           "nombre": "SALCAJÁ",
           "nombreCorregido": "salcajá",
-          "departamentoId": 13
+          "departamentoId": 13,
+          "alias": [
+            "salcajá",
+            "salcaja"
+          ]
         },
         {
           "id": 179,
           "nombre": "SANCARLOSSIJA",
           "nombreCorregido": "san carlos sija",
-          "departamentoId": 13
+          "departamentoId": 13,
+          "alias": [
+            "san carlos sija",
+            "sn carlos sija"
+          ]
         },
         {
           "id": 180,
           "nombre": "SANFRANCISCOLAUNIÓN",
           "nombreCorregido": "san francisco la unión",
-          "departamentoId": 13
+          "departamentoId": 13,
+          "alias": [
+            "san francisco la unión",
+            "san francisco la union",
+            "sn francisco la unión",
+            "sn francisco la union"
+          ]
         },
         {
           "id": 181,
           "nombre": "SANMARTÍNSACATEPÉQUEZ",
           "nombreCorregido": "san martín sacatepéquez",
-          "departamentoId": 13
+          "departamentoId": 13,
+          "alias": [
+            "san martín sacatepéquez",
+            "san martin sacatepequez",
+            "sn martín sacatepéquez",
+            "sn martin sacatepequez"
+          ]
         },
         {
           "id": 182,
           "nombre": "SANMATEO",
           "nombreCorregido": "san mateo",
-          "departamentoId": 13
+          "departamentoId": 13,
+          "alias": [
+            "san mateo",
+            "sn mateo"
+          ]
         },
         {
           "id": 183,
           "nombre": "SANMIGUELSIGÜILÁ",
           "nombreCorregido": "san miguel sigüilá",
-          "departamentoId": 13
+          "departamentoId": 13,
+          "alias": [
+            "san miguel sigüilá",
+            "san miguel siguila",
+            "sn miguel sigüilá",
+            "sn miguel siguila"
+          ]
         },
         {
           "id": 184,
           "nombre": "SIBILIA",
           "nombreCorregido": "sibilia",
-          "departamentoId": 13
+          "departamentoId": 13,
+          "alias": [
+            "sibilia"
+          ]
         },
         {
           "id": 185,
           "nombre": "ZUNIL",
           "nombreCorregido": "zunil",
-          "departamentoId": 13
+          "departamentoId": 13,
+          "alias": [
+            "zunil"
+          ]
         }
+      ],
+      "alias": [
+        "quetzaltenango"
       ]
     },
     {
@@ -1228,128 +2042,214 @@
           "id": 186,
           "nombre": "CANILLÁ",
           "nombreCorregido": "canillá",
-          "departamentoId": 14
+          "departamentoId": 14,
+          "alias": [
+            "canillá",
+            "canilla"
+          ]
         },
         {
           "id": 187,
           "nombre": "CHAJUL",
           "nombreCorregido": "chajul",
-          "departamentoId": 14
+          "departamentoId": 14,
+          "alias": [
+            "chajul"
+          ]
         },
         {
           "id": 188,
           "nombre": "CHICAMAN",
           "nombreCorregido": "chicamán",
-          "departamentoId": 14
+          "departamentoId": 14,
+          "alias": [
+            "chicamán",
+            "chicaman"
+          ]
         },
         {
           "id": 189,
           "nombre": "CHICHÉ",
           "nombreCorregido": "chiché",
-          "departamentoId": 14
+          "departamentoId": 14,
+          "alias": [
+            "chiché",
+            "chiche"
+          ]
         },
         {
           "id": 190,
           "nombre": "CHICHICASTENANGO",
           "nombreCorregido": "chichicastenango",
-          "departamentoId": 14
+          "departamentoId": 14,
+          "alias": [
+            "chichicastenango"
+          ]
         },
         {
           "id": 191,
           "nombre": "CHINIQUE",
           "nombreCorregido": "chinique",
-          "departamentoId": 14
+          "departamentoId": 14,
+          "alias": [
+            "chinique"
+          ]
         },
         {
           "id": 192,
           "nombre": "CUNÉN",
           "nombreCorregido": "cunén",
-          "departamentoId": 14
+          "departamentoId": 14,
+          "alias": [
+            "cunén",
+            "cunen"
+          ]
         },
         {
           "id": 193,
           "nombre": "IXCÁN",
           "nombreCorregido": "ixcán",
-          "departamentoId": 14
+          "departamentoId": 14,
+          "alias": [
+            "ixcán",
+            "ixcan"
+          ]
         },
         {
           "id": 194,
           "nombre": "JOYABAJ",
           "nombreCorregido": "joyabaj",
-          "departamentoId": 14
+          "departamentoId": 14,
+          "alias": [
+            "joyabaj"
+          ]
         },
         {
           "id": 195,
           "nombre": "NEBAJ",
           "nombreCorregido": "nebaj",
-          "departamentoId": 14
+          "departamentoId": 14,
+          "alias": [
+            "nebaj"
+          ]
         },
         {
           "id": 196,
           "nombre": "PACHALÚM",
           "nombreCorregido": "pachalum",
-          "departamentoId": 14
+          "departamentoId": 14,
+          "alias": [
+            "pachalum"
+          ]
         },
         {
           "id": 197,
           "nombre": "PATZITÉ",
           "nombreCorregido": "patzité",
-          "departamentoId": 14
+          "departamentoId": 14,
+          "alias": [
+            "patzité",
+            "patzite"
+          ]
         },
         {
           "id": 198,
           "nombre": "SACAPULAS",
           "nombreCorregido": "sacapulas",
-          "departamentoId": 14
+          "departamentoId": 14,
+          "alias": [
+            "sacapulas"
+          ]
         },
         {
           "id": 199,
           "nombre": "SANANDRÉSSAJCABAJÁ",
           "nombreCorregido": "san andrés sajcabajá",
-          "departamentoId": 14
+          "departamentoId": 14,
+          "alias": [
+            "san andrés sajcabajá",
+            "san andres sajcabaja",
+            "sn andrés sajcabajá",
+            "sn andres sajcabaja"
+          ]
         },
         {
           "id": 200,
           "nombre": "SANANTONIOILOTENANGO",
           "nombreCorregido": "san antonio ilotenango",
-          "departamentoId": 14
+          "departamentoId": 14,
+          "alias": [
+            "san antonio ilotenango",
+            "sn antonio ilotenango"
+          ]
         },
         {
           "id": 201,
           "nombre": "SANBARTOLOMÉJOCOTENANGO",
           "nombreCorregido": "san bartolomé jocotenango",
-          "departamentoId": 14
+          "departamentoId": 14,
+          "alias": [
+            "san bartolomé jocotenango",
+            "san bartolome jocotenango",
+            "sn bartolomé jocotenango",
+            "sn bartolome jocotenango"
+          ]
         },
         {
           "id": 202,
           "nombre": "SANJUANCOTZAL",
           "nombreCorregido": "san juan cotzal",
-          "departamentoId": 14
+          "departamentoId": 14,
+          "alias": [
+            "san juan cotzal",
+            "sn juan cotzal"
+          ]
         },
         {
           "id": 203,
           "nombre": "SANPEDROJOCOPILAS",
           "nombreCorregido": "san pedro jocopilas",
-          "departamentoId": 14
+          "departamentoId": 14,
+          "alias": [
+            "san pedro jocopilas",
+            "sn pedro jocopilas"
+          ]
         },
         {
           "id": 204,
           "nombre": "SANTACRUZDELQUICHÉ",
           "nombreCorregido": "santa cruz del quiché",
-          "departamentoId": 14
+          "departamentoId": 14,
+          "alias": [
+            "santa cruz del quiché",
+            "santa cruz del quiche",
+            "sta cruz del quiché",
+            "sta cruz del quiche"
+          ]
         },
         {
           "id": 205,
           "nombre": "USPANTÁN",
           "nombreCorregido": "uspantán",
-          "departamentoId": 14
+          "departamentoId": 14,
+          "alias": [
+            "uspantán",
+            "uspantan"
+          ]
         },
         {
           "id": 206,
           "nombre": "ZACUALPA",
           "nombreCorregido": "zacualpa",
-          "departamentoId": 14
+          "departamentoId": 14,
+          "alias": [
+            "zacualpa"
+          ]
         }
+      ],
+      "alias": [
+        "quiché",
+        "quiche"
       ]
     },
     {
@@ -1361,56 +2261,101 @@
           "id": 207,
           "nombre": "CHAMPERICO",
           "nombreCorregido": "champerico",
-          "departamentoId": 15
+          "departamentoId": 15,
+          "alias": [
+            "champerico"
+          ]
         },
         {
           "id": 208,
           "nombre": "ELASINTAL",
           "nombreCorregido": "el asintal",
-          "departamentoId": 15
+          "departamentoId": 15,
+          "alias": [
+            "el asintal"
+          ]
         },
         {
           "id": 209,
           "nombre": "NUEVOSANCARLOS",
           "nombreCorregido": "nuevo san carlos",
-          "departamentoId": 15
+          "departamentoId": 15,
+          "alias": [
+            "nuevo san carlos",
+            "nuevo sn carlos"
+          ]
         },
         {
           "id": 210,
           "nombre": "RETALHULEU",
           "nombreCorregido": "retalhuleu",
-          "departamentoId": 15
+          "departamentoId": 15,
+          "alias": [
+            "retalhuleu"
+          ]
         },
         {
           "id": 211,
           "nombre": "SANANDRÉSVILLASECA",
           "nombreCorregido": "san andrés villa seca",
-          "departamentoId": 15
+          "departamentoId": 15,
+          "alias": [
+            "san andrés villa seca",
+            "san andres villa seca",
+            "sn andrés villa seca",
+            "sn andres villa seca"
+          ]
         },
         {
           "id": 212,
           "nombre": "SANFELIPE",
           "nombreCorregido": "san felipe",
-          "departamentoId": 15
+          "departamentoId": 15,
+          "alias": [
+            "san felipe",
+            "sn felipe",
+            "san felipe retalhuleu"
+          ]
         },
         {
           "id": 213,
           "nombre": "SANMARTÍNZAPOTITLÁN",
           "nombreCorregido": "san martín zapotitlán",
-          "departamentoId": 15
+          "departamentoId": 15,
+          "alias": [
+            "san martín zapotitlán",
+            "san martin zapotitlan",
+            "sn martín zapotitlán",
+            "sn martin zapotitlan"
+          ]
         },
         {
           "id": 214,
           "nombre": "SANSEBASTIÁN",
           "nombreCorregido": "san sebastián",
-          "departamentoId": 15
+          "departamentoId": 15,
+          "alias": [
+            "san sebastián",
+            "san sebastian",
+            "sn sebastián",
+            "sn sebastian"
+          ]
         },
         {
           "id": 215,
           "nombre": "SANTACRUZMULUÁ",
           "nombreCorregido": "santa cruz muluá",
-          "departamentoId": 15
+          "departamentoId": 15,
+          "alias": [
+            "santa cruz muluá",
+            "santa cruz mulua",
+            "sta cruz muluá",
+            "sta cruz mulua"
+          ]
         }
+      ],
+      "alias": [
+        "retalhuleu"
       ]
     },
     {
@@ -1422,98 +2367,169 @@
           "id": 216,
           "nombre": "ALOTENANGO",
           "nombreCorregido": "alotenango",
-          "departamentoId": 16
+          "departamentoId": 16,
+          "alias": [
+            "alotenango"
+          ]
         },
         {
           "id": 217,
           "nombre": "ANTIGUAGUATEMALA",
           "nombreCorregido": "antigua guatemala",
-          "departamentoId": 16
+          "departamentoId": 16,
+          "alias": [
+            "antigua guatemala"
+          ]
         },
         {
           "id": 218,
           "nombre": "CIUDADVIEJA",
           "nombreCorregido": "ciudad vieja",
-          "departamentoId": 16
+          "departamentoId": 16,
+          "alias": [
+            "ciudad vieja"
+          ]
         },
         {
           "id": 219,
           "nombre": "JOCOTENANGO",
           "nombreCorregido": "jocotenango",
-          "departamentoId": 16
+          "departamentoId": 16,
+          "alias": [
+            "jocotenango"
+          ]
         },
         {
           "id": 220,
           "nombre": "MAGDALENAMILPASALTAS",
           "nombreCorregido": "magdalena milpas altas",
-          "departamentoId": 16
+          "departamentoId": 16,
+          "alias": [
+            "magdalena milpas altas"
+          ]
         },
         {
           "id": 221,
           "nombre": "PASTORES",
           "nombreCorregido": "pastores",
-          "departamentoId": 16
+          "departamentoId": 16,
+          "alias": [
+            "pastores"
+          ]
         },
         {
           "id": 222,
           "nombre": "SANANTONIOAGUASCALIENTES",
           "nombreCorregido": "san antonio aguas calientes",
-          "departamentoId": 16
+          "departamentoId": 16,
+          "alias": [
+            "san antonio aguas calientes",
+            "sn antonio aguas calientes"
+          ]
         },
         {
           "id": 223,
           "nombre": "SANBARTOLOMÉMILPASALTAS",
           "nombreCorregido": "san bartolomé milpas altas",
-          "departamentoId": 16
+          "departamentoId": 16,
+          "alias": [
+            "san bartolomé milpas altas",
+            "san bartolome milpas altas",
+            "sn bartolomé milpas altas",
+            "sn bartolome milpas altas"
+          ]
         },
         {
           "id": 224,
           "nombre": "SANLUCASSACATEPÉQUEZ",
           "nombreCorregido": "san lucas sacatepéquez",
-          "departamentoId": 16
+          "departamentoId": 16,
+          "alias": [
+            "san lucas sacatepéquez",
+            "san lucas sacatepequez",
+            "sn lucas sacatepéquez",
+            "sn lucas sacatepequez"
+          ]
         },
         {
           "id": 225,
           "nombre": "SANMIGUELDUEÑAS",
           "nombreCorregido": "san miguel dueñas",
-          "departamentoId": 16
+          "departamentoId": 16,
+          "alias": [
+            "san miguel dueñas",
+            "san miguel duenas",
+            "sn miguel dueñas",
+            "sn miguel duenas"
+          ]
         },
         {
           "id": 226,
           "nombre": "SANTACATARINABARAHONA",
           "nombreCorregido": "santa catarina barahona",
-          "departamentoId": 16
+          "departamentoId": 16,
+          "alias": [
+            "santa catarina barahona",
+            "sta catarina barahona"
+          ]
         },
         {
           "id": 227,
           "nombre": "SANTALUCÍAMILPASALTAS",
           "nombreCorregido": "santa lucía milpas altas",
-          "departamentoId": 16
+          "departamentoId": 16,
+          "alias": [
+            "santa lucía milpas altas",
+            "santa lucia milpas altas",
+            "sta lucía milpas altas",
+            "sta lucia milpas altas"
+          ]
         },
         {
           "id": 228,
           "nombre": "SANTAMARÍADEJESÚS",
           "nombreCorregido": "santa maría de jesús",
-          "departamentoId": 16
+          "departamentoId": 16,
+          "alias": [
+            "santa maría de jesús",
+            "santa maria de jesus",
+            "sta maría de jesús",
+            "sta maria de jesus"
+          ]
         },
         {
           "id": 229,
           "nombre": "SANTIAGOSACATEPÉQUEZ",
           "nombreCorregido": "santiago sacatepéquez",
-          "departamentoId": 16
+          "departamentoId": 16,
+          "alias": [
+            "santiago sacatepéquez",
+            "santiago sacatepequez"
+          ]
         },
         {
           "id": 230,
           "nombre": "SANTODOMINGOXENACOJ",
           "nombreCorregido": "santo domingo xenacoj",
-          "departamentoId": 16
+          "departamentoId": 16,
+          "alias": [
+            "santo domingo xenacoj",
+            "sto domingo xenacoj"
+          ]
         },
         {
           "id": 231,
           "nombre": "SUMPANGO",
           "nombreCorregido": "sumpango",
-          "departamentoId": 16
+          "departamentoId": 16,
+          "alias": [
+            "sumpango"
+          ]
         }
+      ],
+      "alias": [
+        "sacatepéquez",
+        "sacatepequez"
       ]
     },
     {
@@ -1525,176 +2541,300 @@
           "id": 232,
           "nombre": "AYUTLA",
           "nombreCorregido": "ayutla",
-          "departamentoId": 17
+          "departamentoId": 17,
+          "alias": [
+            "ayutla"
+          ]
         },
         {
           "id": 233,
           "nombre": "CATARINA",
           "nombreCorregido": "catarina",
-          "departamentoId": 17
+          "departamentoId": 17,
+          "alias": [
+            "catarina"
+          ]
         },
         {
           "id": 234,
           "nombre": "COMITANCILLO",
           "nombreCorregido": "comitancillo",
-          "departamentoId": 17
+          "departamentoId": 17,
+          "alias": [
+            "comitancillo"
+          ]
         },
         {
           "id": 235,
           "nombre": "CONCEPCIÓNTUTUAPA",
           "nombreCorregido": "concepción tutuapa",
-          "departamentoId": 17
+          "departamentoId": 17,
+          "alias": [
+            "concepción tutuapa",
+            "concepcion tutuapa"
+          ]
         },
         {
           "id": 236,
           "nombre": "ELQUETZAL",
           "nombreCorregido": "el quetzal",
-          "departamentoId": 17
+          "departamentoId": 17,
+          "alias": [
+            "el quetzal"
+          ]
         },
         {
           "id": 237,
           "nombre": "ELRODEO",
           "nombreCorregido": "el rodeo",
-          "departamentoId": 17
+          "departamentoId": 17,
+          "alias": [
+            "el rodeo"
+          ]
         },
         {
           "id": 238,
           "nombre": "ELTUMBADOR",
           "nombreCorregido": "el tumbador",
-          "departamentoId": 17
+          "departamentoId": 17,
+          "alias": [
+            "el tumbador"
+          ]
         },
         {
           "id": 239,
           "nombre": "ESQUIPULASPALOGORDO",
           "nombreCorregido": "esquipulas palo gordo",
-          "departamentoId": 17
+          "departamentoId": 17,
+          "alias": [
+            "esquipulas palo gordo"
+          ]
         },
         {
           "id": 240,
           "nombre": "IXCHIGUAN",
           "nombreCorregido": "ixchiguán",
-          "departamentoId": 17
+          "departamentoId": 17,
+          "alias": [
+            "ixchiguán",
+            "ixchiguan"
+          ]
         },
         {
           "id": 241,
           "nombre": "LAREFORMA",
           "nombreCorregido": "la reforma",
-          "departamentoId": 17
+          "departamentoId": 17,
+          "alias": [
+            "la reforma"
+          ]
         },
         {
           "id": 242,
           "nombre": "MALACATÁN",
           "nombreCorregido": "malacatán",
-          "departamentoId": 17
+          "departamentoId": 17,
+          "alias": [
+            "malacatán",
+            "malacatan"
+          ]
         },
         {
           "id": 243,
           "nombre": "NUEVOPROGRESO",
           "nombreCorregido": "nuevo progreso",
-          "departamentoId": 17
+          "departamentoId": 17,
+          "alias": [
+            "nuevo progreso"
+          ]
         },
         {
           "id": 244,
           "nombre": "OCOS",
           "nombreCorregido": "ocos",
-          "departamentoId": 17
+          "departamentoId": 17,
+          "alias": [
+            "ocos"
+          ]
         },
         {
           "id": 245,
           "nombre": "PAJAPITA",
           "nombreCorregido": "pajapita",
-          "departamentoId": 17
+          "departamentoId": 17,
+          "alias": [
+            "pajapita"
+          ]
         },
         {
           "id": 246,
           "nombre": "RÍOBLANCO",
           "nombreCorregido": "río blanco",
-          "departamentoId": 17
+          "departamentoId": 17,
+          "alias": [
+            "río blanco",
+            "rio blanco"
+          ]
         },
         {
           "id": 247,
           "nombre": "SANANTONIOSACATEPÉQUEZ",
           "nombreCorregido": "san antonio sacatepéquez",
-          "departamentoId": 17
+          "departamentoId": 17,
+          "alias": [
+            "san antonio sacatepéquez",
+            "san antonio sacatepequez",
+            "sn antonio sacatepéquez",
+            "sn antonio sacatepequez"
+          ]
         },
         {
           "id": 248,
           "nombre": "SANCRISTOBALCUCHO",
           "nombreCorregido": "san cristóbal cucho",
-          "departamentoId": 17
+          "departamentoId": 17,
+          "alias": [
+            "san cristóbal cucho",
+            "san cristobal cucho",
+            "sn cristóbal cucho",
+            "sn cristobal cucho"
+          ]
         },
         {
           "id": 249,
           "nombre": "SANJOSÉOJETENAM",
           "nombreCorregido": "san josé ojetenam",
-          "departamentoId": 17
+          "departamentoId": 17,
+          "alias": [
+            "san josé ojetenam",
+            "san jose ojetenam",
+            "sn josé ojetenam",
+            "sn jose ojetenam"
+          ]
         },
         {
           "id": 250,
           "nombre": "SANLORENZO",
           "nombreCorregido": "san lorenzo",
-          "departamentoId": 17
+          "departamentoId": 17,
+          "alias": [
+            "san lorenzo",
+            "sn lorenzo"
+          ]
         },
         {
           "id": 251,
           "nombre": "SANMARCOS",
           "nombreCorregido": "san marcos",
-          "departamentoId": 17
+          "departamentoId": 17,
+          "alias": [
+            "san marcos",
+            "sn marcos"
+          ]
         },
         {
           "id": 252,
           "nombre": "SANMIGUELIXTAHUACÁN",
           "nombreCorregido": "san miguel ixtahuacán",
-          "departamentoId": 17
+          "departamentoId": 17,
+          "alias": [
+            "san miguel ixtahuacán",
+            "san miguel ixtahuacan",
+            "sn miguel ixtahuacán",
+            "sn miguel ixtahuacan"
+          ]
         },
         {
           "id": 253,
           "nombre": "SANPABLO",
           "nombreCorregido": "san pablo",
-          "departamentoId": 17
+          "departamentoId": 17,
+          "alias": [
+            "san pablo",
+            "sn pablo"
+          ]
         },
         {
           "id": 254,
           "nombre": "SANPEDROSACATEPÉQUEZ",
           "nombreCorregido": "san pedro sacatepéquez",
-          "departamentoId": 17
+          "departamentoId": 17,
+          "alias": [
+            "san pedro sacatepéquez",
+            "san pedro sacatepequez",
+            "sn pedro sacatepéquez",
+            "sn pedro sacatepequez"
+          ]
         },
         {
           "id": 255,
           "nombre": "SANRAFAÉLPIEDELACUESTA",
           "nombreCorregido": "san rafael pie de la cuesta",
-          "departamentoId": 17
+          "departamentoId": 17,
+          "alias": [
+            "san rafael pie de la cuesta",
+            "sn rafael pie de la cuesta"
+          ]
         },
         {
           "id": 256,
           "nombre": "SANSIBINAL",
           "nombreCorregido": "sibinal",
-          "departamentoId": 17
+          "departamentoId": 17,
+          "alias": [
+            "sibinal"
+          ]
         },
         {
           "id": 257,
           "nombre": "SIPACAPA",
           "nombreCorregido": "sipacapa",
-          "departamentoId": 17
+          "departamentoId": 17,
+          "alias": [
+            "sipacapa"
+          ]
         },
         {
           "id": 258,
           "nombre": "TACANÁ",
           "nombreCorregido": "tacaná",
-          "departamentoId": 17
+          "departamentoId": 17,
+          "alias": [
+            "tacaná",
+            "tacana"
+          ]
         },
         {
           "id": 259,
           "nombre": "TAJUMULCO",
           "nombreCorregido": "tajumulco",
-          "departamentoId": 17
+          "departamentoId": 17,
+          "alias": [
+            "tajumulco"
+          ]
         },
         {
           "id": 260,
           "nombre": "TEJUTLA",
           "nombreCorregido": "tejutla",
-          "departamentoId": 17
+          "departamentoId": 17,
+          "alias": [
+            "tejutla"
+          ]
+        },
+        {
+          "id": 333,
+          "nombre": "LABLANCA",
+          "nombreCorregido": "la blanca",
+          "departamentoId": 17,
+          "alias": [
+            "la blanca"
+          ],
+          "municipioApi": "La Blanca"
         }
+      ],
+      "alias": [
+        "san marcos"
       ]
     },
     {
@@ -1706,86 +2846,141 @@
           "id": 261,
           "nombre": "BARBERENA",
           "nombreCorregido": "barberena",
-          "departamentoId": 18
+          "departamentoId": 18,
+          "alias": [
+            "barberena"
+          ]
         },
         {
           "id": 262,
           "nombre": "CASILLAS",
           "nombreCorregido": "casillas",
-          "departamentoId": 18
+          "departamentoId": 18,
+          "alias": [
+            "casillas"
+          ]
         },
         {
           "id": 263,
           "nombre": "CHIQUIMULILLA",
           "nombreCorregido": "chiquimulilla",
-          "departamentoId": 18
+          "departamentoId": 18,
+          "alias": [
+            "chiquimulilla"
+          ]
         },
         {
           "id": 264,
           "nombre": "CUILAPA",
           "nombreCorregido": "cuilapa",
-          "departamentoId": 18
+          "departamentoId": 18,
+          "alias": [
+            "cuilapa"
+          ]
         },
         {
           "id": 265,
           "nombre": "GUAZACAPÁN",
           "nombreCorregido": "guazacapán",
-          "departamentoId": 18
+          "departamentoId": 18,
+          "alias": [
+            "guazacapán",
+            "guazacapan"
+          ]
         },
         {
           "id": 266,
           "nombre": "NUEVASANTAROSA",
           "nombreCorregido": "nueva santa rosa",
-          "departamentoId": 18
+          "departamentoId": 18,
+          "alias": [
+            "nueva santa rosa",
+            "nueva sta rosa"
+          ]
         },
         {
           "id": 267,
           "nombre": "ORATORIO",
           "nombreCorregido": "oratorio",
-          "departamentoId": 18
+          "departamentoId": 18,
+          "alias": [
+            "oratorio"
+          ]
         },
         {
           "id": 268,
           "nombre": "PUEBLONUEVOVIÑAS",
           "nombreCorregido": "pueblo nuevo viñas",
-          "departamentoId": 18
+          "departamentoId": 18,
+          "alias": [
+            "pueblo nuevo viñas",
+            "pueblo nuevo vinas"
+          ]
         },
         {
           "id": 269,
           "nombre": "SANJUANTECUACO",
           "nombreCorregido": "san juan tecuaco",
-          "departamentoId": 18
+          "departamentoId": 18,
+          "alias": [
+            "san juan tecuaco",
+            "sn juan tecuaco"
+          ]
         },
         {
           "id": 270,
           "nombre": "SANRAFAÉLLASFLORES",
           "nombreCorregido": "san rafael las flores",
-          "departamentoId": 18
+          "departamentoId": 18,
+          "alias": [
+            "san rafael las flores",
+            "sn rafael las flores"
+          ]
         },
         {
           "id": 271,
           "nombre": "SANTACRUZNARANJO",
           "nombreCorregido": "santa cruz naranjo",
-          "departamentoId": 18
+          "departamentoId": 18,
+          "alias": [
+            "santa cruz naranjo",
+            "sta cruz naranjo"
+          ]
         },
         {
           "id": 272,
           "nombre": "SANTAMARÍAIXHUATÁN",
           "nombreCorregido": "santa maría ixhuatán",
-          "departamentoId": 18
+          "departamentoId": 18,
+          "alias": [
+            "santa maría ixhuatán",
+            "santa maria ixhuatan",
+            "sta maría ixhuatán",
+            "sta maria ixhuatan"
+          ]
         },
         {
           "id": 273,
           "nombre": "SANTAROSADELIMA",
           "nombreCorregido": "santa rosa de lima",
-          "departamentoId": 18
+          "departamentoId": 18,
+          "alias": [
+            "santa rosa de lima",
+            "sta rosa de lima"
+          ]
         },
         {
           "id": 274,
           "nombre": "TAXISCO",
           "nombreCorregido": "taxisco",
-          "departamentoId": 18
+          "departamentoId": 18,
+          "alias": [
+            "taxisco"
+          ]
         }
+      ],
+      "alias": [
+        "santa rosa"
       ]
     },
     {
@@ -1797,116 +2992,211 @@
           "id": 275,
           "nombre": "CONCEPCIÓN",
           "nombreCorregido": "concepción",
-          "departamentoId": 19
+          "departamentoId": 19,
+          "alias": [
+            "concepción",
+            "concepcion"
+          ]
         },
         {
           "id": 276,
           "nombre": "NAHUALÁ",
           "nombreCorregido": "nahualá",
-          "departamentoId": 19
+          "departamentoId": 19,
+          "alias": [
+            "nahualá",
+            "nahuala"
+          ]
         },
         {
           "id": 277,
           "nombre": "PANAJACHEL",
           "nombreCorregido": "panajachel",
-          "departamentoId": 19
+          "departamentoId": 19,
+          "alias": [
+            "panajachel"
+          ]
         },
         {
           "id": 278,
           "nombre": "SANANDRÉSSEMETABAJ",
           "nombreCorregido": "san andrés semetabaj",
-          "departamentoId": 19
+          "departamentoId": 19,
+          "alias": [
+            "san andrés semetabaj",
+            "san andres semetabaj",
+            "sn andrés semetabaj",
+            "sn andres semetabaj"
+          ]
         },
         {
           "id": 279,
           "nombre": "SANANTONIOPALOPÓ",
           "nombreCorregido": "san antonio palopó",
-          "departamentoId": 19
+          "departamentoId": 19,
+          "alias": [
+            "san antonio palopó",
+            "san antonio palopo",
+            "sn antonio palopó",
+            "sn antonio palopo"
+          ]
         },
         {
           "id": 280,
           "nombre": "SANJOSÉCHACAYÁ",
           "nombreCorregido": "san josé chacayá",
-          "departamentoId": 19
+          "departamentoId": 19,
+          "alias": [
+            "san josé chacayá",
+            "san jose chacaya",
+            "sn josé chacayá",
+            "sn jose chacaya"
+          ]
         },
         {
           "id": 281,
           "nombre": "SANJUANLALAGUNA",
           "nombreCorregido": "san juan la laguna",
-          "departamentoId": 19
+          "departamentoId": 19,
+          "alias": [
+            "san juan la laguna",
+            "sn juan la laguna"
+          ]
         },
         {
           "id": 282,
           "nombre": "SANLUCASTOLIMÁN",
           "nombreCorregido": "san lucas tolimán",
-          "departamentoId": 19
+          "departamentoId": 19,
+          "alias": [
+            "san lucas tolimán",
+            "san lucas toliman",
+            "sn lucas tolimán",
+            "sn lucas toliman"
+          ]
         },
         {
           "id": 283,
           "nombre": "SANMARCOSLALAGUNA",
           "nombreCorregido": "san marcos la laguna",
-          "departamentoId": 19
+          "departamentoId": 19,
+          "alias": [
+            "san marcos la laguna",
+            "sn marcos la laguna"
+          ]
         },
         {
           "id": 284,
           "nombre": "SANPABLOLALAGUNA",
           "nombreCorregido": "san pablo la laguna",
-          "departamentoId": 19
+          "departamentoId": 19,
+          "alias": [
+            "san pablo la laguna",
+            "sn pablo la laguna"
+          ]
         },
         {
           "id": 285,
           "nombre": "SANPEDROLALAGUNA",
           "nombreCorregido": "san pedro la laguna",
-          "departamentoId": 19
+          "departamentoId": 19,
+          "alias": [
+            "san pedro la laguna",
+            "sn pedro la laguna"
+          ]
         },
         {
           "id": 286,
           "nombre": "SANTACATARINAIXTAHUACAN",
           "nombreCorregido": "santa catarina ixtahuacán",
-          "departamentoId": 19
+          "departamentoId": 19,
+          "alias": [
+            "santa catarina ixtahuacán",
+            "santa catarina ixtahuacan",
+            "sta catarina ixtahuacán",
+            "sta catarina ixtahuacan"
+          ]
         },
         {
           "id": 287,
           "nombre": "SANTACATARINAPALOPÓ",
           "nombreCorregido": "santa catarina palopó",
-          "departamentoId": 19
+          "departamentoId": 19,
+          "alias": [
+            "santa catarina palopó",
+            "santa catarina palopo",
+            "sta catarina palopó",
+            "sta catarina palopo"
+          ]
         },
         {
           "id": 288,
           "nombre": "SANTACLARALALAGUNA",
           "nombreCorregido": "santa clara la laguna",
-          "departamentoId": 19
+          "departamentoId": 19,
+          "alias": [
+            "santa clara la laguna",
+            "sta clara la laguna"
+          ]
         },
         {
           "id": 289,
           "nombre": "SANTACRUZLALAGUNA",
           "nombreCorregido": "santa cruz la laguna",
-          "departamentoId": 19
+          "departamentoId": 19,
+          "alias": [
+            "santa cruz la laguna",
+            "sta cruz la laguna"
+          ]
         },
         {
           "id": 290,
           "nombre": "SANTALUCÍAUTATLÁN",
           "nombreCorregido": "santa lucía utatlán",
-          "departamentoId": 19
+          "departamentoId": 19,
+          "alias": [
+            "santa lucía utatlán",
+            "santa lucia utatlan",
+            "sta lucía utatlán",
+            "sta lucia utatlan"
+          ]
         },
         {
           "id": 291,
           "nombre": "SANTAMARÍAVISITACIÓN",
           "nombreCorregido": "santa maría visitación",
-          "departamentoId": 19
+          "departamentoId": 19,
+          "alias": [
+            "santa maría visitación",
+            "santa maria visitacion",
+            "sta maría visitación",
+            "sta maria visitacion"
+          ]
         },
         {
           "id": 292,
           "nombre": "SANTIAGOATITLÁN",
           "nombreCorregido": "santiago atitlán",
-          "departamentoId": 19
+          "departamentoId": 19,
+          "alias": [
+            "santiago atitlán",
+            "santiago atitlan"
+          ]
         },
         {
           "id": 293,
           "nombre": "SOLOLÁ",
           "nombreCorregido": "sololá",
-          "departamentoId": 19
+          "departamentoId": 19,
+          "alias": [
+            "sololá",
+            "solola"
+          ]
         }
+      ],
+      "alias": [
+        "sololá",
+        "solola"
       ]
     },
     {
@@ -1918,122 +3208,226 @@
           "id": 294,
           "nombre": "CHICACAO",
           "nombreCorregido": "chicacao",
-          "departamentoId": 20
+          "departamentoId": 20,
+          "alias": [
+            "chicacao"
+          ]
         },
         {
           "id": 295,
           "nombre": "CUYOTENANGO",
           "nombreCorregido": "cuyotenango",
-          "departamentoId": 20
+          "departamentoId": 20,
+          "alias": [
+            "cuyotenango"
+          ]
         },
         {
           "id": 296,
           "nombre": "MAZATENANGO",
           "nombreCorregido": "mazatenango",
-          "departamentoId": 20
+          "departamentoId": 20,
+          "alias": [
+            "mazatenango"
+          ]
         },
         {
           "id": 297,
           "nombre": "PATULUL",
           "nombreCorregido": "patulul",
-          "departamentoId": 20
+          "departamentoId": 20,
+          "alias": [
+            "patulul"
+          ]
         },
         {
           "id": 298,
           "nombre": "PUEBLONUEVO",
           "nombreCorregido": "pueblo nuevo",
-          "departamentoId": 20
+          "departamentoId": 20,
+          "alias": [
+            "pueblo nuevo"
+          ]
         },
         {
           "id": 299,
           "nombre": "RÍOBRAVO",
           "nombreCorregido": "río bravo",
-          "departamentoId": 20
+          "departamentoId": 20,
+          "alias": [
+            "río bravo",
+            "rio bravo"
+          ]
         },
         {
           "id": 300,
           "nombre": "SAMAYAC",
           "nombreCorregido": "samayac",
-          "departamentoId": 20
+          "departamentoId": 20,
+          "alias": [
+            "samayac"
+          ]
         },
         {
           "id": 301,
           "nombre": "SANANTONIOSUCHITEPÉQUEZ",
           "nombreCorregido": "san antonio suchitepéquez",
-          "departamentoId": 20
+          "departamentoId": 20,
+          "alias": [
+            "san antonio suchitepéquez",
+            "san antonio suchitepequez",
+            "sn antonio suchitepéquez",
+            "sn antonio suchitepequez"
+          ]
         },
         {
           "id": 302,
           "nombre": "SANBERNARDINO",
           "nombreCorregido": "san bernardino",
-          "departamentoId": 20
+          "departamentoId": 20,
+          "alias": [
+            "san bernardino",
+            "sn bernardino"
+          ]
         },
         {
           "id": 303,
           "nombre": "SANFRANCISCOZAPOTITLÁN",
           "nombreCorregido": "san francisco zapotitlán",
-          "departamentoId": 20
+          "departamentoId": 20,
+          "alias": [
+            "san francisco zapotitlán",
+            "san francisco zapotitlan",
+            "sn francisco zapotitlán",
+            "sn francisco zapotitlan"
+          ]
         },
         {
           "id": 304,
           "nombre": "SANGABRIEL",
           "nombreCorregido": "san gabriel",
-          "departamentoId": 20
+          "departamentoId": 20,
+          "alias": [
+            "san gabriel",
+            "sn gabriel"
+          ]
         },
         {
           "id": 305,
           "nombre": "SANJOSÉELIDOLO",
           "nombreCorregido": "san josé el ídolo",
-          "departamentoId": 20
+          "departamentoId": 20,
+          "alias": [
+            "san josé el ídolo",
+            "san jose el idolo",
+            "sn josé el ídolo",
+            "sn jose el idolo"
+          ]
         },
         {
           "id": 306,
           "nombre": "SANJUANBAUTISTA",
           "nombreCorregido": "san juan bautista",
-          "departamentoId": 20
+          "departamentoId": 20,
+          "alias": [
+            "san juan bautista",
+            "sn juan bautista"
+          ]
         },
         {
           "id": 307,
           "nombre": "SANLORENZO",
           "nombreCorregido": "san lorenzo",
-          "departamentoId": 20
+          "departamentoId": 20,
+          "alias": [
+            "san lorenzo",
+            "sn lorenzo"
+          ]
         },
         {
           "id": 308,
           "nombre": "SANMIGUELPANÁN",
           "nombreCorregido": "san miguel panán",
-          "departamentoId": 20
+          "departamentoId": 20,
+          "alias": [
+            "san miguel panán",
+            "san miguel panan",
+            "sn miguel panán",
+            "sn miguel panan"
+          ]
         },
         {
           "id": 309,
           "nombre": "SANPABLOJOCOPILAS",
           "nombreCorregido": "san pablo jocopilas",
-          "departamentoId": 20
+          "departamentoId": 20,
+          "alias": [
+            "san pablo jocopilas",
+            "sn pablo jocopilas"
+          ]
         },
         {
           "id": 310,
           "nombre": "SANTABÁRBARA",
           "nombreCorregido": "santa bárbara",
-          "departamentoId": 20
+          "departamentoId": 20,
+          "alias": [
+            "santa bárbara",
+            "santa barbara",
+            "sta bárbara",
+            "sta barbara"
+          ]
         },
         {
           "id": 311,
           "nombre": "SANTODOMINGOSUCHITEPEQUEZ",
           "nombreCorregido": "santo domingo suchitepéquez",
-          "departamentoId": 20
+          "departamentoId": 20,
+          "alias": [
+            "santo domingo suchitepéquez",
+            "santo domingo suchitepequez",
+            "sto domingo suchitepéquez",
+            "sto domingo suchitepequez"
+          ]
         },
         {
           "id": 312,
           "nombre": "SANTOTOMÁSLAUNIÓN",
           "nombreCorregido": "santo tomás la unión",
-          "departamentoId": 20
+          "departamentoId": 20,
+          "alias": [
+            "santo tomás la unión",
+            "santo tomas la union",
+            "sto tomás la unión",
+            "sto tomas la union"
+          ]
         },
         {
           "id": 313,
           "nombre": "ZUNILITO",
           "nombreCorregido": "zunilito",
-          "departamentoId": 20
+          "departamentoId": 20,
+          "alias": [
+            "zunilito"
+          ]
+        },
+        {
+          "id": 338,
+          "nombre": "SANJOSÉLAMÁQUINA",
+          "nombreCorregido": "san josé la máquina",
+          "departamentoId": 20,
+          "alias": [
+            "san josé la máquina",
+            "san jose la maquina",
+            "la máquina",
+            "la maquina"
+          ],
+          "municipioApi": "La Máquina"
         }
+      ],
+      "alias": [
+        "suchitepéquez",
+        "suchitepequez"
       ]
     },
     {
@@ -2045,50 +3439,94 @@
           "id": 314,
           "nombre": "MOMOSTENANGO",
           "nombreCorregido": "momostenango",
-          "departamentoId": 21
+          "departamentoId": 21,
+          "alias": [
+            "momostenango"
+          ]
         },
         {
           "id": 315,
           "nombre": "SANANDRÉSXECUL",
           "nombreCorregido": "san andrés xecul",
-          "departamentoId": 21
+          "departamentoId": 21,
+          "alias": [
+            "san andrés xecul",
+            "san andres xecul",
+            "sn andrés xecul",
+            "sn andres xecul"
+          ]
         },
         {
           "id": 316,
           "nombre": "SANBARTOLO",
           "nombreCorregido": "san bartolo",
-          "departamentoId": 21
+          "departamentoId": 21,
+          "alias": [
+            "san bartolo",
+            "sn bartolo",
+            "san bartolo aguas calientes"
+          ]
         },
         {
           "id": 317,
           "nombre": "SANCRISTÓBALTOTONICAPÁN",
           "nombreCorregido": "san cristóbal totonicapán",
-          "departamentoId": 21
+          "departamentoId": 21,
+          "alias": [
+            "san cristóbal totonicapán",
+            "san cristobal totonicapan",
+            "sn cristóbal totonicapán",
+            "sn cristobal totonicapan"
+          ]
         },
         {
           "id": 318,
           "nombre": "SANFRANCISCOELALTO",
           "nombreCorregido": "san francisco el alto",
-          "departamentoId": 21
+          "departamentoId": 21,
+          "alias": [
+            "san francisco el alto",
+            "sn francisco el alto"
+          ]
         },
         {
           "id": 319,
           "nombre": "SANTALUCÍALAREFORMA",
           "nombreCorregido": "santa lucía la reforma",
-          "departamentoId": 21
+          "departamentoId": 21,
+          "alias": [
+            "santa lucía la reforma",
+            "santa lucia la reforma",
+            "sta lucía la reforma",
+            "sta lucia la reforma"
+          ]
         },
         {
           "id": 320,
           "nombre": "SANTAMARÍACHIQUIMULA",
           "nombreCorregido": "santa maría chiquimula",
-          "departamentoId": 21
+          "departamentoId": 21,
+          "alias": [
+            "santa maría chiquimula",
+            "santa maria chiquimula",
+            "sta maría chiquimula",
+            "sta maria chiquimula"
+          ]
         },
         {
           "id": 321,
           "nombre": "TOTONICAPÁN",
           "nombreCorregido": "totonicapán",
-          "departamentoId": 21
+          "departamentoId": 21,
+          "alias": [
+            "totonicapán",
+            "totonicapan"
+          ]
         }
+      ],
+      "alias": [
+        "totonicapán",
+        "totonicapan"
       ]
     },
     {
@@ -2100,62 +3538,113 @@
           "id": 322,
           "nombre": "CABAÑAS",
           "nombreCorregido": "cabañas",
-          "departamentoId": 22
+          "departamentoId": 22,
+          "alias": [
+            "cabañas",
+            "cabanas"
+          ]
         },
         {
           "id": 323,
           "nombre": "ESTANZUELA",
           "nombreCorregido": "estanzuela",
-          "departamentoId": 22
+          "departamentoId": 22,
+          "alias": [
+            "estanzuela"
+          ]
         },
         {
           "id": 324,
           "nombre": "GUALÁN",
           "nombreCorregido": "gualán",
-          "departamentoId": 22
+          "departamentoId": 22,
+          "alias": [
+            "gualán",
+            "gualan"
+          ]
         },
         {
           "id": 325,
           "nombre": "HUITÉ",
           "nombreCorregido": "huité",
-          "departamentoId": 22
+          "departamentoId": 22,
+          "alias": [
+            "huité",
+            "huite"
+          ]
         },
         {
           "id": 326,
           "nombre": "LAUNIÓN",
           "nombreCorregido": "la unión",
-          "departamentoId": 22
+          "departamentoId": 22,
+          "alias": [
+            "la unión",
+            "la union"
+          ]
         },
         {
           "id": 327,
           "nombre": "RÍOHONDO",
           "nombreCorregido": "río hondo",
-          "departamentoId": 22
+          "departamentoId": 22,
+          "alias": [
+            "río hondo",
+            "rio hondo"
+          ]
         },
         {
           "id": 328,
           "nombre": "SANDIEGO",
           "nombreCorregido": "san diego",
-          "departamentoId": 22
+          "departamentoId": 22,
+          "alias": [
+            "san diego",
+            "sn diego"
+          ]
         },
         {
           "id": 329,
           "nombre": "TECULUTÁN",
           "nombreCorregido": "teculután",
-          "departamentoId": 22
+          "departamentoId": 22,
+          "alias": [
+            "teculután",
+            "teculutan"
+          ]
         },
         {
           "id": 330,
           "nombre": "USUMATLÁN",
           "nombreCorregido": "usumatlán",
-          "departamentoId": 22
+          "departamentoId": 22,
+          "alias": [
+            "usumatlán",
+            "usumatlan"
+          ]
         },
         {
           "id": 331,
           "nombre": "ZACAPA",
           "nombreCorregido": "zacapa",
-          "departamentoId": 22
+          "departamentoId": 22,
+          "alias": [
+            "zacapa"
+          ]
+        },
+        {
+          "id": 334,
+          "nombre": "SANJORGE",
+          "nombreCorregido": "san jorge",
+          "departamentoId": 22,
+          "alias": [
+            "san jorge"
+          ],
+          "municipioApi": "San Jorge"
         }
+      ],
+      "alias": [
+        "zacapa"
       ]
     }
   ]

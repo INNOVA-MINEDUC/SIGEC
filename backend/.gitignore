@@ -58,3 +58,6 @@ cypress/screenshots/
 # Archivos de producción
 dist-ssr/
 *.local
+
+# Nota: la carga de datos ya no usa archivos en el servidor. El administrador
+# sube el Excel desde la vista "Importar Datos" y se procesa en memoria.

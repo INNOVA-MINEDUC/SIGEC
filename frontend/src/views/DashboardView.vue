@@ -4,7 +4,7 @@
 
     <!-- HERO -->
     <section class="hero-dash">
-      <img :src="heroImage" alt="Corredor de escuela" class="hero-bg" />
+      <img src="/imgs/img3.jpg" alt="Corredor de escuela" class="hero-bg" />
       <div class="hero-overlay"></div>
       <div class="hero-content">
         <p class="hero-top-text">Visualiza el panorama nacional</p>
@@ -23,7 +23,7 @@
 
           <div class="filters-header">
             <div class="filters-title">
-              <v-icon size="18" color="#ff9797">mdi-filter-outline</v-icon>
+              <v-icon size="18" color="#17c4e8">mdi-filter-outline</v-icon>
               <span>Filtrar Información</span>
               <span v-if="casosStore.loading" class="loading-chip">Cargando...</span>
               <span v-else class="count-chip">{{ casosStore.total }} casos</span>
@@ -38,6 +38,13 @@
 
           <!-- Filtros principales -->
           <div class="filters-grid">
+                <div class="filter-group">
+                <label>Dideduc (Dir. Departamental)</label>
+                <select v-model="filters.departamental">
+                  <option value="">Todas</option>
+                  <option v-for="d in departamentales" :key="d.id" :value="d.id">{{ d.nombre }}</option>
+                </select>
+              </div>
             <div class="filter-group">
               <label>Departamento</label>
               <select v-model="filters.departamento" @change="onDepartamentoChange">
@@ -54,17 +61,22 @@
               </select>
             </div>
 
-            <div class="filter-group">
-              <label>Estado del Caso</label>
-              <select v-model="filters.estado">
-                <option value="">Todos</option>
-                <option value="pendiente">Pendiente</option>
-                <option value="faltante">Faltante</option>
-                <option value="completado">Completado</option>
-              </select>
-            </div>
+                 <div class="filter-group">
+                <label>Status en Sistema</label>
+                <select v-model="filters.statusActual">
+                  <option value="">Todos</option>
+                  <option v-for="s in STATUS_SISTEMA" :key="s" :value="s">{{ s }}</option>
+                </select>
+              </div>
 
-            <div class="filter-group">
+          </div>
+
+          <!-- Filtros avanzados -->
+          <div class="advanced-wrapper" :class="{ open: showAdvanced }">
+            <div class="filters-grid advanced-grid">
+
+          
+     <div class="filter-group">
               <label>¿Tiene Queja?</label>
               <select v-model="filters.tieneQueja">
                 <option value="">Todos</option>
@@ -72,20 +84,15 @@
                 <option value="no">Sin queja</option>
               </select>
             </div>
-          </div>
 
-          <!-- Filtros avanzados -->
-          <div class="advanced-wrapper" :class="{ open: showAdvanced }">
-            <div class="filters-grid advanced-grid">
-
-              <div class="filter-group">
-                <label>DIDEDUC (Dir. Departamental)</label>
-                <select v-model="filters.departamental">
-                  <option value="">Todas</option>
-                  <option v-for="d in departamentales" :key="d.id" :value="d.id">{{ d.nombre }}</option>
-                </select>
-              </div>
-
+            <div class="filter-group">
+              <label>¿Tiene CUI?</label>
+              <select v-model="filters.tieneCui">
+                <option value="">Todos</option>
+                <option value="si">Con CUI</option>
+                <option value="no">Sin CUI</option>
+              </select>
+            </div>
               <div class="filter-group">
                 <label>Pueblo de Pertenencia</label>
                 <select v-model="filters.pueblo">
@@ -106,7 +113,7 @@
                 <label>Grado</label>
                 <select v-model="filters.grado">
                   <option value="">Todos</option>
-                  <option v-for="g in GRADOS" :key="g" :value="g">{{ g }}</option>
+                  <option v-for="g in GRADOS" :key="g.id" :value="g.id">{{ g.nombre }}</option>
                 </select>
               </div>
 
@@ -114,17 +121,17 @@
                 <label>Nivel Educativo</label>
                 <select v-model="filters.nivel">
                   <option value="">Todos</option>
-                  <option v-for="n in NIVELES" :key="n" :value="n">{{ n }}</option>
+                  <option v-for="n in NIVELES" :key="n.id" :value="n.id">{{ n.nombre }}</option>
                 </select>
               </div>
 
-              <div class="filter-group">
-                <label>Status en Sistema</label>
-                <select v-model="filters.statusActual">
-                  <option value="">Todos</option>
-                  <option v-for="s in STATUS_SISTEMA" :key="s" :value="s">{{ s }}</option>
-                </select>
-              </div>
+                 <div class="filter-group">
+              <label>Estado del Caso</label>
+              <select v-model="filters.estado">
+                <option value="">Todos</option>
+                <option v-for="est in ESTADOS_CASO" :key="est" :value="est">{{ est }}</option>
+              </select>
+            </div>
 
               <div class="filter-group">
                 <label>Resultado</label>
@@ -187,10 +194,21 @@
                 <v-icon size="15">mdi-microsoft-excel</v-icon>
                 {{ exporting ? 'Generando...' : 'Excel' }}
               </button>
-              <button @click="exportarPDFClick" class="btn-export pdf" :disabled="casosStore.loading || exporting || casosStore.total === 0">
-                <v-icon size="15">mdi-file-pdf-box</v-icon>
-                {{ exporting ? 'Generando...' : 'PDF' }}
-              </button>
+              <div class="pdf-group">
+                <button
+                  @click="pixelarNombres = !pixelarNombres"
+                  class="btn-pixelar"
+                  :class="{ 'btn-pixelar-active': pixelarNombres }"
+                  title="Oculta los nombres de las niñas en el PDF por privacidad"
+                >
+                  <v-icon size="14">{{ pixelarNombres ? 'mdi-eye-off-outline' : 'mdi-eye-outline' }}</v-icon>
+                  {{ pixelarNombres ? 'Nombres ocultos' : 'Pixelar nombres' }}
+                </button>
+                <button @click="exportarPDFClick" class="btn-export pdf" :disabled="casosStore.loading || exporting || casosStore.total === 0">
+                  <v-icon size="15">mdi-file-pdf-box</v-icon>
+                  {{ exporting ? 'Generando...' : 'PDF' }}
+                </button>
+              </div>
               <button @click="aplicarFiltros" class="btn-apply" :disabled="casosStore.loading">
                 <v-icon size="15">mdi-magnify</v-icon>
                 {{ casosStore.loading ? 'Buscando...' : 'Aplicar filtros' }}
@@ -204,20 +222,23 @@
 
     <!-- STAT CARDS -->
     <section class="py-8 bg-white">
-      <div class="container-max">
-        <div class="stats-grid">
-          <div
-            v-for="(card, i) in statCards" :key="i"
-            class="stat-card-custom"
-            @mouseenter="card.hovered = true"
-            @mouseleave="card.hovered = false"
-            :class="{ hovered: card.hovered }"
-          >
-            <img :src="card.hovered ? card.white : card.pink" :alt="card.label" class="stat-img" />
-            <div class="stat-label">{{ card.label }}</div>
-            <div class="stat-value">{{ card.value }}</div>
+  <div class="kpi-grid">
+          <div class="kpi-card" v-for="item in kpiPrincipales" :key="item.id">
+            <div class="kpi-icon-wrap">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" :d="item.iconPath" />
+              </svg>
+            </div>
+            <div class="kpi-number">{{ item.value }}</div>
+            <div class="kpi-label">{{ item.label }}</div>
           </div>
         </div>
+    </section>
+
+        <section class="pb-2 text-center">
+      <div class="container-max" style="background-color: #10233f; border-radius: 10px; padding-block: 1rem;">
+        <h2 class="chart-title">Gráficas geográficas y edades</h2>
+        <p class="chart-subtitle">Distribución de casos por departamentos, municipios y edades según los filtros aplicados.</p>
       </div>
     </section>
 
@@ -239,8 +260,8 @@
 
     <!-- CHARTS -->
     <section class="pb-2 text-center">
-      <div class="container-max">
-        <h2 class="chart-title">Gráficas por Mes y Estado de Casos</h2>
+      <div class="container-max" style="background-color: #10233f; border-radius: 10px; padding-block: 1rem;">
+        <h2 class="chart-title">Gráficas por mes y estado de casos</h2>
         <p class="chart-subtitle">Distribución de casos por mes y estado según los filtros aplicados.</p>
       </div>
     </section>
@@ -276,17 +297,69 @@ import { useCasosStore } from '@/stores/casos'
 import { exportarExcel, exportarPDF } from '@/composables/useExport'
 
 import heroImage   from '@/assets/ninas embarazadas -37.png'
-import iconPink16  from '@/assets/ninas_embarazadas_-20.png'
-import iconPink15  from '@/assets/ninas embarazadas -31.png'
-import iconPink14  from '@/assets/ninas embarazadas -30.png'
-import iconPink13  from '@/assets/ninas embarazadas -32.png'
-import iconWhite16 from '@/assets/ninas_embarazadas_-13.png'
-import iconWhite15 from '@/assets/ninas embarazadas -34.png'
-import iconWhite14 from '@/assets/ninas embarazadas -35.png'
-import iconWhite13 from '@/assets/ninas embarazadas -33.png'
+
+
 
 
 const casosStore = useCasosStore()
+
+// Normaliza el status para comparar sin importar mayúsculas/acentos:
+// en la BD se guardan en mayúsculas ("MAYOR DE 14 AÑOS", "NO EXISTE REGISTRO").
+const normStatus = (s) =>
+  String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim()
+
+const esMayorOSinRegistro = (caso) => {
+  // Coincide con cualquier historial de la niña (no solo el primero), igual que
+  // el conteo del servidor en Seguimiento.
+  const historiales = caso.nina?.historialEducativo ?? []
+  return historiales.some(h => {
+    const s = normStatus(h.status_actual)
+    return s === 'mayor de 14 anos' || s === 'no existe registro' || s === 'sin registro'
+  })
+}
+
+const kpiPrincipales = computed(() => {
+  const mayoresOSinRegistro = casosStore.casos.filter(esMayorOSinRegistro).length
+
+  return [
+    {
+      id: 'casos_totales',
+      label: 'Casos Totales',
+      value: casosStore.total,
+      iconPath: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'
+    },
+    {
+      id: 'mayores_14_sin_registro',
+      label: 'Casos Mayores de 14 años o sin Registro',
+      value: mayoresOSinRegistro,
+      iconPath: 'M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z'
+    },
+    {
+      id: 'verificados_sire',
+      label: 'Verificados en el SIRE',
+      value: casosStore.casosPorEstado('Verificados en el SIRE').length,
+      iconPath: 'M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z'
+    },
+    {
+      id: 'sin_verificar_sire',
+      label: 'Sin Verificar en el SIRE',
+      value: casosStore.casosPorEstado('sin Verificar en el SIRE').length,
+      iconPath: 'M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12a9 9 0 11-18 0 9 9 0 0118 0z'
+    },
+    {
+      id: 'verificados_quejas',
+      label: 'Verificados en el Sistema de Quejas, Comentarios o Sugerencias',
+      value: casosStore.casosPorEstado('Verificados en el Sistema de Quejas, Comentarios o Sugerencias').length,
+      iconPath: 'M21 11.25v8.25a1.5 1.5 0 01-1.5 1.5H5.25a1.5 1.5 0 01-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 1014.625 7.5H12V4.875z'
+    },
+    {
+      id: 'sin_quejas',
+      label: 'Sin Quejas',
+      value: casosStore.casosPorEstado('sin Quejas').length,
+      iconPath: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'
+    }
+  ]
+})
 
 // ── Lookup data ───────────────────────────────────────────────────────────────
 const departamentos   = ref([])
@@ -304,10 +377,44 @@ const COMUNIDADES = [
 ]
 
 // ── Constantes de valores conocidos ──────────────────────────────────────────
-const GRADOS       = ['1ro', '2do', '3ro', '4to', '5to', '6to']
-const NIVELES      = ['Preprimaria', 'Primaria', 'Media (Básico)', 'Media (Diversificado)']
-const STATUS_SISTEMA = ['Inscrita', 'No Inscrita', 'Deserción / Retiro Temporal', 'Abandono']
-const RESULTADOS   = ['Inscrita', 'No Inscrita', 'Retirada', 'En Proceso']
+const GRADOS = [
+  { id: 1, nombre: "1ro" },
+  { id: 2, nombre: "2do" },
+  { id: 3, nombre: "3ro" },
+  { id: 4, nombre: "4to" },
+  { id: 5, nombre: "5to" },
+  { id: 6, nombre: "6to" }
+]
+// El id es el valor canónico guardado en historial_educativo.nivel — el mismo
+// vocabulario que usa la carga masiva. Ver backend/helpers/nivelEducativo.js
+const NIVELES = [
+  {
+    id: "Preprimaria",
+    nombre: "Nivel de Educación Preprimaria",
+  },
+  {
+    id: "Primaria",
+    nombre: "Nivel de Educación Primaria",
+  },
+  {
+    id: "Media (Básico)",
+    nombre: "Nivel de Educación Media (Ciclo Básico)",
+  },
+  {
+    id: "Media (Diversificado)",
+    nombre: "Nivel de Educación Media (Ciclo Diversificado)",
+  },
+];
+const STATUS_SISTEMA = ['Inscrita', 'No inscrita', 'Retirada', 'Mayor de 14 años', 'No existe Registro']
+const RESULTADOS   = ['Promovido', 'No Promovido', 'Retirado', 'Cursando actualmente']
+
+// Estados institucionales del caso
+const ESTADOS_CASO = [
+  'Verificados en el SIRE',
+  'sin Verificar en el SIRE',
+  'Verificados en el Sistema de Quejas, Comentarios o Sugerencias',
+  'sin Quejas',
+]
 
 // ── Estado de filtros ─────────────────────────────────────────────────────────
 const showAdvanced = ref(false)
@@ -317,6 +424,7 @@ const initialFilters = () => ({
   municipio:       '',
   estado:          '',
   tieneQueja:      '',
+  tieneCui:        '',
   departamental:   '',
   pueblo:          '',
   lengua:          '',
@@ -335,27 +443,56 @@ const initialFilters = () => ({
 
 const filters = reactive(initialFilters())
 
+const toTitleCase = (text = '') => {
+  return text
+    .toLowerCase()
+    .split(' ')
+    .map(palabra =>
+      palabra.charAt(0).toUpperCase() + palabra.slice(1)
+    )
+    .join(' ')
+}
+
 // ── Carga de datos de referencia ──────────────────────────────────────────────
 onMounted(async () => {
   const [rDept, rDeptales] = await Promise.all([
     api.get('/dept'),
     api.get('/dept/departamentales'),
   ])
-  departamentos.value   = rDept.data.data    || []
-  departamentales.value = rDeptales.data.data || []
+
+  departamentos.value = (rDept.data.data || []).map(dep => ({
+    ...dep,
+    nombre: toTitleCase(dep.nombre)
+  }))
+
+  departamentales.value = (rDeptales.data.data || []).map(dep => ({
+    ...dep,
+    nombre: toTitleCase(dep.nombre)
+  }))
 
   await casosStore.fetchTodos()
 })
 
-// ── Manejo de dependencia departamento → municipio ────────────────────────────
 const onDepartamentoChange = async () => {
   filters.municipio = ''
   municipios.value = []
+
   if (!filters.departamento) return
-  const dept = departamentos.value.find(d => d.nombre === filters.departamento)
+
+  const dept = departamentos.value.find(
+    d => d.nombre === filters.departamento
+  )
+
   if (!dept) return
-  const r = await api.get('/dept/municipios', { params: { departamento_id: dept.id } })
-  municipios.value = r.data.data || []
+
+  const r = await api.get('/dept/municipios', {
+    params: { departamento_id: dept.id }
+  })
+
+  municipios.value = (r.data.data || []).map(mun => ({
+    ...mun,
+    nombre: toTitleCase(mun.nombre)
+  }))
 }
 
 // ── Construir params desde filters ───────────────────────────────────────────
@@ -365,6 +502,7 @@ const buildParams = () => {
   if (filters.municipio)        params.municipio         = filters.municipio
   if (filters.estado)           params.estado            = filters.estado
   if (filters.tieneQueja)       params.tiene_queja       = filters.tieneQueja
+  if (filters.tieneCui)         params.tiene_cui         = filters.tieneCui
   if (filters.departamental)    params.departamental     = filters.departamental
   if (filters.pueblo)           params.pueblo            = filters.pueblo
   if (filters.lengua)           params.lengua            = filters.lengua
@@ -397,6 +535,7 @@ const _autoApply = () => {
 watch(
   () => [
     filters.departamento, filters.municipio, filters.estado, filters.tieneQueja,
+    filters.tieneCui,
     filters.departamental, filters.pueblo,   filters.lengua, filters.grado,
     filters.nivel, filters.statusActual,     filters.resultado, filters.area,
     filters.edadMin, filters.edadMax,        filters.fechaInicio, filters.fechaFin,
@@ -428,6 +567,7 @@ const resumenFiltros = computed(() => {
 
 // ── Exportar (siempre aplica filtros antes de exportar) ───────────────────────
 const exporting = ref(false)
+const pixelarNombres = ref(false)
 
 const exportarExcelClick = async () => {
   if (exporting.value) return
@@ -447,38 +587,118 @@ const exportarPDFClick = async () => {
   try {
     await aplicarFiltros()
     await nextTick()
-    exportarPDF(casosStore.casos, 'SIGEC_Casos', resumenFiltros.value)
+    exportarPDF(casosStore.casos, 'SIGEC_Casos', resumenFiltros.value, { pixelarNombres: pixelarNombres.value })
   } finally {
     exporting.value = false
   }
 }
 
-// ── Stat Cards ────────────────────────────────────────────────────────────────
-const statCards = computed(() => [
-  {
-    label: 'Total de Casos',
-    value: casosStore.total,
-    pink: iconPink16, white: iconWhite16, hovered: false
-  },
-  {
-    label: 'Pendientes',
-    value: casosStore.casosPorEstado('pendiente').length,
-    pink: iconPink15, white: iconWhite15, hovered: false
-  },
-  {
-    label: 'Faltantes',
-    value: casosStore.casosPorEstado('faltante').length,
-    pink: iconPink14, white: iconWhite14, hovered: false
-  },
-  {
-    label: 'Completados',
-    value: casosStore.casosPorEstado('completado').length,
-    pink: iconPink13, white: iconWhite13, hovered: false
-  }
-])
 </script>
 
 <style scoped>
+.kpi-divider {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 4px 0 18px;
+}
+
+.kpi-divider-line {
+  flex: 1;
+  border: none;
+  border-top: 1px solid #c6d8e6;
+  margin: 0;
+}
+
+.kpi-divider-label {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+  color: #8da7be;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* ==========================
+   KPI PRINCIPALES
+========================== */
+
+@keyframes kpiEnter {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.kpi-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 22px 14px 18px;
+  background: #fff;
+  border-radius: 10px;
+  border: 1px solid #dce8f0;
+  box-shadow: 0 2px 8px rgba(16, 35, 63, 0.04);
+  animation: kpiEnter 0.45s ease both;
+  transition: transform .22s ease, box-shadow .22s ease;
+}
+
+.kpi-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 28px rgba(16, 35, 63, 0.13);
+}
+
+.kpi-card:nth-child(1) { animation-delay: .05s; }
+.kpi-card:nth-child(2) { animation-delay: .12s; }
+.kpi-card:nth-child(3) { animation-delay: .19s; }
+.kpi-card:nth-child(4) { animation-delay: .26s; }
+.kpi-card:nth-child(5) { animation-delay: .33s; }
+
+.kpi-icon-wrap {
+  width: 34px;
+  height: 34px;
+  color: #17c4e8;
+  margin-bottom: 10px;
+}
+
+.kpi-icon-wrap :deep(svg) {
+  width: 100%;
+  height: 100%;
+}
+
+.kpi-number {
+  font-size: clamp(20px, 2.2vw, 30px);
+  font-weight: 900;
+  color: #10233f;
+  line-height: 1;
+  margin-bottom: 6px;
+  letter-spacing: -.02em;
+}
+
+.kpi-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #6a8299;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  line-height: 1.3;
+}
+
+
+
 .dashboard-page {
   background-color: #f5f5f5;
   color: #6d6d6d;
@@ -499,7 +719,10 @@ const statCards = computed(() => [
 .hero-bg   { width: 100%; height: 100%; object-fit: cover; object-position: center; }
 .hero-overlay {
   position: absolute; inset: 0;
-  background: linear-gradient(to bottom, rgba(255,151,151,0) 0%, rgba(255,151,151,0.2) 40%, rgba(255,151,151,0.95) 100%);
+  background: linear-gradient(to bottom,
+      rgba(16, 35, 63, 0) 0%,
+      rgba(16, 35, 63, 0.2) 40%,
+      rgba(16, 35, 63, 0.95) 100%);
 }
 .hero-content {
   position: absolute; inset: 0;
@@ -530,7 +753,7 @@ const statCards = computed(() => [
   font-size: 1rem; font-weight: 600; color: #1a1a1a;
 }
 .count-chip {
-  background: #fff0f0; color: #ff9797; border: 1px solid #ffd6d6;
+  background: #e0eef0; color: #10233f; border: 1px solid #17c4e8;
   border-radius: 999px; padding: 0.1rem 0.6rem; font-size: 0.75rem; font-weight: 600;
 }
 .loading-chip {
@@ -539,12 +762,12 @@ const statCards = computed(() => [
 }
 .header-actions { display: flex; align-items: center; gap: 0.5rem; }
 .btn-toggle {
-  background: transparent; border: none; color: #ff9797;
+  background: transparent; border: none; color: #10233f;
   font-weight: 600; font-size: 0.8rem; cursor: pointer;
   display: flex; align-items: center; gap: 0.25rem;
   transition: color 0.2s;
 }
-.btn-toggle:hover { color: #e67e7e; }
+.btn-toggle:hover { color: #10233f; }
 .btn-toggle .v-icon { transition: transform 0.3s; }
 .btn-toggle .v-icon.rotated { transform: rotate(180deg); }
 
@@ -611,9 +834,21 @@ const statCards = computed(() => [
 .btn-export.pdf   { background: #fce4e4; color: #b71c1c; }
 .btn-export.pdf:hover:not(:disabled) { background: #ffcdd2; }
 
+.pdf-group { display: flex; align-items: center; gap: 0; border: 1px solid #e0e0e0; border-radius: 0.5rem; overflow: hidden; }
+.pdf-group .btn-export.pdf { border-radius: 0; border: none; border-left: 1px solid #e0e0e0; }
+
+.btn-pixelar {
+  display: flex; align-items: center; gap: 0.3rem;
+  background: #f5f5f5; border: none; color: #6d6d6d;
+  padding: 0.45rem 0.75rem; font-size: 0.75rem; font-weight: 600;
+  cursor: pointer; transition: all 0.2s; white-space: nowrap;
+}
+.btn-pixelar:hover { background: #ebebeb; color: #10233f; }
+.btn-pixelar-active { background: #10233f !important; color: #ffffff !important; }
+
 .btn-apply {
   display: flex; align-items: center; gap: 0.35rem;
-  background: #ff9797; border: none; color: white;
+  background: #10233f; border: none; color: white;
   padding: 0.45rem 1.1rem; border-radius: 0.5rem;
   font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
   box-shadow: 0 2px 8px rgba(255,151,151,0.4);
@@ -652,8 +887,8 @@ const statCards = computed(() => [
 .age-container { display: flex; flex-direction: column; justify-content: center; }
 
 /* CHART TITLE */
-.chart-title    { color: #6d6d6d; font-size: 1.25rem; font-weight: 600; }
-.chart-subtitle { margin-top: 0.25rem; font-size: 0.875rem; color: #ff9797; }
+.chart-title    { color: #fff; font-size: 1.25rem; font-weight: 600; }
+.chart-subtitle { margin-top: 0.25rem; font-size: 0.875rem; color: #17c4e8; }
 
 /* CHART WRAPPERS */
 .chart-container { display: flex; align-items: center; justify-content: center; }

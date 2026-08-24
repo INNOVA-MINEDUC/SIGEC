@@ -2,7 +2,7 @@
   <nav class="navbar">
     <div class="nav-container">
       <div class="logo-container">
-        <img :src="logoSisec" alt="Logo SIGEC" class="header-logo-img" />
+        <img src="/imgs/logo.png" alt="Logo SIGEC" class="header-logo-img" />
       </div>
       <div class="nav-links">
         <router-link
@@ -28,17 +28,15 @@
 
 <script setup>
 import { computed } from 'vue'
-import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import logoSisec from '@/assets/LOGO_SISEC.png'
 
-const router = useRouter()
 const auth = useAuthStore()
 
 const BASE_LINKS = [
   { name: 'Inicio',      to: '/' },
   { name: 'Seguimiento', to: '/seguimiento' },
-  { name: 'Quejas',      to: '/complains' },
+  { name: 'Registro',      to: '/complains' },
   { name: 'Dashboard',   to: '/dashboard' },
 ]
 
@@ -53,9 +51,16 @@ const navLinks = computed(() => {
   return BASE_LINKS
 })
 
-function logout() {
-  auth.logout()
-  router.push('/login')
+async function logout() {
+  // Se espera a logoutSession para que quede registrado el cierre en auditoría
+  // antes de salir.
+  await auth.logoutSession()
+
+  // Redirección dura (no router.push): fuerza una recarga completa para que no
+  // sobreviva nada del estado en memoria —stores de Pinia, datos ya cargados—
+  // de la sesión anterior. Se usa replace para que el botón "atrás" no regrese
+  // a una vista autenticada.
+  window.location.replace(`${import.meta.env.BASE_URL}login`)
 }
 </script>
 
@@ -103,8 +108,8 @@ function logout() {
   border-bottom: 2px solid transparent;
 }
 .nav-item-active {
-  color: #ff9797;
-  border-bottom-color: #ff9797;
+  color: #10233f;
+  border-bottom-color: #f472b6;
   font-weight: 600;
 }
 .divider {
@@ -126,7 +131,7 @@ function logout() {
   text-decoration: none;
 }
 .logout-btn {
-  background-color: #ff9797;
+  background-color: #10233f;
   color: white;
   margin-left: 0.25rem;
   padding: 0.375rem 1rem;
