@@ -200,6 +200,7 @@ departamental_id,
 estado,
 sinQueja,
 queja,        // 'con' | 'sin' | null  → filtra por presencia de número de queja
+cui,          // 'con' | 'sin' | null  → filtra por presencia de CUI de la niña
 busqueda,
 page    = 1,
 limit   = 10,
@@ -238,6 +239,21 @@ if(queja==='sin' || sinQueja===true || sinQueja==='true'){
 /* Con queja: campo con valor (no nulo y no vacío) */
 if(queja==='con'){
   andConditions.push({ [Op.and]: [ { queja: { [Op.ne]: null } }, { queja: { [Op.ne]: '' } } ] })
+}
+
+/* CUI de la niña: se usa EXISTS (igual que la búsqueda) para que funcione en
+   las tres consultas —paginada, estadísticas y conteo— sin depender del include. */
+if(cui==='con'){
+  andConditions.push(sequelize.literal(`EXISTS (
+    SELECT 1 FROM ninas n
+    WHERE n.id = CasoEmbarazo.nina_id AND n.cui IS NOT NULL AND n.cui <> ''
+  )`))
+}
+if(cui==='sin'){
+  andConditions.push(sequelize.literal(`NOT EXISTS (
+    SELECT 1 FROM ninas n
+    WHERE n.id = CasoEmbarazo.nina_id AND n.cui IS NOT NULL AND n.cui <> ''
+  )`))
 }
 
 if(busqueda && busqueda.trim()){
@@ -543,6 +559,7 @@ export const ObtenerCasosFiltrados = async (req, res) => {
       fecha_fin,
       estado,
       tiene_queja,
+      tiene_cui,
       departamental,
       status_actual,
       resultado,
@@ -652,6 +669,10 @@ export const ObtenerCasosFiltrados = async (req, res) => {
 
       if (tiene_queja === "si" && !(caso.queja && caso.queja.trim() !== "")) return false;
       if (tiene_queja === "no" && (caso.queja && caso.queja.trim() !== "")) return false;
+
+      const tieneCui = !!(nina?.cui && String(nina.cui).trim() !== "");
+      if (tiene_cui === "si" && !tieneCui) return false;
+      if (tiene_cui === "no" && tieneCui) return false;
 
       if (codigo_estudiante) {
         const existeCodigo = historial.some((h) =>

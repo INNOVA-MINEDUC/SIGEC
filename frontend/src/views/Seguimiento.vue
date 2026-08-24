@@ -120,6 +120,21 @@
             />
 
             <v-select
+              v-model="filtroCui"
+              :items="cuiOptions"
+              item-title="label"
+              item-value="value"
+              label="CUI"
+              prepend-inner-icon="mdi-card-account-details-outline"
+              variant="outlined"
+              density="compact"
+              hide-details
+              rounded="lg"
+              class="filter-select"
+              @update:modelValue="handleFilter"
+            />
+
+            <v-select
               v-model="selectedDepartamental"
               :items="departamentales"
               item-title="nombre"
@@ -288,13 +303,18 @@ const serverTotalPages = ref(1)
 const serverStats      = ref({})
 
 // ── Filtros y UI (desde el store persistente) ────────────────────────────────
-const { search, selectedDepartamental, selectedEstado, filtroQueja, itemsPerPage, page } =
+const { search, selectedDepartamental, selectedEstado, filtroQueja, filtroCui, itemsPerPage, page } =
   storeToRefs(filtrosStore)
 
 const quejaOptions = [
   { label: 'Todas',      value: 'Todos' },
   { label: 'Con queja',  value: 'con' },
   { label: 'Sin queja',  value: 'sin' },
+]
+const cuiOptions = [
+  { label: 'Todos',    value: 'Todos' },
+  { label: 'Con CUI',  value: 'con' },
+  { label: 'Sin CUI',  value: 'sin' },
 ]
 const loading               = ref(false)
 
@@ -335,6 +355,7 @@ const fetchCasos = async (targetPage = 1) => {
       departamental_id: selectedDepartamental.value || null,
       estado:           selectedEstado.value !== 'Todos' ? selectedEstado.value : null,
       queja:            filtroQueja.value !== 'Todos' ? filtroQueja.value : null,
+      cui:              filtroCui.value !== 'Todos' ? filtroCui.value : null,
       busqueda:         search.value.trim() || null,
       page:             targetPage,
       limit:            itemsPerPage.value,

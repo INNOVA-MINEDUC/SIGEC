@@ -84,6 +84,15 @@
                 <option value="no">Sin queja</option>
               </select>
             </div>
+
+            <div class="filter-group">
+              <label>¿Tiene CUI?</label>
+              <select v-model="filters.tieneCui">
+                <option value="">Todos</option>
+                <option value="si">Con CUI</option>
+                <option value="no">Sin CUI</option>
+              </select>
+            </div>
               <div class="filter-group">
                 <label>Pueblo de Pertenencia</label>
                 <select v-model="filters.pueblo">
@@ -294,11 +303,23 @@ import heroImage   from '@/assets/ninas embarazadas -37.png'
 
 const casosStore = useCasosStore()
 
+// Normaliza el status para comparar sin importar mayúsculas/acentos:
+// en la BD se guardan en mayúsculas ("MAYOR DE 14 AÑOS", "NO EXISTE REGISTRO").
+const normStatus = (s) =>
+  String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim()
+
+const esMayorOSinRegistro = (caso) => {
+  // Coincide con cualquier historial de la niña (no solo el primero), igual que
+  // el conteo del servidor en Seguimiento.
+  const historiales = caso.nina?.historialEducativo ?? []
+  return historiales.some(h => {
+    const s = normStatus(h.status_actual)
+    return s === 'mayor de 14 anos' || s === 'no existe registro' || s === 'sin registro'
+  })
+}
+
 const kpiPrincipales = computed(() => {
-  const mayoresOSinRegistro = casosStore.casos.filter(c => {
-    const status = c.nina?.historialEducativo?.[0]?.status_actual
-    return status === 'Mayor de 14 años' || status === 'No existe Registro'
-  }).length
+  const mayoresOSinRegistro = casosStore.casos.filter(esMayorOSinRegistro).length
 
   return [
     {
@@ -403,6 +424,7 @@ const initialFilters = () => ({
   municipio:       '',
   estado:          '',
   tieneQueja:      '',
+  tieneCui:        '',
   departamental:   '',
   pueblo:          '',
   lengua:          '',
@@ -480,6 +502,7 @@ const buildParams = () => {
   if (filters.municipio)        params.municipio         = filters.municipio
   if (filters.estado)           params.estado            = filters.estado
   if (filters.tieneQueja)       params.tiene_queja       = filters.tieneQueja
+  if (filters.tieneCui)         params.tiene_cui         = filters.tieneCui
   if (filters.departamental)    params.departamental     = filters.departamental
   if (filters.pueblo)           params.pueblo            = filters.pueblo
   if (filters.lengua)           params.lengua            = filters.lengua
@@ -512,6 +535,7 @@ const _autoApply = () => {
 watch(
   () => [
     filters.departamento, filters.municipio, filters.estado, filters.tieneQueja,
+    filters.tieneCui,
     filters.departamental, filters.pueblo,   filters.lengua, filters.grado,
     filters.nivel, filters.statusActual,     filters.resultado, filters.area,
     filters.edadMin, filters.edadMax,        filters.fechaInicio, filters.fechaFin,

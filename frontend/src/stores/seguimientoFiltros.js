@@ -14,6 +14,7 @@ export const useSeguimientoFiltros = defineStore('seguimientoFiltros', {
     selectedDepartamental: null,
     selectedEstado:        'Todos',
     filtroQueja:           'Todos',   // 'Todos' | 'con' | 'sin'
+    filtroCui:             'Todos',   // 'Todos' | 'con' | 'sin'
     itemsPerPage:          10,
     page:                  1,
   }),
@@ -25,6 +26,7 @@ export const useSeguimientoFiltros = defineStore('seguimientoFiltros', {
       this.selectedDepartamental = null
       this.selectedEstado        = 'Todos'
       this.filtroQueja           = 'Todos'
+      this.filtroCui             = 'Todos'
       this.page                  = 1
     },
   },
