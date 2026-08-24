@@ -15,7 +15,7 @@ const authLimiter = rateLimit({
 });
 
 router.post('/login', AuthLogin);
-router.post('/logout', verifyToken, AuthLogout);
+router.post('/logout', authLimiter, verifyToken, AuthLogout);
 router.get('/validate-token', authLimiter, isAuthenticated);
 
 
