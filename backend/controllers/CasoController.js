@@ -257,26 +257,35 @@ if(cui==='sin'){
 }
 
 if(busqueda && busqueda.trim()){
-  const bs = String(busqueda).trim().replace(/'/g, "''")
+  const searchPattern = `%${String(busqueda).trim()}%`
   andConditions.push({
     [Op.or]: [
-      { numero_caso: { [Op.like]: `%${bs}%` } },
-      { queja:       { [Op.like]: `%${bs}%` } },
-      sequelize.literal(`EXISTS (
-        SELECT 1 FROM ninas n
-        WHERE n.id = CasoEmbarazo.nina_id
-          AND n.nombre_completo LIKE '%${bs}%'
-      )`),
-      sequelize.literal(`EXISTS (
-        SELECT 1 FROM ninas n
-        WHERE n.id = CasoEmbarazo.nina_id
-          AND n.cui LIKE '%${bs}%'
-      )`),
-      sequelize.literal(`EXISTS (
-        SELECT 1 FROM historial_educativo h
-        WHERE h.nina_id = CasoEmbarazo.nina_id
-          AND h.codigo_personal LIKE '%${bs}%'
-      )`),
+      { numero_caso: { [Op.like]: searchPattern } },
+      { queja:       { [Op.like]: searchPattern } },
+      sequelize.where(
+        sequelize.literal(`EXISTS (
+          SELECT 1 FROM ninas n
+          WHERE n.id = CasoEmbarazo.nina_id
+            AND n.nombre_completo LIKE :search
+        )`),
+        true
+      ),
+      sequelize.where(
+        sequelize.literal(`EXISTS (
+          SELECT 1 FROM ninas n
+          WHERE n.id = CasoEmbarazo.nina_id
+            AND n.cui LIKE :search
+        )`),
+        true
+      ),
+      sequelize.where(
+        sequelize.literal(`EXISTS (
+          SELECT 1 FROM historial_educativo h
+          WHERE h.nina_id = CasoEmbarazo.nina_id
+            AND h.codigo_personal LIKE :search
+        )`),
+        true
+      ),
     ]
   })
 }
