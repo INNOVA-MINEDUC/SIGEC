@@ -14,6 +14,8 @@ import CentroEducativo from "../models/CentroEducativo.js";
 
 import CargaArchivo from "../models/CargaArchivo.js";
 import { registrarAuditoria } from "../utils/auditoria.js";
+import { aplicarReglaDideduc } from "../helpers/dideduc.js";
+import { normalizarZona } from "../helpers/zonaGuatemala.js";
 import { normalizarNivel, NIVELES_EDUCATIVOS } from "../helpers/nivelEducativo.js";
 
 // Estados institucionales válidos para el campo CasoEmbarazo.estado
@@ -416,6 +418,10 @@ export const RegistrarCaso = async (req, res) => {
     // Departamento de residencia: el que venga explícito, o el del municipio.
     // Se conserva aunque no haya municipio, para no perder el departamento.
     const departamentoIdNina = await resolverDepartamentoNina(datos_nina, t)
+    const zonaNina = await normalizarZona(datos_nina.zona, datos_nina.municipio_id, t)
+
+    // Regla de negocio: municipio Ixcán → DIDEDUC Quiché Norte (prevalece sobre la elegida)
+    const departamentalFinal = await aplicarReglaDideduc(datos_nina.municipio_id, departamental_id || null, t)
 
     // 1. Buscar o crear niña por CUI
     // findOrCreate por CUI cuando viene, o crear nuevo cuando CUI es nulo
@@ -430,6 +436,7 @@ export const RegistrarCaso = async (req, res) => {
           direccion:             datos_nina.direccion || null,
           municipio_id:          datos_nina.municipio_id || null,
           departamento_id:       departamentoIdNina,
+          zona:                  zonaNina,
           pueblo:                datos_nina.pueblo || null,
           comunidad_linguistica: datos_nina.comunidad_linguistica || null,
         },
@@ -462,6 +469,7 @@ export const RegistrarCaso = async (req, res) => {
             nombre:       se.nombre_centro_educativo || se.codigo_udi,
             direccion:    se.direccion || null,
             municipio_id: Number(se.municipio_id),
+            zona:         await normalizarZona(se.zona, se.municipio_id, t),
             sector:       se.sector || null,
             jornada:      se.jornada || null,
             area:         se.area || null,
@@ -497,7 +505,7 @@ export const RegistrarCaso = async (req, res) => {
       institucion:            datos_nina.institucion || null,
       queja:                  numero_queja || null,
       estado:                 estado,
-      departamental_id:       departamental_id || null,
+      departamental_id:       departamentalFinal,
     }, { transaction: t })
 
     // 4. Crear historial educativo
@@ -673,8 +681,15 @@ export const ObtenerCasosFiltrados = async (req, res) => {
         String(caso.departamental?.id ?? caso.departamental_id) !== String(departamental)
       ) return false;
 
-      if (fecha_inicio && new Date(caso.fecha_ingreso) < new Date(fecha_inicio)) return false;
-      if (fecha_fin && new Date(caso.fecha_ingreso) > new Date(fecha_fin)) return false;
+      // Rango de fechas: se basa en la fecha de la PRIMERA CONSULTA del caso
+      // (DATEONLY 'YYYY-MM-DD', comparable como texto). Solo si el caso no la
+      // tiene registrada se recurre a la fecha de ingreso, para no perderlo.
+      const fechaBase = caso.fecha_primera_consulta || caso.fecha_ingreso || null;
+      if (fecha_inicio || fecha_fin) {
+        if (!fechaBase) return false;
+        if (fecha_inicio && fechaBase < fecha_inicio) return false;
+        if (fecha_fin && fechaBase > fecha_fin) return false;
+      }
 
       if (tiene_queja === "si" && !(caso.queja && caso.queja.trim() !== "")) return false;
       if (tiene_queja === "no" && (caso.queja && caso.queja.trim() !== "")) return false;
@@ -832,6 +847,13 @@ export const ActualizarCaso = async (req, res) => {
     if (datos_nina?.no_notificacion !== undefined) casoUpdates.no_notificacion = datos_nina.no_notificacion || null
     if (datos_nina?.institucion !== undefined)     casoUpdates.institucion     = datos_nina.institucion || null
     if (datos_nina?.fecha_primera_consulta !== undefined) casoUpdates.fecha_primera_consulta = datos_nina.fecha_primera_consulta || null
+    // Regla de negocio: municipio Ixcán → DIDEDUC Quiché Norte
+    const municipioFinal = datos_nina?.municipio_id !== undefined
+      ? datos_nina.municipio_id
+      : (await Nina.findByPk(caso.nina_id, { attributes: ['municipio_id'], transaction: t }))?.municipio_id
+    casoUpdates.departamental_id = await aplicarReglaDideduc(
+      municipioFinal, casoUpdates.departamental_id ?? caso.departamental_id, t
+    )
     await caso.update(casoUpdates, { transaction: t })
 
     // 2. Actualizar niña
@@ -844,6 +866,7 @@ export const ActualizarCaso = async (req, res) => {
       if (datos_nina.municipio_id !== undefined) {
         ninaUpd.municipio_id    = datos_nina.municipio_id || null
         ninaUpd.departamento_id = await resolverDepartamentoNina(datos_nina, t)
+        ninaUpd.zona            = await normalizarZona(datos_nina.zona, datos_nina.municipio_id, t)
       } else if (datos_nina.departamento_id !== undefined) {
         ninaUpd.departamento_id = datos_nina.departamento_id || null
       }
@@ -870,7 +893,7 @@ export const ActualizarCaso = async (req, res) => {
               sector:       se.sector        || centro.sector,
               jornada:      se.jornada       || centro.jornada,
               area:         se.area          || centro.area,
-              ...(se.municipio_id ? { municipio_id: Number(se.municipio_id) } : {})
+              ...(se.municipio_id ? { municipio_id: Number(se.municipio_id), zona: await normalizarZona(se.zona, se.municipio_id, t) } : {})
             }, { transaction: t })
           } else if (se.municipio_id) {
             centro = await CentroEducativo.create({

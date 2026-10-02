@@ -67,12 +67,93 @@ function drawPdfHeader(doc, { sigec, mineduc, title, subtitle, barH = 22, logoH 
   }
 }
 
+// ── Formato dd/mm/aaaa para fechas DATEONLY ('YYYY-MM-DD') ──────────────────
+function fmtFecha(f) {
+  if (!f) return ''
+  const [a, m, d] = String(f).slice(0, 10).split('-')
+  return a && m && d ? `${d}/${m}/${a}` : String(f)
+}
+
+// ── Datos de un caso por nombre de campo (fuente única para Excel y PDF) ────
+function datosCaso(caso) {
+  const nina   = caso.nina || {}
+  const hist   = (nina.historialEducativo || [])[0] || {}
+  const centro = hist.centroEducativo || {}
+  return {
+    numero_caso:      caso.numero_caso     || '',
+    fecha_ingreso:    fmtFecha(caso.fecha_ingreso),
+    fecha_consulta:   fmtFecha(caso.fecha_primera_consulta),
+    estado:           caso.estado          || '',
+    no_notificacion:  caso.no_notificacion || '',
+    queja:            caso.queja           || '',
+    // Dirección Departamental de Educación del caso (relación caso → departamental)
+    dideduc:          caso.departamental?.nombre || '',
+    cui:              nina.cui             || '',
+    nombre:           nina.nombre_completo || '',
+    edad:             nina.edad            || '',
+    direccion:        nina.direccion       || '',
+    departamento:     nina.municipio?.departamento?.nombre
+                   || nina.departamento?.nombre
+                   || caso.departamental?.departamento?.nombre || '',
+    municipio:        nina.municipio?.nombre || '',
+    zona:             nina.zona ? `Zona ${nina.zona}` : '',
+    pueblo:           nina.pueblo                || '',
+    comunidad:        nina.comunidad_linguistica || '',
+    institucion:      caso.institucion     || '',
+    centro:           centro.nombre        || '',
+    direccion_centro: centro.direccion     || '',
+    codigo_udi:       centro.codigo_udi    || '',
+    area:             centro.area          || '',
+    jornada:          centro.jornada       || '',
+    sector:           centro.sector        || '',
+    grado:            hist.grado           || '',
+    nivel:            hist.nivel           || '',
+    anio:             hist.anio            || '',
+    status:           hist.status_actual   || '',
+    resultado:        hist.resultado       || '',
+    codigo_personal:  hist.codigo_personal || '',
+  }
+}
+
 // ── Columnas para Excel agrupadas por sección (Información General / Niña / Establecimiento / Situación Educativa)
 const GRUPOS_EXCEL = [
-  { label: 'Información General', cols: ['No. Caso', 'Fecha Ingreso', 'Estado', 'No. Notificación', 'Queja'] },
-  { label: 'Datos de la Niña',     cols: ['CUI', 'Nombre Completo', 'Edad', 'Dirección', 'Departamento', 'Municipio', 'Pueblo', 'Comunidad Lingüística'] },
-  { label: 'Establecimiento',      cols: ['Institución', 'Centro Educativo', 'Código UDI', 'Área', 'Jornada', 'Sector'] },
-  { label: 'Situación Educativa',  cols: ['Grado', 'Nivel', 'Status Sistema', 'Resultado', 'Código Personal'] },
+  { label: 'Información General', cols: [
+    { h: 'No. Caso',                k: 'numero_caso' },
+    { h: 'Fecha Ingreso',           k: 'fecha_ingreso' },
+    { h: 'Fecha Primera Consulta',  k: 'fecha_consulta' },
+    { h: 'Estado',                  k: 'estado' },
+    { h: 'No. Notificación',        k: 'no_notificacion' },
+    { h: 'Queja',                   k: 'queja' },
+    { h: 'Dirección Departamental de Educación (DIDEDUC)', k: 'dideduc' },
+  ] },
+  { label: 'Datos de la Niña', cols: [
+    { h: 'CUI',                     k: 'cui' },
+    { h: 'Nombre Completo',         k: 'nombre' },
+    { h: 'Edad',                    k: 'edad' },
+    { h: 'Dirección',               k: 'direccion' },
+    { h: 'Departamento',            k: 'departamento' },
+    { h: 'Municipio',               k: 'municipio' },
+    { h: 'Zona',                    k: 'zona' },
+    { h: 'Pueblo',                  k: 'pueblo' },
+    { h: 'Comunidad Lingüística',   k: 'comunidad' },
+  ] },
+  { label: 'Establecimiento', cols: [
+    { h: 'Institución',             k: 'institucion' },
+    { h: 'Centro Educativo',        k: 'centro' },
+    { h: 'Dirección del Centro Educativo', k: 'direccion_centro' },
+    { h: 'Código UDI',              k: 'codigo_udi' },
+    { h: 'Área',                    k: 'area' },
+    { h: 'Jornada',                 k: 'jornada' },
+    { h: 'Sector',                  k: 'sector' },
+  ] },
+  { label: 'Situación Educativa', cols: [
+    { h: 'Grado',                   k: 'grado' },
+    { h: 'Nivel',                   k: 'nivel' },
+    { h: 'Último Año Cursado',      k: 'anio' },
+    { h: 'Status Sistema',          k: 'status' },
+    { h: 'Resultado',               k: 'resultado' },
+    { h: 'Código Personal',         k: 'codigo_personal' },
+  ] },
 ]
 
 // Colores institucionales por sección (tonos de azul marino)
@@ -83,91 +164,32 @@ const GRUPO_COLORES = {
   'Situación Educativa':  '1F3864',
 }
 
-// ── Convierte un caso a fila de datos, en el mismo orden que GRUPOS_EXCEL ────
-function casoAFilaExcel(caso) {
-  const nina   = caso.nina || {}
-  const hist   = (nina.historialEducativo || [])[0] || {}
-  const centro = hist.centroEducativo || {}
-  const dept   = nina.municipio?.departamento?.nombre
-              || nina.departamento?.nombre
-              || caso.departamental?.departamento?.nombre || ''
-  const mun    = nina.municipio?.nombre || ''
-  return [
-    // Información General
-    caso.numero_caso     || '',
-    caso.fecha_ingreso   || '',
-    caso.estado          || '',
-    caso.no_notificacion || '',
-    caso.queja           || '',
-    // Datos de la Niña
-    nina.cui                           || '',
-    nina.nombre_completo               || '',
-    nina.edad                          || '',
-    nina.direccion                     || '',
-    dept,
-    mun,
-    nina.pueblo?.nombre                || '',
-    nina.comunidadLinguistica?.nombre  || '',
-    // Establecimiento
-    caso.institucion     || '',
-    centro.nombre        || '',
-    centro.codigo_udi    || '',
-    centro.area          || '',
-    centro.jornada       || '',
-    centro.sector        || '',
-    // Situación Educativa
-    hist.grado           || '',
-    hist.nivel           || '',
-    hist.status_actual   || '',
-    hist.resultado       || '',
-    hist.codigo_personal || '',
-  ]
-}
-
-// ── Convierte un caso a fila de datos (orden plano, usado por el PDF) ───────
-function casoAFila(caso) {
-  const nina   = caso.nina || {}
-  const hist   = (nina.historialEducativo || [])[0] || {}
-  const centro = hist.centroEducativo || {}
-  const dept   = nina.municipio?.departamento?.nombre
-              || nina.departamento?.nombre
-              || caso.departamental?.departamento?.nombre || ''
-  const mun    = nina.municipio?.nombre || ''
-  return [
-    caso.numero_caso       || '',
-    nina.cui               || '',
-    nina.nombre_completo   || '',
-    caso.estado            || '',
-    caso.fecha_ingreso     || '',
-    caso.queja             || '',
-    caso.institucion       || '',
-    caso.no_notificacion   || '',
-    dept,
-    mun,
-    nina.pueblo?.nombre                  || '',
-    nina.comunidadLinguistica?.nombre    || '',
-    nina.edad              || '',
-    nina.direccion         || '',
-    hist.grado             || '',
-    hist.nivel             || '',
-    hist.status_actual     || '',
-    hist.resultado         || '',
-    centro.nombre          || '',
-    centro.codigo_udi      || '',
-    hist.codigo_personal   || '',
-    centro.area            || '',
-    centro.jornada         || '',
-    centro.sector          || '',
-  ]
-}
+// Columnas de la tabla "Listado de Casos" del PDF
+const COLS_PDF = [
+  { h: 'No. Caso',            k: 'numero_caso' },
+  { h: 'Nombre',              k: 'nombre' },
+  { h: 'Estado',              k: 'estado' },
+  { h: 'Fecha Ingreso',       k: 'fecha_ingreso' },
+  { h: 'Fecha 1ª Consulta',   k: 'fecha_consulta' },
+  { h: 'Depto.',              k: 'departamento' },
+  { h: 'Municipio',           k: 'municipio' },
+  { h: 'Edad',                k: 'edad' },
+  { h: 'Grado',               k: 'grado' },
+  { h: 'Nivel',               k: 'nivel' },
+  { h: 'Último Año Cursado',  k: 'anio' },
+  { h: 'Centro Educativo',    k: 'centro' },
+  { h: 'Dirección Centro',    k: 'direccion_centro' },
+  { h: 'Queja',               k: 'queja' },
+]
 
 // ────────────────────────────────────────────────────────────────────────────
 // EXPORTAR EXCEL
 // ────────────────────────────────────────────────────────────────────────────
 export function exportarExcel(casos, nombre = 'SIGEC_Casos') {
-  const flatCols  = GRUPOS_EXCEL.flatMap(g => g.cols)
+  const columnas  = GRUPOS_EXCEL.flatMap(g => g.cols)
+  const flatCols  = columnas.map(c => c.h)
   const totalCols = flatCols.length
-  const filas     = casos.map(casoAFilaExcel)
+  const filas     = casos.map(c => { const d = datosCaso(c); return columnas.map(col => d[col.k]) })
 
   // Fila de título + fila de grupos + fila de columnas + datos
   const tituloRow = [`Base de Datos de Casos de Embarazos en Niñas — SIGEC, MINEDUC Guatemala (Generado: ${new Date().toLocaleDateString('es-GT', { dateStyle: 'long' })})`]
@@ -379,7 +401,7 @@ export function exportarPDF(casos, nombre = 'SIGEC_Casos', resumenFiltros = '', 
   const MESES_S = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
   const porMes = MESES_S.map((l, i) => ({
     l,
-    v: casos.filter(c => c.fecha_ingreso && new Date(c.fecha_ingreso).getMonth() === i).length
+    v: casos.filter(c => (c.fecha_primera_consulta || c.fecha_ingreso) && new Date(`${c.fecha_primera_consulta || c.fecha_ingreso}T00:00:00`).getMonth() === i).length
   }))
 
   // Edad
@@ -565,11 +587,11 @@ export function exportarPDF(casos, nombre = 'SIGEC_Casos', resumenFiltros = '', 
     doc.setFont('helvetica', 'normal')
     doc.text(`${total} registros`, W - PAD, 10, { align: 'right' })
 
-    const colsPDF = ['No. Caso', pixelarNombres ? 'Nombre (protegido)' : 'Nombre', 'Estado', 'Fecha Ingreso', 'Depto.', 'Municipio', 'Edad', 'Grado', 'Nivel', 'Centro Educativo', 'Queja']
-    const idxPDF  = [0, 2, 3, 4, 8, 9, 12, 14, 15, 18, 5]
+    const colsPDF = COLS_PDF.map(c => c.h)
+    if (pixelarNombres) colsPDF[1] = 'Nombre (protegido)'
     const body    = casos.map(c => {
-      const f = casoAFila(c)
-      const row = idxPDF.map(i => f[i])
+      const d   = datosCaso(c)
+      const row = COLS_PDF.map(col => d[col.k])
       if (pixelarNombres && row[1]) {
         const inicial = String(row[1]).charAt(0).toUpperCase()
         row[1] = `${inicial}. ████████████`
@@ -581,15 +603,16 @@ export function exportarPDF(casos, nombre = 'SIGEC_Casos', resumenFiltros = '', 
       head: [colsPDF],
       body,
       startY: 18,
-      styles: { fontSize: 6.5, cellPadding: 1.5, overflow: 'linebreak' },
-      headStyles: { fillColor: NAVY, textColor: 255, fontStyle: 'bold', fontSize: 7 },
+      styles: { fontSize: 6, cellPadding: 1.2, overflow: 'linebreak' },
+      headStyles: { fillColor: NAVY, textColor: 255, fontStyle: 'bold', fontSize: 6.5 },
       alternateRowStyles: { fillColor: [240, 242, 247] },
       margin: { left: PAD, right: PAD },
       columnStyles: {
-        1: { cellWidth: 38 },
-        4: { cellWidth: 22 },
-        5: { cellWidth: 20 },
-        9: { cellWidth: 32 },
+        1:  { cellWidth: 30 },   // Nombre
+        5:  { cellWidth: 17 },   // Depto.
+        6:  { cellWidth: 18 },   // Municipio
+        11: { cellWidth: 26 },   // Centro Educativo
+        12: { cellWidth: 30 },   // Dirección Centro
       },
       didDrawPage: ({ pageNumber }) => {
         doc.setFontSize(6)

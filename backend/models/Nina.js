@@ -43,6 +43,12 @@ type:DataTypes.INTEGER,
 allowNull:true
 },
 
+// Zona de la Ciudad de Guatemala (ver helpers/zonaGuatemala.js); solo aplica si departamento y municipio son Guatemala
+zona:{
+type:DataTypes.TINYINT,
+allowNull:true
+},
+
 pueblo:{
 type:DataTypes.STRING(100),
 allowNull:true

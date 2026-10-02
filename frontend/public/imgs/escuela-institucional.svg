@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" role="img" aria-label="Edificio escolar institucional">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9CC3EC"/><stop offset="1" stop-color="#E8F1FB"/></linearGradient>
+    <linearGradient id="wall" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F7F3EA"/><stop offset="1" stop-color="#E6DFCF"/></linearGradient>
+    <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5E8FCB"/><stop offset="1" stop-color="#2E5395"/></linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#sky)"/>
+  <circle cx="660" cy="110" r="46" fill="#FFE9A8" opacity=".9"/>
+  <g fill="#fff" opacity=".9"><ellipse cx="150" cy="120" rx="70" ry="22"/><ellipse cx="190" cy="105" rx="50" ry="20"/><ellipse cx="520" cy="80" rx="60" ry="18"/></g>
+  <rect y="470" width="800" height="130" fill="#7FB069"/>
+  <rect y="470" width="800" height="14" fill="#6AA055"/>
+  <!-- edificio -->
+  <rect x="90" y="250" width="620" height="220" fill="url(#wall)"/>
+  <rect x="90" y="440" width="620" height="30" fill="#CFC6B2"/>
+  <rect x="300" y="190" width="200" height="280" fill="#FBF8F1"/>
+  <polygon points="280,190 400,120 520,190" fill="#1F3864"/>
+  <rect x="280" y="190" width="240" height="12" fill="#11203D"/>
+  <circle cx="400" cy="162" r="18" fill="#fff" stroke="#C5A059" stroke-width="4"/>
+  <line x1="400" y1="162" x2="400" y2="150" stroke="#1F3864" stroke-width="3"/><line x1="400" y1="162" x2="409" y2="166" stroke="#1F3864" stroke-width="3"/>
+  <!-- columnas -->
+  <g fill="#fff" stroke="#D9D2C0"><rect x="318" y="210" width="18" height="230"/><rect x="364" y="210" width="18" height="230"/><rect x="418" y="210" width="18" height="230"/><rect x="464" y="210" width="18" height="230"/></g>
+  <!-- puerta -->
+  <rect x="372" y="360" width="56" height="80" rx="3" fill="#2E5395"/><line x1="400" y1="360" x2="400" y2="440" stroke="#fff" stroke-width="2"/>
+  <!-- ventanas -->
+  <g fill="url(#glass)" stroke="#fff" stroke-width="3">
+    <rect x="120" y="290" width="50" height="60"/><rect x="190" y="290" width="50" height="60"/>
+    <rect x="560" y="290" width="50" height="60"/><rect x="630" y="290" width="50" height="60"/>
+    <rect x="120" y="376" width="50" height="60"/><rect x="190" y="376" width="50" height="60"/>
+    <rect x="560" y="376" width="50" height="60"/><rect x="630" y="376" width="50" height="60"/>
+  </g>
+  <rect x="90" y="240" width="210" height="10" fill="#1F3864"/><rect x="500" y="240" width="210" height="10" fill="#1F3864"/>
+  <!-- escalinata y camino -->
+  <polygon points="350,470 450,470 480,600 320,600" fill="#D9D2C0"/>
+  <rect x="340" y="452" width="120" height="8" fill="#CFC6B2"/><rect x="330" y="461" width="140" height="9" fill="#C4BBA6"/>
+  <!-- mástil y bandera -->
+  <rect x="120" y="330" width="0" height="0"/>
+  <rect x="742" y="250" width="5" height="220" fill="#8A8A8A"/>
+  <rect x="747" y="254" width="42" height="14" fill="#4997D0"/><rect x="756" y="254" width="14" height="14" fill="#fff"/>
+  <!-- árboles -->
+  <g><rect x="46" y="410" width="10" height="70" fill="#7A5C3A"/><circle cx="51" cy="395" r="42" fill="#3F8F5B"/><circle cx="30" cy="420" r="26" fill="#4FA56B"/></g>
+  <g><rect x="742" y="430" width="10" height="55" fill="#7A5C3A"/><circle cx="747" cy="415" r="34" fill="#3F8F5B"/></g>
+  <!-- estudiantes -->
+  <g>
+    <circle cx="220" cy="530" r="9" fill="#E8B48E"/><rect x="211" y="539" width="18" height="34" rx="6" fill="#C5A059"/><rect x="212" y="573" width="6" height="18" fill="#1F3864"/><rect x="222" y="573" width="6" height="18" fill="#1F3864"/>
+    <circle cx="250" cy="534" r="8" fill="#C98E69"/><rect x="242" y="542" width="16" height="31" rx="6" fill="#2E5395"/><rect x="243" y="573" width="5" height="16" fill="#1F3864"/><rect x="251" y="573" width="5" height="16" fill="#1F3864"/>
+    <circle cx="560" cy="532" r="9" fill="#E8B48E"/><rect x="551" y="541" width="18" height="33" rx="6" fill="#2E5395"/><rect x="552" y="574" width="6" height="17" fill="#1F3864"/><rect x="562" y="574" width="6" height="17" fill="#1F3864"/>
+    <circle cx="590" cy="535" r="8" fill="#C98E69"/><rect x="582" y="543" width="16" height="30" rx="6" fill="#C5A059"/><rect x="583" y="573" width="5" height="16" fill="#1F3864"/><rect x="591" y="573" width="5" height="16" fill="#1F3864"/>
+  </g>
+</svg>

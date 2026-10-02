@@ -39,7 +39,7 @@
           <button class="primary-btn" @click="router.push('/seguimiento')">Seguimiento</button>
         </div>
         <div class="about-image">
-          <img src="/imgs/escuela.png" alt="Niña embarazada" />
+          <img src="/imgs/escuela-institucional.svg" alt="Edificio escolar institucional" />
         </div>
       </div>
     </section>

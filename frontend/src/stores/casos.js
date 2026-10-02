@@ -72,8 +72,8 @@ export const useCasosStore = defineStore('casos', () => {
   // Casos filtrados por mes (1=Enero ... 12=Diciembre)
   const casosPorMes = (mes) =>
     casos.value.filter(c =>
-      c.fecha_ingreso
-        ? new Date(c.fecha_ingreso).getMonth() + 1 === mes
+      (c.fecha_primera_consulta || c.fecha_ingreso)
+        ? new Date(`${c.fecha_primera_consulta || c.fecha_ingreso}T00:00:00`).getMonth() + 1 === mes
         : false
     )
 

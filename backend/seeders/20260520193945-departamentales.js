@@ -39,6 +39,7 @@ export default {
       { nombre: 'Dideduc Petén',               departamento: 'Petén'           },
       { nombre: 'Dideduc Quetzaltenango',      departamento: 'Quetzaltenango'  },
       { nombre: 'Dideduc Quiché',              departamento: 'Quiché'          },
+      { nombre: 'Dideduc Quiché Norte',        departamento: 'Quiché'          },
       { nombre: 'Dideduc Retalhuleu',          departamento: 'Retalhuleu'      },
       { nombre: 'Dideduc Sacatepéquez',        departamento: 'Sacatepéquez'    },
       { nombre: 'Dideduc San Marcos',          departamento: 'San Marcos'      },

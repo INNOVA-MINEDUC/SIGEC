@@ -205,6 +205,17 @@
                 </div>
               </div>
 
+              <div class="field-row" v-if="mostrarZonaNina">
+                <div class="input-box">
+                  <v-icon size="16" class="input-icon">mdi-map-marker-outline</v-icon>
+                  <select v-model="form.zonaNina" :class="{ 'empty-select': !form.zonaNina }">
+                    <option value="" disabled selected>Zona (Ciudad de Guatemala)</option>
+                    <option v-for="z in ZONAS_GUATEMALA" :key="z" :value="z">Zona {{ z }}</option>
+                  </select>
+                  <v-icon size="16" class="select-chevron">mdi-chevron-down</v-icon>
+                </div>
+              </div>
+
               <div class="field-row">
                 <div class="input-box" :class="form.institucion ? 'w-50' : ''">
                   <v-icon size="16" class="input-icon">mdi-office-building-marker-outline</v-icon>
@@ -345,6 +356,17 @@
                   </div>
                 </div>
 
+                <div class="field-row" v-if="mostrarZonaEscuela">
+                  <div class="input-box">
+                    <v-icon size="16" class="input-icon">mdi-map-marker-outline</v-icon>
+                    <select v-model="form.zonaEscuela" :class="{ 'empty-select': !form.zonaEscuela }">
+                      <option value="" disabled selected>Zona (Ciudad de Guatemala)</option>
+                      <option v-for="z in ZONAS_GUATEMALA" :key="z" :value="z">Zona {{ z }}</option>
+                    </select>
+                    <v-icon size="16" class="select-chevron">mdi-chevron-down</v-icon>
+                  </div>
+                </div>
+
                 <div class="input-box">
                   <v-icon size="16" class="input-icon">mdi-town-hall</v-icon>
                   <input type="text" v-model="form.nombreCentro" placeholder="Nombre del centro educativo" />
@@ -477,7 +499,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { nextTick } from 'vue'
 import Swal from 'sweetalert2'
@@ -514,7 +536,11 @@ const MESES = [
 ]
 
 const currentYear = new Date().getFullYear()
-const ANOS          = Array.from({ length: 11 }, (_, i) => currentYear - 5 + i)
+// Ciclo escolar: desde el 2000 hasta 5 años después del actual, en orden descendente
+const ANO_CICLO_MIN = 2000
+const ANOS          = Array.from({ length: currentYear + 5 - ANO_CICLO_MIN + 1 }, (_, i) => currentYear + 5 - i)
+// Zonas existentes de la Ciudad de Guatemala (no existen las zonas 20, 22 ni 23)
+const ZONAS_GUATEMALA = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 21, 24, 25]
 const ANOS_NACIMIENTO = Array.from({ length: 20 }, (_, i) => currentYear - 5 - i)
 
 const INSTITUCIONES  = ['Ministerio Público', 'Procuraduría General de la Nación', 'Otra']
@@ -607,14 +633,14 @@ const form = reactive({
   nombreCompleto: '',
   nacimientoDia: '', nacimientoMes: '', nacimientoAno: '',
   edad: '', direccionNina: '',
-  departamentoNina: '', municipioNina: '',
+  departamentoNina: '', municipioNina: '', zonaNina: '',
   institucion: '', puebloPertenencia: '', comunidadLinguistica: '',
 
   // Step 3
   codigoPersonal: '', statusActual: '', subsistema: '',
   // Subsistema Escolar
   grado: '', nivel: '', codigoUdi: '',
-  departamentoEscuela: '', municipioEscuela: '', nombreCentro: '',
+  departamentoEscuela: '', municipioEscuela: '', zonaEscuela: '', nombreCentro: '',
   direccionCentro: '', jornada: '', area: '', sector: '',
   // Subsistema Extraescolar
   programa: '', etapa: '',
@@ -715,6 +741,7 @@ const cargarCaso = async (id) => {
       const rMun = await api.get('/dept/municipios', { params: { departamento_id: deptNinaId } })
       municipiosNina.value = rMun.data.data
       form.municipioNina = nina.municipio_id || ''
+      form.zonaNina = nina.zona || ''
     }
 
     if (deptEscuelaId) {
@@ -722,6 +749,7 @@ const cargarCaso = async (id) => {
       const rMun = await api.get('/dept/municipios', { params: { departamento_id: deptEscuelaId } })
       municipiosEscuela.value = rMun.data.data
       form.municipioEscuela = centro.municipio_id || ''
+      form.zonaEscuela = centro.zona || ''
     }
 
   } catch (err) {
@@ -745,6 +773,27 @@ onMounted(async () => {
     await cargarCaso(casoId.value)
   } else {
     form.noCaso = resNumero.data.numero
+  }
+})
+
+// ── Zona: solo aplica cuando Departamento = Guatemala y Municipio = Guatemala ──
+const normTxt = (t) => String(t ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toLowerCase()
+const esGuatemalaGuatemala = (deptoId, munId, municipios) => {
+  const d = departamentos.value.find(x => x.id === deptoId)
+  const m = municipios.find(x => x.id === munId)
+  return !!d && !!m && normTxt(d.nombre) === 'guatemala' && normTxt(m.nombre) === 'guatemala'
+}
+const mostrarZonaNina    = computed(() => esGuatemalaGuatemala(form.departamentoNina, form.municipioNina, municipiosNina.value))
+const mostrarZonaEscuela = computed(() => esGuatemalaGuatemala(form.departamentoEscuela, form.municipioEscuela, municipiosEscuela.value))
+watch(mostrarZonaNina,    (v) => { if (!v) form.zonaNina = '' })
+watch(mostrarZonaEscuela, (v) => { if (!v) form.zonaEscuela = '' })
+
+// Regla: municipio Ixcán → DIDEDUC Quiché Norte (el backend también la impone)
+watch(() => form.municipioNina, (id) => {
+  const m = municipiosNina.value.find(x => x.id === id)
+  if (m && normTxt(m.nombre) === 'ixcan') {
+    const qn = departamentales.value.find(d => normTxt(d.nombre).includes('quiche norte'))
+    if (qn) form.direccionDepartamental = qn.id
   }
 })
 
@@ -810,6 +859,7 @@ async function submitForm() {
           direccion:                form.direccionNina || null,
           municipio_id:          form.municipioNina || null,
           departamento_id:       form.departamentoNina || null,
+          zona:                  mostrarZonaNina.value ? (form.zonaNina || null) : null,
           pueblo:                form.puebloPertenencia || null,
           comunidad_linguistica: form.comunidadLinguistica || null,
           institucion:           form.institucion || null,
@@ -826,6 +876,7 @@ async function submitForm() {
           anio:                    form.anoEducativo   || null,
           codigo_udi:              form.codigoUdi      || null,
           municipio_id:            form.municipioEscuela || null,
+          zona:                    mostrarZonaEscuela.value ? (form.zonaEscuela || null) : null,
           nombre_centro_educativo: form.nombreCentro   || null,
           direccion:               form.direccionCentro || null,
           jornada:                 form.jornada        || null,
@@ -851,6 +902,7 @@ async function submitForm() {
           direccion:                form.direccionNina,
           municipio_id:          form.municipioNina || null,
           departamento_id:       form.departamentoNina || null,
+          zona:                  mostrarZonaNina.value ? (form.zonaNina || null) : null,
           institucion:           form.institucion,
           pueblo:                form.puebloPertenencia || null,
           comunidad_linguistica: form.comunidadLinguistica || null,
@@ -868,6 +920,7 @@ async function submitForm() {
           codigo_udi:              form.codigoUdi,
           departamento_id:         form.departamentoEscuela,
           municipio_id:            form.municipioEscuela,
+          zona:                    mostrarZonaEscuela.value ? (form.zonaEscuela || null) : null,
           nombre_centro_educativo: form.nombreCentro,
           direccion:               form.direccionCentro,
           jornada:                 form.jornada,
@@ -946,14 +999,15 @@ async function submitForm() {
 .form-grid { display: flex; flex-direction: column; gap: 0.75rem; }
 .field-row { display: flex; gap: 0.75rem; }
 .w-50 { width: 50%; }
-.input-box { display: flex; align-items: center; gap: 0.5rem; padding: 0.625rem 0.75rem; border-radius: 0.25rem; border: 1px solid #e8e8e8; background-color: #f9f9f9; width: 100%; position: relative; }
-.input-icon { color: #b0b0b0; flex-shrink: 0; }
+.input-box { display: flex; align-items: center; gap: 0.5rem; padding: 0.625rem 0.75rem; border-radius: 0.25rem; border: 1px solid #c3cad4; background-color: #ffffff; width: 100%; position: relative; }
+.input-box:focus-within { border-color: #17c4e8; box-shadow: 0 0 0 2px rgba(23,196,232,0.18); }
+.input-icon { color: #5b6573; flex-shrink: 0; }
 .input-box input,
-.input-box select { flex: 1; background: transparent; border: none; outline: none; font-size: 0.875rem; color: #6d6d6d; width: 100%; }
+.input-box select { flex: 1; background: transparent; border: none; outline: none; font-size: 0.875rem; font-weight: 500; color: #1f2937; width: 100%; }
 .input-box select  { appearance: none; cursor: pointer; }
-.input-box input::placeholder { color: #b0b0b0; font-size: 0.875rem; }
-.empty-select      { color: #b0b0b0 !important; }
-.select-chevron    { color: #b0b0b0; flex-shrink: 0; position: absolute; right: 0.75rem; pointer-events: none; }
+.input-box input::placeholder { color: #5b6573; opacity: 1; font-size: 0.875rem; font-weight: 500; }
+.empty-select      { color: #5b6573 !important; font-weight: 500; }
+.select-chevron    { color: #5b6573; flex-shrink: 0; position: absolute; right: 0.75rem; pointer-events: none; }
 .form-actions { display: flex; align-items: center; justify-content: space-between; margin-top: 2rem; }
 .btn-prev { background: none; border: none; color: #b0b0b0; font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; }
 .btn-prev:disabled { cursor: default; }

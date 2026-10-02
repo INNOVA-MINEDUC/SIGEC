@@ -22,8 +22,12 @@ const COLOR_VACIO  = am5.color(0xeef2f7)   // 0 casos → gris muy claro
 const COLOR_MIN    = am5.color(0xbcd0ec)   // pocos casos → azul claro
 const COLOR_MAX    = am5.color(0x0b1b33)   // más casos → azul muy oscuro
 
+// Quita tildes y cualquier carácter que no sea letra/número/espacio: el GeoJSON
+// trae caracteres invisibles (p. ej. guion suave en "San Agustí­n") que
+// impedían emparejar nombres que a simple vista son iguales.
 const norm = (s) =>
-  String(s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim()
+  String(s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
+    .replace(/[^a-z0-9 ]/g, "").replace(/\s+/g, " ").trim()
 
 // Departamento del caso: municipio→depto, o depto de residencia, o el departamental
 const deptoDeCaso = (c) =>
@@ -31,7 +35,35 @@ const deptoDeCaso = (c) =>
   c.nina?.departamento?.nombre ||
   c.departamental?.departamento?.nombre || null
 
-const municipioDeCaso = (c) => c.nina?.municipio?.nombre || null
+// Nombres del catálogo (BD) que en el GeoJSON están escritos distinto
+const ALIAS_MUNICIPIO_GEO = {
+  "san ildefonso ixtahuacan":  "san idelfonso ixtahuacan",
+  "san juan ermita":           "san juan la ermita",
+  "santa lucia cotzumalguapa": "santa lucia cotzulmalguapa",
+  "santa maria de jesus":      "santa maria de jesis",
+  "san pablo jocopilas":       "san pablo jocopila",
+}
+
+// Polígonos municipales agrupados por departamento (nombres normalizados)
+const municipiosGeoPorDepto = new Map()
+for (const f of guatemalaMunicipios.features) {
+  const d = norm(f.properties?.departamen)
+  if (!municipiosGeoPorDepto.has(d)) municipiosGeoPorDepto.set(d, [])
+  municipiosGeoPorDepto.get(d).push(norm(f.properties?.municipio))
+}
+
+// Municipio del caso expresado como el nombre de su polígono en el mapa.
+// 1) igual, 2) alias, 3) un nombre contiene al otro dentro del mismo
+// departamento ("santa cruz barillas" ↔ "barillas") si hay un único candidato.
+const municipioDeCaso = (c) => {
+  const nombre = norm(c.nina?.municipio?.nombre)
+  if (!nombre) return null
+  const lista = municipiosGeoPorDepto.get(norm(c.nina?.municipio?.departamento?.nombre)) || []
+  const m = ALIAS_MUNICIPIO_GEO[nombre] || nombre
+  if (lista.includes(m)) return m
+  const cand = lista.filter(g => ` ${m} `.includes(` ${g} `) || ` ${g} `.includes(` ${m} `))
+  return cand.length === 1 ? cand[0] : nombre
+}
 
 // Cuenta casos del store agrupados por el nombre que devuelve fn (normalizado)
 const contarPor = (fn) => {
@@ -67,9 +99,6 @@ onMounted(() => {
     fill: COLOR_VACIO,
     stroke: am5.color(0xffffff),
     strokeWidth: 0.5
-  })
-  departamentosSeries.mapPolygons.template.states.create("hover", {
-    fill: am5.color(0x17c4e8)
   })
 
   const municipiosSeries = chart.series.push(
@@ -117,6 +146,20 @@ onMounted(() => {
     })
   )
 
+  // Total de casos mostrado en el mapa (mismo número que la card "Casos Totales")
+  const totalLabel = chart.children.push(
+    am5.Label.new(root, {
+      text: "",
+      x: 10,
+      y: 10,
+      fontSize: 14,
+      fontWeight: "600",
+      fill: am5.color(0x10233f),
+      background: am5.RoundedRectangle.new(root, { fill: am5.color(0xffffff), fillOpacity: 0.85 }),
+      paddingTop: 6, paddingBottom: 6, paddingLeft: 10, paddingRight: 10
+    })
+  )
+
   // Pinta una serie según cuántos casos tiene cada polígono (choropleth).
   //   fn: cómo obtener el nombre del caso; campoGeo: propiedad del GeoJSON
   const pintarSerie = (series, fn, campoGeo) => {
@@ -124,11 +167,13 @@ onMounted(() => {
     let max = 0
     counts.forEach((v) => { if (v > max) max = v })
 
+    let ubicados = 0
     series.mapPolygons.each((poly) => {
       const ctx = poly.dataItem?.dataContext
       if (!ctx) return
       const nombre = ctx[campoGeo] ?? ctx.nombre
       const count = counts.get(norm(nombre)) || 0
+      ubicados += count
       ctx.casos = count   // para el tooltip {casos}
       if (count <= 0) {
         poly.set("fill", COLOR_VACIO)
@@ -141,6 +186,15 @@ onMounted(() => {
 
     heatLegend.set("startValue", 0)
     heatLegend.set("endValue", max)
+
+    // Total del mapa = total de las cards. Los casos que no se pueden ubicar
+    // en un polígono (sin municipio/departamento registrado) se indican aparte.
+    const total = casosStore.casos.length
+    const sinUbicar = total - ubicados
+    const nivel = vista === "nacional" ? "departamento" : "municipio"
+    totalLabel.set("text",
+      `Total: ${total} casos` +
+      (sinUbicar > 0 ? `  ·  ${sinUbicar} sin ${nivel} registrado` : ""))
   }
 
   // Repinta la serie que esté visible según el nivel de navegación actual.
@@ -231,7 +285,12 @@ onMounted(() => {
 
     console.log("[MAPA] Municipio:", munNombre, "| Departamento:", deptNombre)
 
-    casosStore.fetchPorMunicipio(munNombre, deptNombre).then(() => {
+    // El filtro del servidor compara contra el nombre del catálogo (BD), que puede
+    // escribirse distinto al del polígono ("Santa Cruz Barillas" vs "Barillas").
+    const casoDelMunicipio = casosStore.casos.find(c => municipioDeCaso(c) === norm(munNombre))
+    const munNombreBD = casoDelMunicipio?.nina?.municipio?.nombre || munNombre
+
+    casosStore.fetchPorMunicipio(munNombreBD, deptNombre).then(() => {
       console.log(`[STORE] Total casos (${munNombre}):`, casosStore.total)
       console.log("[STORE] Datos:", casosStore.casos)
     })

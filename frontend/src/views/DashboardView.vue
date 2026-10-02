@@ -161,12 +161,12 @@
               </div>
 
               <div class="filter-group">
-                <label>Fecha desde</label>
+                <label>Primera consulta desde</label>
                 <input type="date" v-model="filters.fechaInicio" />
               </div>
 
               <div class="filter-group">
-                <label>Fecha hasta</label>
+                <label>Primera consulta hasta</label>
                 <input type="date" v-model="filters.fechaFin" />
               </div>
 
@@ -560,8 +560,8 @@ const resumenFiltros = computed(() => {
   if (filters.grado)           partes.push(`Grado: ${filters.grado}`)
   if (filters.nivel)           partes.push(`Nivel: ${filters.nivel}`)
   if (filters.area)            partes.push(`Área: ${filters.area}`)
-  if (filters.fechaInicio)     partes.push(`Desde: ${filters.fechaInicio}`)
-  if (filters.fechaFin)        partes.push(`Hasta: ${filters.fechaFin}`)
+  if (filters.fechaInicio)     partes.push(`1ª consulta desde: ${filters.fechaInicio}`)
+  if (filters.fechaFin)        partes.push(`1ª consulta hasta: ${filters.fechaFin}`)
   return partes.join('  ·  ')
 })
 

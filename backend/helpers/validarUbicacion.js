@@ -5,6 +5,7 @@ import { readFileSync } from 'fs'
 import Departamental from '../models/Departamental.js'
 import Departamento from '../models/Departamento.js'
 import Municipio from '../models/Municipio.js'
+import { esIxcan, obtenerQuicheNorteId } from './dideduc.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -54,6 +55,7 @@ let fuseDepto = null
 let fuseMunicipios  = null   // Fuse GLOBAL: todos los municipios del país, sin filtrar por departamento
 let municipiosBase = null    // Lista base de municipios (sin alias) para el fallback por contención
 let departamentalPorDepto = null // Map<departamento_id, departamental_id>
+let quicheNorteId = null         // DIDEDUC Quiché Norte (regla: Ixcán → Quiché Norte)
 
 async function init() {
   if (fuseDepto) return
@@ -71,10 +73,14 @@ async function init() {
       departamento_id:  d.departamento_id,
     }))
 
+  quicheNorteId = await obtenerQuicheNorteId()
+
   fuseDepto = new Fuse(deptoEntries, { keys: ['nombreBusqueda'], ...FUSE_OPTIONS_DEPTO })
 
   departamentalPorDepto = new Map()
   for (const d of deptoEntries) {
+    // Quiché Norte solo aplica a Ixcán: no es la DIDEDUC por defecto de Quiché.
+    if (d.departamental_id === quicheNorteId) continue
     if (!departamentalPorDepto.has(d.departamento_id)) {
       departamentalPorDepto.set(d.departamento_id, d.departamental_id)
     }
@@ -170,7 +176,9 @@ export async function validarUbicacion(departamentoNombre, municipioNombre) {
     const municipio = mejorCandidato(fuseMunicipios.search(munNorm)) || municipioPorContencion(munNorm)
     if (municipio) {
       return {
-        departamental_id: departamentalPorDepto.get(municipio.departamento_id) ?? null,
+        departamental_id: (esIxcan(municipio.nombre) && quicheNorteId)
+          ? quicheNorteId
+          : (departamentalPorDepto.get(municipio.departamento_id) ?? null),
         departamento_id:  municipio.departamento_id,
         municipio_id:     municipio.municipio_id,
       }
