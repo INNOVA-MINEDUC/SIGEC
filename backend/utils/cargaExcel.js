@@ -8,6 +8,7 @@ import CentroEducativo from '../models/CentroEducativo.js'
 import CargaArchivo from '../models/CargaArchivo.js'
 import { validarUbicacion } from '../helpers/validarUbicacion.js'
 import { normalizarNivel } from '../helpers/nivelEducativo.js'
+import { normalizarComunidad } from '../helpers/comunidadLinguistica.js'
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -305,7 +306,7 @@ export async function procesarExcelCasos(buffer, {
 
     // ── Datos educativos ────────────────────────────────────────────────────
     const pueblo               = toTitleCase(clean(pick('Pueblo de pertenencia', 'Pueblo'))) || null
-    const comunidad_linguistica = toTitleCase(clean(pick('Comunidad Linguistica', 'Comunidad Lingüística', 'Comunidad'))) || null
+    const comunidad_linguistica = normalizarComunidad(toTitleCase(clean(pick('Comunidad Linguistica', 'Comunidad Lingüística', 'Comunidad'))))
     const codigoPersonal       = clean(pick('Código personal', 'Codigo personal'))
     const statusActual         = clean(pick('Status actual', 'Estatus actual'))
     const grado                = clean(pick('Grado'))

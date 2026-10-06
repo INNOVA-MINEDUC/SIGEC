@@ -16,6 +16,7 @@ import CargaArchivo from "../models/CargaArchivo.js";
 import { registrarAuditoria } from "../utils/auditoria.js";
 import { aplicarReglaDideduc } from "../helpers/dideduc.js";
 import { normalizarZona } from "../helpers/zonaGuatemala.js";
+import { normalizarComunidad } from "../helpers/comunidadLinguistica.js";
 import { normalizarNivel, NIVELES_EDUCATIVOS } from "../helpers/nivelEducativo.js";
 
 // Estados institucionales válidos para el campo CasoEmbarazo.estado
@@ -438,10 +439,17 @@ export const RegistrarCaso = async (req, res) => {
           departamento_id:       departamentoIdNina,
           zona:                  zonaNina,
           pueblo:                datos_nina.pueblo || null,
-          comunidad_linguistica: datos_nina.comunidad_linguistica || null,
+          comunidad_linguistica: normalizarComunidad(datos_nina.comunidad_linguistica),
         },
         transaction: t
       })
+      // Si la niña ya existía (mismo CUI), findOrCreate no aplica los defaults:
+      // se guardan el pueblo y la comunidad lingüística enviados en el formulario.
+      const extra = {}
+      if (datos_nina.pueblo) extra.pueblo = datos_nina.pueblo
+      const comunidad = normalizarComunidad(datos_nina.comunidad_linguistica)
+      if (comunidad) extra.comunidad_linguistica = comunidad
+      if (Object.keys(extra).length) await nina.update(extra, { transaction: t })
     } else {
       nina = await Nina.create({
         cui:                   null,
@@ -452,7 +460,7 @@ export const RegistrarCaso = async (req, res) => {
         municipio_id:          datos_nina.municipio_id || null,
         departamento_id:       departamentoIdNina,
         pueblo:                datos_nina.pueblo || null,
-        comunidad_linguistica: datos_nina.comunidad_linguistica || null,
+        comunidad_linguistica: normalizarComunidad(datos_nina.comunidad_linguistica),
       }, { transaction: t })
     }
 
@@ -709,7 +717,7 @@ export const ObtenerCasosFiltrados = async (req, res) => {
       if (edad_max !== undefined && edad_max !== "" && Number(nina?.edad) > Number(edad_max)) return false;
 
       if (pueblo && normD(nina?.pueblo) !== normD(pueblo)) return false;
-      if (lengua && normD(nina?.comunidad_linguistica) !== normD(lengua)) return false;
+      if (lengua && normalizarComunidad(nina?.comunidad_linguistica) !== normalizarComunidad(lengua)) return false;
 
       if (grado) {
         const existeGrado = historial.some((h) => String(h.grado) === String(grado));
@@ -870,8 +878,9 @@ export const ActualizarCaso = async (req, res) => {
       } else if (datos_nina.departamento_id !== undefined) {
         ninaUpd.departamento_id = datos_nina.departamento_id || null
       }
-      if (datos_nina.pueblo !== undefined)                 ninaUpd.pueblo                = datos_nina.pueblo || null
-      if (datos_nina.comunidad_linguistica !== undefined)  ninaUpd.comunidad_linguistica = datos_nina.comunidad_linguistica || null
+      // Solo se actualizan si traen valor: un select vacío no debe borrar el dato guardado
+      if (datos_nina.pueblo)                ninaUpd.pueblo                = datos_nina.pueblo
+      if (datos_nina.comunidad_linguistica) ninaUpd.comunidad_linguistica = normalizarComunidad(datos_nina.comunidad_linguistica)
       if (Object.keys(ninaUpd).length > 0) {
         await Nina.update(ninaUpd, { where: { id: caso.nina_id }, transaction: t })
       }

@@ -9,6 +9,7 @@ import { registrarAuditoria } from '../utils/auditoria.js'
 import { validarUbicacion } from '../helpers/validarUbicacion.js'
 import { normalizarNivel } from '../helpers/nivelEducativo.js'
 import { procesarExcelCasos } from '../utils/cargaExcel.js'
+import { normalizarComunidad } from '../helpers/comunidadLinguistica.js'
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -228,8 +229,8 @@ export const CargaMasiva = async (req, res) => {
 
       // ── Pueblo y comunidad lingüística como texto ───────────────────────────
       const pueblo               = toTitleCase(clean(get('Pueblo')))               || null
-      const comunidad_linguistica = toTitleCase(clean(get('Comunidad Linguistica')) ||
-                                    clean(get('Comunidad Lingüística'))) || null
+      const comunidad_linguistica = normalizarComunidad(toTitleCase(clean(get('Comunidad Linguistica')) ||
+                                    clean(get('Comunidad Lingüística'))))
 
       // ── Escolaridad → nivel ─────────────────────────────────────────────────
       const nivelEducativo = mapEscolaridad(get('Escolaridad') ?? get('escolaridad'))

@@ -504,6 +504,7 @@ import { useRoute } from 'vue-router'
 import { nextTick } from 'vue'
 import Swal from 'sweetalert2'
 import api from "@/helpers/api"
+import { COMUNIDADES_LINGUISTICAS, normalizarComunidad } from '@/helpers/comunidadLinguistica'
 import AppNavbar from '@/components/AppNavbar.vue'
 import AppFooter from '@/components/AppFooter.vue'
 import heroImage from '@/assets/ninas embarazadas -25.jpg'
@@ -657,13 +658,14 @@ const municipiosNina    = ref([])
 
 // Listas fijas — ya no provienen de tablas de BD
 const PUEBLOS_LIST = ['Maya', 'Xinka', 'Garífuna', 'Ladino', 'Otros']
-const COMUNIDADES_LIST = [
-  'Kaqchikel', "K'iche'", 'Español', "Achi'", 'Akateko', 'Awakateko',
-  'Chalchiteko', "Ch'orti'", 'Chuj', 'Ixil', "Jakalteko / Popti'",
-  'Mam', 'Mopan', 'Poqomam', "Poqomchi'", "Q'anjob'al", "Q'eqchi'",
-  'Sakapulteko', 'Sipakapense', 'Tektiteko', "Tz'utujil", 'Uspanteko',
-  'Garífuna', 'Xinka', 'Otros',
-]
+// Si el caso trae una comunidad que no está en la lista, se agrega como opción
+// para que el select la muestre y no se pierda al guardar.
+const COMUNIDADES_LIST = computed(() => {
+  const actual = form.comunidadLinguistica
+  return actual && !COMUNIDADES_LINGUISTICAS.includes(actual)
+    ? [...COMUNIDADES_LINGUISTICAS, actual]
+    : COMUNIDADES_LINGUISTICAS
+})
 
 const errores = ref('')
 
@@ -709,7 +711,7 @@ const cargarCaso = async (id) => {
     form.edad                 = nina.edad || ''
     form.direccionNina        = nina.direccion || ''
     form.puebloPertenencia    = nina.pueblo || ''
-    form.comunidadLinguistica = nina.comunidad_linguistica || ''
+    form.comunidadLinguistica = normalizarComunidad(nina.comunidad_linguistica) || ''
     form.institucion          = caso.institucion || ''
     form.noNotificacion       = caso.no_notificacion || ''
 

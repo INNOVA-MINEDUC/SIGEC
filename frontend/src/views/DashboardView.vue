@@ -290,6 +290,7 @@ import api from '@/helpers/api'
 import AppNavbar from '@/components/AppNavbar.vue'
 import AppFooter from '@/components/AppFooter.vue'
 import GuateMap  from '@/components/GuateMap.vue'
+import { COMUNIDADES_LINGUISTICAS } from '@/helpers/comunidadLinguistica'
 import LineChart from '@/components/LineChart.vue'
 import DonaChart from '@/components/DonaChart.vue'
 import BarChart  from '@/components/BarChart.vue'
@@ -368,13 +369,7 @@ const departamentales = ref([])
 
 // Pueblos y comunidades lingüísticas — listas fijas (ya no son tablas de BD)
 const PUEBLOS = ['Maya', 'Xinka', 'Garífuna', 'Ladino', 'Otros']
-const COMUNIDADES = [
-  'Kaqchikel', "K'iche'", 'Español', "Achi'", 'Akateko', 'Awakateko',
-  'Chalchiteko', "Ch'orti'", 'Chuj', 'Ixil', "Jakalteko / Popti'",
-  'Mam', 'Mopan', 'Poqomam', "Poqomchi'", "Q'anjob'al", "Q'eqchi'",
-  'Sakapulteko', 'Sipakapense', 'Tektiteko', "Tz'utujil", 'Uspanteko',
-  'Garífuna', 'Xinka', 'Otros',
-]
+const COMUNIDADES = COMUNIDADES_LINGUISTICAS
 
 // ── Constantes de valores conocidos ──────────────────────────────────────────
 const GRADOS = [
