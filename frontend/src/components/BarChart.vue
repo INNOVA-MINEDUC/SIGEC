@@ -28,28 +28,14 @@
 <script setup>
 import { computed } from "vue"
 import { useCasosStore } from '@/stores/casos'
+import { contarPorEdad } from '@/helpers/estadisticasCasos'
 
 const casosStore = useCasosStore()
 
-// Rangos de 14 (arriba) a <9 (abajo)
-const RANGOS = [
-  { label: "14 años",  min: 14, max: 14 },
-  { label: "13 años",  min: 13, max: 13 },
-  { label: "12 años",  min: 12, max: 12 },
-  { label: "11 años",  min: 11, max: 11 },
-  { label: "10 años",  min: 10, max: 10 },
-  { label: "9 años",   min: 9,  max: 9  },
-  { label: "Menor de 9 años", min: 0,  max: 8  },
-]
-
+// Rangos de 14 (arriba) a <9 (abajo); los mismos que usa el PDF. Los casos
+// sin edad registrada no se cuentan en ningún rango.
 const data = computed(() =>
-  RANGOS.map(r => ({
-    edad: r.label,
-    value: casosStore.casos.filter(c => {
-      const edad = Number(c.nina?.edad)
-      return edad >= r.min && edad <= r.max
-    }).length
-  }))
+  contarPorEdad(casosStore.casos).map(r => ({ edad: r.label, value: r.total }))
 )
 
 const total = computed(() => data.value.reduce((sum, d) => sum + d.value, 0))

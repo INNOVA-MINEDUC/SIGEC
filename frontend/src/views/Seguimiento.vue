@@ -233,7 +233,11 @@
                 </td>
 
                 <td>
-                  <button class="action-btn" @click="irAQueja(caso)">SEGUIMIENTO</button>
+                  <div class="acciones">
+                    <button class="action-btn" @click="verDetalle(caso)">VER DETALLE</button>
+                    <!-- Editar solo para perfiles con permiso (no los de consulta) -->
+                    <button v-if="puedeEditar" class="action-btn" @click="irAQueja(caso)">SEGUIMIENTO</button>
+                  </div>
                 </td>
               </tr>
 
@@ -275,6 +279,29 @@
     </section>
 
     <AppFooter />
+
+    <!-- ── DETALLE DEL CASO (solo lectura) ── -->
+    <v-dialog v-model="detalleAbierto" max-width="760" scrollable>
+      <v-card v-if="detalle" class="rounded-lg">
+        <v-card-title class="detalle-titulo">
+          <span>Caso {{ detalle.numero_caso || 'sin número' }}</span>
+          <button class="detalle-cerrar" aria-label="Cerrar detalle" @click="detalleAbierto = false">
+            <v-icon size="20">mdi-close</v-icon>
+          </button>
+        </v-card-title>
+        <v-card-text class="detalle-cuerpo">
+          <section v-for="seccion in SECCIONES_DETALLE" :key="seccion.titulo" class="detalle-seccion">
+            <h3>{{ seccion.titulo }}</h3>
+            <dl>
+              <div v-for="campo in seccion.campos" :key="campo.k" :class="['detalle-campo', { ancho: campo.ancho }]">
+                <dt>{{ campo.h }}</dt>
+                <dd :class="{ vacio: !detalle[campo.k] }">{{ detalle[campo.k] || 'No registrado' }}</dd>
+              </div>
+            </dl>
+          </section>
+        </v-card-text>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 
@@ -284,6 +311,9 @@ import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
 import api from '@/helpers/api'
 import { useSeguimientoFiltros } from '@/stores/seguimientoFiltros'
+import { useAuthStore } from '@/stores/auth'
+import { puedeEditarCasos } from '@/helpers/permisos'
+import { datosCaso } from '@/composables/useExport'
 
 import AppNavbar from '@/components/AppNavbar.vue'
 import AppFooter from '@/components/AppFooter.vue'
@@ -433,6 +463,59 @@ const limpiarFiltros = () => {
 }
 
 const irAQueja = (caso) => router.push({ path: '/complains', query: { caso_id: caso.id } })
+
+// ── Permisos y detalle del caso ────────────────────────────────────────────────
+const auth = useAuthStore()
+const puedeEditar = computed(() => puedeEditarCasos(auth.user?.role))
+
+// El detalle usa datosCaso(), la misma función que arma las filas de Excel y
+// PDF: lo que se ve aquí coincide con lo que se exporta.
+const detalleAbierto = ref(false)
+const detalle        = ref(null)
+const verDetalle = (caso) => {
+  detalle.value = datosCaso(caso)
+  detalleAbierto.value = true
+}
+
+const SECCIONES_DETALLE = [
+  { titulo: 'Información general', campos: [
+    { h: 'No. de caso',             k: 'numero_caso' },
+    { h: 'Estado del caso',         k: 'estado' },
+    { h: 'Fecha de ingreso',        k: 'fecha_ingreso' },
+    { h: 'Fecha de primera consulta', k: 'fecha_consulta' },
+    { h: 'No. de queja',            k: 'queja' },
+    { h: 'No. de notificación',     k: 'no_notificacion' },
+    { h: 'Institución que reporta', k: 'institucion', ancho: true },
+  ] },
+  { titulo: 'Datos de la niña', campos: [
+    { h: 'Nombre completo',         k: 'nombre', ancho: true },
+    { h: 'CUI',                     k: 'cui' },
+    { h: 'Fecha de nacimiento',     k: 'fecha_nacimiento' },
+    { h: 'Edad',                    k: 'edad' },
+    { h: 'Dirección de residencia', k: 'direccion', ancho: true },
+    { h: 'Departamento',            k: 'departamento' },
+    { h: 'Municipio',               k: 'municipio' },
+    { h: 'Zona',                    k: 'zona' },
+    { h: 'Pueblo de pertenencia',   k: 'pueblo' },
+    { h: 'Comunidad lingüística',   k: 'comunidad' },
+  ] },
+  { titulo: 'Establecimiento', campos: [
+    { h: 'Centro educativo',        k: 'centro', ancho: true },
+    { h: 'Dirección del centro',    k: 'direccion_centro', ancho: true },
+    { h: 'Código UDI',              k: 'codigo_udi' },
+    { h: 'Área',                    k: 'area' },
+    { h: 'Jornada',                 k: 'jornada' },
+    { h: 'Sector',                  k: 'sector' },
+  ] },
+  { titulo: 'Situación educativa', campos: [
+    { h: 'Status en el sistema',    k: 'status' },
+    { h: 'Código personal',         k: 'codigo_personal' },
+    { h: 'Nivel',                   k: 'nivel' },
+    { h: 'Grado',                   k: 'grado' },
+    { h: 'Último año cursado',      k: 'anio' },
+    { h: 'Resultado',               k: 'resultado' },
+  ] },
+]
 </script>
 
 <style scoped>
@@ -772,6 +855,28 @@ td { padding: 1rem 1.5rem; color: #6d6d6d; font-size: 0.75rem; vertical-align: m
 .status-badge { display: inline-block; padding: 0.25rem 0.625rem; border-radius: 9999px; font-size: .5rem; font-weight: 500; text-transform: uppercase; }
 .action-btn { color: #10233f; font-weight: 600; background: none; border: none; font-size: 0.65rem; letter-spacing: 0.05em; cursor: pointer; transition: opacity 0.2s; }
 .action-btn:hover { opacity: 0.7; }
+.acciones { display: flex; flex-direction: column; align-items: flex-start; gap: 0.35rem; }
+
+/* DETALLE DEL CASO */
+.detalle-titulo {
+  display: flex; justify-content: space-between; align-items: center;
+  font-weight: 700; color: #10233f; border-bottom: 1px solid #f0f0f0; padding: 1rem 1.5rem;
+}
+.detalle-cerrar { background: none; border: none; cursor: pointer; color: #6d6d6d; display: flex; }
+.detalle-cuerpo { padding: 1rem 1.5rem 1.5rem !important; }
+.detalle-seccion + .detalle-seccion { margin-top: 1.25rem; }
+.detalle-seccion h3 {
+  font-size: 0.75rem; font-weight: 700; color: #17c4e8;
+  text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.5rem;
+}
+.detalle-seccion dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.6rem 1.25rem; margin: 0; }
+.detalle-campo.ancho { grid-column: 1 / -1; }
+.detalle-campo dt { font-size: 0.7rem; color: #6a8299; font-weight: 600; }
+.detalle-campo dd { margin: 0.1rem 0 0; font-size: 0.875rem; color: #1a1a1a; overflow-wrap: anywhere; }
+.detalle-campo dd.vacio { color: #a0a8b3; font-style: italic; }
+@media (max-width: 600px) {
+  .detalle-seccion dl { grid-template-columns: 1fr; }
+}
 .empty-state { text-align: center; padding: 2rem 1rem; color: #b0b0b0; }
 
 /* PAGINATION */
@@ -826,4 +931,4 @@ td { padding: 1rem 1.5rem; color: #6d6d6d; font-size: 0.75rem; vertical-align: m
     width: 100%;
   }
 }
-</style>
+</style>

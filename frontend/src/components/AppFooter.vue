@@ -61,6 +61,7 @@ import logoDigecade1 from '@/assets/LOGOS_DCE1.png'
 .footer-logo {
   display: flex;
   flex-direction: row;
+  flex-wrap: wrap;   /* en pantallas pequeñas los logos bajan de línea en vez de desbordar */
   justify-content: start;
   gap: 1rem;
   margin-bottom: 3rem;
@@ -69,6 +70,7 @@ import logoDigecade1 from '@/assets/LOGOS_DCE1.png'
 .footer-logo-img {
   height: 5rem;
   width: auto;
+  max-width: 100%;
   object-fit: contain;
 }
 .footer-grid {

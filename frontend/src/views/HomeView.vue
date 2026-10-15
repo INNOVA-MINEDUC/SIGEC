@@ -39,7 +39,7 @@
           <button class="primary-btn" @click="router.push('/seguimiento')">Seguimiento</button>
         </div>
         <div class="about-image">
-          <img src="/imgs/MINEDUC_1.webp" alt="Edificio escolar institucional" />
+          <img src="/imgs/mineduc_2.webp" alt="Edificio escolar institucional" />
         </div>
       </div>
     </section>

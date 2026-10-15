@@ -247,6 +247,28 @@ as:'departamento'
 
 
 /* ======================================================
+DEPARTAMENTO - USUARIO (alcance del rol "consulta")
+====================================================== */
+
+Departamento.hasMany(User,{
+
+foreignKey:'departamento_id',
+
+as:'usuarios'
+
+})
+
+User.belongsTo(Departamento,{
+
+foreignKey:'departamento_id',
+
+as:'departamento'
+
+})
+
+
+
+/* ======================================================
 NIÑA - CASOS EMBARAZO
 ====================================================== */
 

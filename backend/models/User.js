@@ -35,6 +35,13 @@ const User = sequelize.define(
       type: DataTypes.BOOLEAN,
       defaultValue: true,
     },
+
+    // Departamento al que se limita el acceso de los usuarios con rol "consulta"
+    // (ver helpers/permisos.js). Null para los demás roles.
+    departamento_id: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
   },
   {
     tableName: "users",

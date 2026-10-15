@@ -47,8 +47,13 @@
               </div>
             <div class="filter-group">
               <label>Departamento</label>
-              <select v-model="filters.departamento" @change="onDepartamentoChange">
-                <option value="">Todos</option>
+              <select
+                v-model="filters.departamento"
+                @change="onDepartamentoChange"
+                :disabled="alcanceDepartamental"
+                :title="alcanceDepartamental ? 'Su perfil solo tiene acceso a este departamento' : ''"
+              >
+                <option value="" :disabled="alcanceDepartamental">Todos</option>
                 <option v-for="d in departamentos" :key="d.id" :value="d.nombre">{{ d.nombre }}</option>
               </select>
             </div>
@@ -185,7 +190,11 @@
 
           <!-- Footer de filtros -->
           <div class="filters-footer">
-            <button @click="limpiar" class="btn-clear">
+            <button
+              @click="limpiar"
+              class="btn-clear"
+              title="Limpia los filtros. La ubicación elegida en el mapa se conserva hasta presionar «Regresar»."
+            >
               <v-icon size="15">mdi-close-circle-outline</v-icon>
               Limpiar filtros
             </button>
@@ -242,18 +251,45 @@
       </div>
     </section>
 
-    <!-- MAPA + BAR CHART -->
+    <!-- MAPA + CASOS POR DEPARTAMENTO + RESUMEN POR MUNICIPIO -->
     <section class="py-8">
       <div class="container-max">
         <div class="card-box unified-card">
-          <div class="grid-2-col">
+          <div class="grid-mapa">
             <div class="map-container unified-left">
-              <GuateMap />
+              <GuateMap
+                :departamento="filters.departamento"
+                :municipio="filters.municipio"
+                :bloquear-departamento="alcanceDepartamental"
+                @seleccionar-departamento="seleccionarDepartamento"
+                @seleccionar-municipio="onMapaMunicipio"
+                @regresar="onMapaRegresar"
+              />
             </div>
-            <div class="age-container unified-right">
-              <BarChart />
+            <div class="deptos-container unified-right">
+              <CasosPorDepartamento
+                :seleccionado="filters.departamento"
+                :bloqueado="alcanceDepartamental"
+                @seleccionar="seleccionarDepartamento"
+              />
             </div>
           </div>
+          <div class="municipios-container">
+            <CasosPorMunicipio
+              :departamento="filters.departamento"
+              :municipio="filters.municipio"
+              @seleccionar="seleccionarMunicipioDesdeResumen"
+            />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CASOS POR EDAD -->
+    <section class="pb-8">
+      <div class="container-max">
+        <div class="card-box age-card">
+          <BarChart />
         </div>
       </div>
     </section>
@@ -294,8 +330,15 @@ import { COMUNIDADES_LINGUISTICAS } from '@/helpers/comunidadLinguistica'
 import LineChart from '@/components/LineChart.vue'
 import DonaChart from '@/components/DonaChart.vue'
 import BarChart  from '@/components/BarChart.vue'
+import CasosPorDepartamento from '@/components/CasosPorDepartamento.vue'
+import CasosPorMunicipio    from '@/components/CasosPorMunicipio.vue'
 import { useCasosStore } from '@/stores/casos'
+import { useAuthStore } from '@/stores/auth'
 import { exportarExcel, exportarPDF } from '@/composables/useExport'
+import { esMayorOSinRegistro } from '@/helpers/estadisticasCasos'
+import { normGeo, poligonoDeMunicipio } from '@/helpers/mapaGeo'
+import { formatearNombreGeografico } from '@/helpers/formatoNombres'
+import { tieneAlcanceDepartamental } from '@/helpers/permisos'
 
 import heroImage   from '@/assets/ninas embarazadas -37.png'
 
@@ -303,21 +346,11 @@ import heroImage   from '@/assets/ninas embarazadas -37.png'
 
 
 const casosStore = useCasosStore()
+const auth = useAuthStore()
 
-// Normaliza el status para comparar sin importar mayúsculas/acentos:
-// en la BD se guardan en mayúsculas ("MAYOR DE 14 AÑOS", "NO EXISTE REGISTRO").
-const normStatus = (s) =>
-  String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim()
-
-const esMayorOSinRegistro = (caso) => {
-  // Coincide con cualquier historial de la niña (no solo el primero), igual que
-  // el conteo del servidor en Seguimiento.
-  const historiales = caso.nina?.historialEducativo ?? []
-  return historiales.some(h => {
-    const s = normStatus(h.status_actual)
-    return s === 'mayor de 14 anos' || s === 'no existe registro' || s === 'sin registro'
-  })
-}
+// Perfil "Consulta": su departamento queda fijo en el dashboard y en el mapa
+// (el backend también limita los casos que devuelve).
+const alcanceDepartamental = computed(() => tieneAlcanceDepartamental(auth.user?.role))
 
 const kpiPrincipales = computed(() => {
   const mayoresOSinRegistro = casosStore.casos.filter(esMayorOSinRegistro).length
@@ -465,7 +498,17 @@ onMounted(async () => {
     nombre: toTitleCase(dep.nombre)
   }))
 
-  await casosStore.fetchTodos()
+  if (alcanceDepartamental.value) {
+    const propio = departamentos.value.find(d => Number(d.id) === Number(auth.user?.departamento_id))
+    if (propio) {
+      filters.departamento = propio.nombre
+      await onDepartamentoChange()
+    }
+  }
+
+  await nextTick()          // deja que el watcher programe su recarga…
+  clearTimeout(_autoTimer)  // …y la reemplaza por una sola inmediata
+  await aplicarFiltros()
 })
 
 const onDepartamentoChange = async () => {
@@ -538,11 +581,63 @@ watch(
   _autoApply
 )
 
-const limpiar = () => {
+// Limpia los filtros del panel. La ubicación elegida (departamento/municipio)
+// se conserva: el mapa solo sale de esa vista con «Regresar».
+const limpiar = async () => {
+  const { departamento, municipio } = filters
+  Object.assign(filters, initialFilters(), { departamento, municipio })
+  await nextTick()
   clearTimeout(_autoTimer)
-  Object.assign(filters, initialFilters())
-  municipios.value = []
-  casosStore.fetchTodos()
+  aplicarFiltros()
+}
+
+// ── Selección geográfica: mapa, listados y filtros comparten el mismo estado ──
+// filters.departamento / filters.municipio guardan el nombre del catálogo tal
+// como lo muestran los selectores; el mapa y los listados solo los cambian.
+const opcionDepartamento = (nombre) =>
+  departamentos.value.find(d => normGeo(d.nombre) === normGeo(nombre))
+
+// Acepta el nombre del catálogo o el del polígono del mapa ("Barillas")
+const opcionMunicipio = (nombre) =>
+  municipios.value.find(m =>
+    normGeo(m.nombre) === normGeo(nombre) ||
+    poligonoDeMunicipio(m.nombre, filters.departamento) === normGeo(nombre))
+
+const seleccionarDepartamento = async (nombre) => {
+  if (alcanceDepartamental.value) return
+  const opcion = opcionDepartamento(nombre)
+  if (!opcion || opcion.nombre === filters.departamento) return
+  filters.departamento = opcion.nombre
+  await onDepartamentoChange()
+}
+
+const onMapaMunicipio = (nombrePoligono) => {
+  const opcion = opcionMunicipio(nombrePoligono)
+  filters.municipio = opcion ? opcion.nombre : formatearNombreGeografico(nombrePoligono)
+}
+
+const seleccionarMunicipioDesdeResumen = async ({ departamento, municipio }) => {
+  if (normGeo(departamento) !== normGeo(filters.departamento)) {
+    if (alcanceDepartamental.value) return
+    const opcion = opcionDepartamento(departamento)
+    if (!opcion) return
+    filters.departamento = opcion.nombre
+    await onDepartamentoChange()
+  }
+  const opcion = opcionMunicipio(municipio)
+  filters.municipio = opcion ? opcion.nombre : municipio
+}
+
+// «Regresar»: de municipio a departamento y de departamento a la vista nacional
+const onMapaRegresar = () => {
+  if (filters.municipio) {
+    filters.municipio = ''
+    return
+  }
+  if (filters.departamento && !alcanceDepartamental.value) {
+    filters.departamento = ''
+    municipios.value = []
+  }
 }
 
 // ── Resumen de filtros para el PDF ────────────────────────────────────────────
@@ -557,6 +652,15 @@ const resumenFiltros = computed(() => {
   if (filters.area)            partes.push(`Área: ${filters.area}`)
   if (filters.fechaInicio)     partes.push(`1ª consulta desde: ${filters.fechaInicio}`)
   if (filters.fechaFin)        partes.push(`1ª consulta hasta: ${filters.fechaFin}`)
+  if (filters.tieneCui)        partes.push(`CUI: ${filters.tieneCui === 'si' ? 'Con CUI' : 'Sin CUI'}`)
+  if (filters.statusActual)    partes.push(`Status: ${filters.statusActual}`)
+  if (filters.resultado)       partes.push(`Resultado: ${filters.resultado}`)
+  if (filters.pueblo)          partes.push(`Pueblo: ${filters.pueblo}`)
+  if (filters.lengua)          partes.push(`Comunidad lingüística: ${filters.lengua}`)
+  if (filters.edadMin !== '')  partes.push(`Edad mínima: ${filters.edadMin}`)
+  if (filters.edadMax !== '')  partes.push(`Edad máxima: ${filters.edadMax}`)
+  if (filters.centroEducativo) partes.push(`Centro educativo: ${filters.centroEducativo}`)
+  if (filters.codigoEstudiante) partes.push(`Código personal: ${filters.codigoEstudiante}`)
   return partes.join('  ·  ')
 })
 
@@ -570,7 +674,7 @@ const exportarExcelClick = async () => {
   try {
     await aplicarFiltros()
     await nextTick()
-    exportarExcel(casosStore.casos, 'SIGEC_Casos')
+    exportarExcel(casosStore.casos, 'SIRCE_Casos')
   } finally {
     exporting.value = false
   }
@@ -582,7 +686,7 @@ const exportarPDFClick = async () => {
   try {
     await aplicarFiltros()
     await nextTick()
-    exportarPDF(casosStore.casos, 'SIGEC_Casos', resumenFiltros.value, { pixelarNombres: pixelarNombres.value })
+    exportarPDF(casosStore.casos, 'SIRCE_Casos', resumenFiltros.value, { pixelarNombres: pixelarNombres.value })
   } finally {
     exporting.value = false
   }
@@ -868,6 +972,24 @@ const exportarPDFClick = async () => {
 
 /* GRID */
 .grid-2-col { display: grid; grid-template-columns: 1fr 1fr; }
+.grid-mapa  { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); }
+
+/* Tarjetas y botones de exportación en pantallas pequeñas */
+@media (max-width: 1100px) { .kpi-grid { grid-template-columns: repeat(3, 1fr); padding: 0 1rem; } }
+@media (max-width: 600px) {
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .filters-footer { flex-direction: column; align-items: stretch; gap: 0.75rem; }
+  .footer-right { flex-wrap: wrap; }
+}
+.deptos-container { display: flex; flex-direction: column; min-width: 0; }
+.municipios-container { padding: 0 1.5rem 1.5rem; }
+.age-card { padding: 2rem 1.5rem 1.5rem; }
+.pb-8 { padding-bottom: 2rem; }
+
+@media (max-width: 900px) {
+  .grid-mapa, .grid-2-col { grid-template-columns: 1fr; }
+  .unified-right { padding: 0 1.5rem 1.5rem; }
+}
 .card-box {
   background-color: #ffffff; border: none; border-radius: 0.75rem;
   padding: 1.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.02);

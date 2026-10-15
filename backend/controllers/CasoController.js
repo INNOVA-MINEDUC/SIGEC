@@ -18,6 +18,7 @@ import { aplicarReglaDideduc } from "../helpers/dideduc.js";
 import { normalizarZona } from "../helpers/zonaGuatemala.js";
 import { normalizarComunidad } from "../helpers/comunidadLinguistica.js";
 import { normalizarNivel, NIVELES_EDUCATIVOS } from "../helpers/nivelEducativo.js";
+import { departamentoResidenciaId } from "../helpers/permisos.js";
 
 // Estados institucionales válidos para el campo CasoEmbarazo.estado
 export const ESTADOS_VALIDOS = [
@@ -259,8 +260,23 @@ if(cui==='sin'){
   )`))
 }
 
+/* Alcance departamental (rol "consulta"): solo casos cuya niña reside en el
+   departamento asignado al usuario. Mismo criterio que departamentoResidenciaId. */
+if(req.alcanceDepartamentoId){
+  andConditions.push(sequelize.literal(`EXISTS (
+    SELECT 1 FROM ninas n
+    LEFT JOIN municipios m ON m.id = n.municipio_id
+    WHERE n.id = CasoEmbarazo.nina_id
+      AND COALESCE(m.departamento_id, n.departamento_id) = :alcanceDepto
+  )`))
+}
+
+// Valores para los :parámetros de las condiciones literales
+const replacements = { alcanceDepto: req.alcanceDepartamentoId ?? null }
+
 if(busqueda && busqueda.trim()){
   const searchPattern = `%${String(busqueda).trim()}%`
+  replacements.search = searchPattern
   andConditions.push({
     [Op.or]: [
       { numero_caso: { [Op.like]: searchPattern } },
@@ -326,6 +342,7 @@ const { count, rows: casos } = await CasoEmbarazo.findAndCountAll({
   limit:    limitNum,
   offset,
   distinct: true,  // necesario cuando hay includes para no duplicar el conteo
+  replacements,
 })
 
 
@@ -340,6 +357,7 @@ const [statsRows, mayoresCount] = await Promise.all([
     attributes: ['estado', [sequelize.fn('COUNT', sequelize.col('CasoEmbarazo.id')), 'c']],
     group:  ['estado'],
     raw:    true,
+    replacements,
   }),
   CasoEmbarazo.count({
     where: whereCaso,
@@ -353,6 +371,7 @@ const [statsRows, mayoresCount] = await Promise.all([
       }],
     }],
     distinct: true,
+    replacements,
   }),
 ])
 
@@ -663,11 +682,21 @@ export const ObtenerCasosFiltrados = async (req, res) => {
       String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim()
       .replace(/^(el|la|los|las)\s+/, '')
 
+    // Compara sin distinguir mayúsculas ni tildes: en la BD el status, el
+    // resultado y el área vienen en mayúsculas ("INSCRITA", "RURAL") y los
+    // filtros del dashboard los envían capitalizados ("Inscrita", "Rural").
+    const normT = (s) =>
+      String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim()
+    const igual = (a, b) => normT(a) === normT(b)
+
     const filtrados = casos.filter((caso) => {
       const nina = caso.nina;
       const municipioNina = nina?.municipio;
       const departamentoNina = municipioNina?.departamento;
       const historial = nina?.historialEducativo || [];
+
+      // Alcance departamental del rol "consulta": solo casos de su departamento
+      if (req.alcanceDepartamentoId && departamentoResidenciaId(caso) !== req.alcanceDepartamentoId) return false;
 
       // Departamento: revisar vía nina→municipio→departamento
       //               y también vía caso→departamental→departamento (casos de carga masiva)
@@ -730,17 +759,17 @@ export const ObtenerCasosFiltrados = async (req, res) => {
       }
 
       if (status_actual) {
-        const existeStatus = historial.some((h) => String(h.status_actual) === String(status_actual));
+        const existeStatus = historial.some((h) => igual(h.status_actual, status_actual));
         if (!existeStatus) return false;
       }
 
       if (resultado) {
-        const existeResultado = historial.some((h) => String(h.resultado) === String(resultado));
+        const existeResultado = historial.some((h) => igual(h.resultado, resultado));
         if (!existeResultado) return false;
       }
 
       if (area) {
-        const existeArea = historial.some((h) => String(h.centroEducativo?.area) === String(area));
+        const existeArea = historial.some((h) => igual(h.centroEducativo?.area, area));
         if (!existeArea) return false;
       }
 
@@ -809,6 +838,10 @@ export const ObtenerCasoPorId = async (req, res) => {
       ]
     })
     if (!caso) return res.status(404).json({ success: false, message: 'Caso no encontrado' })
+    // Alcance departamental del rol "consulta"
+    if (req.alcanceDepartamentoId && departamentoResidenciaId(caso) !== req.alcanceDepartamentoId) {
+      return res.status(403).json({ success: false, message: 'No tiene acceso a casos de otro departamento' })
+    }
     return res.json({ success: true, data: caso })
   } catch (error) {
     console.error(error)

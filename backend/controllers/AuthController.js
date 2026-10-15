@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken'
 import bcrypt from 'bcryptjs'
 import User from "../models/User.js"
 import Role from "../models/Role.js"
+import Departamento from "../models/Departamento.js"
 import { registrarAuditoria } from "../utils/auditoria.js"
 import dotenv from 'dotenv'
 dotenv.config()
@@ -17,10 +18,10 @@ export const AuthLogin = async (req, res) => {
     // 1. Buscar usuario
     const user = await User.findOne({
       where: { email },
-      include: {
-        model: Role,
-        as: 'role'
-      }
+      include: [
+        { model: Role, as: 'role' },
+        { model: Departamento, as: 'departamento', attributes: ['id', 'nombre'] },
+      ]
     })
 
     if (!user) {
@@ -73,6 +74,9 @@ export const AuthLogin = async (req, res) => {
         name:  user.name,
         email: user.email,
         role:  roleName,
+        // Alcance del rol "consulta" (null para los demás roles)
+        departamento_id: user.departamento_id ?? null,
+        departamento:    user.departamento?.nombre ?? null,
       }
     })
 
@@ -110,7 +114,10 @@ export const isAuthenticated = async (req, res) => {
 
     // Re-leer usuario desde BD para obtener el rol actual (no el del JWT que puede ser viejo)
     const user = await User.findByPk(decoded.id, {
-      include: { model: Role, as: 'role', attributes: ['name'] }
+      include: [
+        { model: Role, as: 'role', attributes: ['name'] },
+        { model: Departamento, as: 'departamento', attributes: ['id', 'nombre'] },
+      ]
     })
     if (!user) return res.status(401).json({ error: 'Usuario no encontrado' })
     if (!user.isActive) return res.status(403).json({ error: 'Usuario inactivo' })
@@ -120,6 +127,8 @@ export const isAuthenticated = async (req, res) => {
       name:  user.name,
       email: user.email,
       role:  user.role?.name ?? null,
+      departamento_id: user.departamento_id ?? null,
+      departamento:    user.departamento?.nombre ?? null,
     })
   } catch {
     return res.status(401).json({ error: 'Token inválido' })

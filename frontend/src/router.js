@@ -3,6 +3,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import api from '@/helpers/api'
 
 import { useAuthStore } from '@/stores/auth'
+import { ROLES_EDICION_CASOS } from '@/helpers/permisos'
 
 // Views
 import HomeView from './views/HomeView.vue'
@@ -65,7 +66,8 @@ const routes = [
     name: 'complains',
     component: ComplainView,
     meta: {
-      requiresAuth: true
+      requiresAuth: true,
+      roles: ROLES_EDICION_CASOS,  // registrar/editar: no disponible para los perfiles de consulta
     }
   },
 

@@ -176,13 +176,19 @@
               </div>
 
               <div class="field-row">
-                <div class="input-box w-50">
+                <div class="input-box" style="flex: 1;">
                   <v-icon size="16" class="input-icon">mdi-account-clock-outline</v-icon>
                   <input type="number" v-model="form.edad" placeholder="Edad" min="0" max="18" />
                 </div>
-                <div class="input-box w-50">
+                <!-- La dirección suele ser larga: se ajusta en varias líneas en vez de cortarse -->
+                <div class="input-box input-box-multilinea" style="flex: 3;">
                   <v-icon size="16" class="input-icon">mdi-home-outline</v-icon>
-                  <input type="text" v-model="form.direccionNina" placeholder="Dirección de residencia" />
+                  <textarea
+                    v-model="form.direccionNina"
+                    :rows="filasDireccion"
+                    placeholder="Dirección de residencia"
+                    aria-label="Dirección de residencia"
+                  ></textarea>
                 </div>
               </div>
 
@@ -669,6 +675,12 @@ const COMUNIDADES_LIST = computed(() => {
 
 const errores = ref('')
 
+// Líneas visibles del campo de dirección según su largo (máx. 4), para que una
+// dirección larga se lea completa sin desplazarse dentro del campo.
+const filasDireccion = computed(() =>
+  Math.min(4, Math.max(1, Math.ceil(String(form.direccionNina ?? '').length / 60)))
+)
+
 const parseFecha = (str) => {
   if (!str) return { dia: '', mes: '', ano: '' }
   const [ano, mes, dia] = str.split('-')
@@ -1008,6 +1020,10 @@ async function submitForm() {
 .input-box select { flex: 1; background: transparent; border: none; outline: none; font-size: 0.875rem; font-weight: 500; color: #1f2937; width: 100%; }
 .input-box select  { appearance: none; cursor: pointer; }
 .input-box input::placeholder { color: #5b6573; opacity: 1; font-size: 0.875rem; font-weight: 500; }
+.input-box-multilinea { align-items: flex-start; }
+.input-box-multilinea .input-icon { margin-top: 0.15rem; }
+.input-box textarea { flex: 1; background: transparent; border: none; outline: none; resize: none; font: inherit; font-size: 0.875rem; font-weight: 500; line-height: 1.35; color: #1f2937; width: 100%; }
+.input-box textarea::placeholder { color: #5b6573; opacity: 1; font-size: 0.875rem; font-weight: 500; }
 .empty-select      { color: #5b6573 !important; font-weight: 500; }
 .select-chevron    { color: #5b6573; flex-shrink: 0; position: absolute; right: 0.75rem; pointer-events: none; }
 .form-actions { display: flex; align-items: center; justify-content: space-between; margin-top: 2rem; }

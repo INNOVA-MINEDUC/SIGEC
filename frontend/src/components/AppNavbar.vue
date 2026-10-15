@@ -29,6 +29,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import { puedeEditarCasos } from '@/helpers/permisos'
 import logoSisec from '@/assets/LOGO_SISEC.png'
 
 const auth = useAuthStore()
@@ -47,8 +48,12 @@ const ADMIN_LINKS = [
 ]
 
 const navLinks = computed(() => {
-  if (auth.user?.role === 'admin') return [...BASE_LINKS, ...ADMIN_LINKS]
-  return BASE_LINKS
+  // "Registro" solo para perfiles que pueden registrar/editar casos
+  const base = puedeEditarCasos(auth.user?.role)
+    ? BASE_LINKS
+    : BASE_LINKS.filter(link => link.to !== '/complains')
+  if (auth.user?.role === 'admin') return [...base, ...ADMIN_LINKS]
+  return base
 })
 
 async function logout() {
@@ -138,4 +143,11 @@ async function logout() {
   transition: opacity 0.2s;
 }
 .logout-btn:hover { opacity: 0.9; }
+
+/* En pantallas pequeñas los enlaces ocupan varias líneas: la barra crece con
+   ellos y deja de ser fija para no tapar el contenido (p. ej. «Regresar» del mapa). */
+@media (max-width: 900px) {
+  .navbar { position: relative; }
+  .nav-container { height: auto; min-height: 4rem; flex-wrap: wrap; gap: 0.5rem; padding-block: 0.5rem; }
+}
 </style>

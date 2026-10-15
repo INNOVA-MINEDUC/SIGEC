@@ -4,6 +4,11 @@ import autoTable from 'jspdf-autotable'
 import api from '@/helpers/api'
 import sigecLogoUrl from '@/assets/LOGO_SISEC.png'
 import mineducLogoUrl from '@/assets/logo_mineduc.png'
+import { normalizarComunidad } from '@/helpers/comunidadLinguistica'
+import { formatearNombreGeografico } from '@/helpers/formatoNombres'
+import {
+  departamentoDeCaso, contarPorDepartamento, contarPorMunicipio, contarPorEdad, esMayorOSinRegistro,
+} from '@/helpers/estadisticasCasos'
 
 // Registra la descarga en la bitácora de auditoría (no bloquea la exportación si falla)
 function registrarDescarga(tipo, descripcion) {
@@ -74,8 +79,10 @@ function fmtFecha(f) {
   return a && m && d ? `${d}/${m}/${a}` : String(f)
 }
 
-// ── Datos de un caso por nombre de campo (fuente única para Excel y PDF) ────
-function datosCaso(caso) {
+// ── Datos de un caso por nombre de campo ────────────────────────────────────
+// Fuente única para Excel, PDF y el detalle del caso en Seguimiento, para que
+// la pantalla muestre exactamente lo mismo que se exporta.
+export function datosCaso(caso) {
   const nina   = caso.nina || {}
   const hist   = (nina.historialEducativo || [])[0] || {}
   const centro = hist.centroEducativo || {}
@@ -90,15 +97,16 @@ function datosCaso(caso) {
     dideduc:          caso.departamental?.nombre || '',
     cui:              nina.cui             || '',
     nombre:           nina.nombre_completo || '',
+    fecha_nacimiento: fmtFecha(nina.fecha_nacimiento),
     edad:             nina.edad            || '',
     direccion:        nina.direccion       || '',
-    departamento:     nina.municipio?.departamento?.nombre
-                   || nina.departamento?.nombre
-                   || caso.departamental?.departamento?.nombre || '',
+    // Nombre oficial con mayúscula inicial ("Alta Verapaz"); la BD lo guarda en minúsculas
+    departamento:     formatearNombreGeografico(departamentoDeCaso(caso)),
     municipio:        nina.municipio?.nombre || '',
     zona:             nina.zona ? `Zona ${nina.zona}` : '',
     pueblo:           nina.pueblo                || '',
-    comunidad:        nina.comunidad_linguistica || '',
+    // Denominación canónica ("Q'eqchi'", "K'iche'"), igual que en el formulario
+    comunidad:        normalizarComunidad(nina.comunidad_linguistica) || '',
     institucion:      caso.institucion     || '',
     centro:           centro.nombre        || '',
     direccion_centro: centro.direccion     || '',
@@ -129,6 +137,7 @@ const GRUPOS_EXCEL = [
   { label: 'Datos de la Niña', cols: [
     { h: 'CUI',                     k: 'cui' },
     { h: 'Nombre Completo',         k: 'nombre' },
+    { h: 'Fecha de Nacimiento',     k: 'fecha_nacimiento' },
     { h: 'Edad',                    k: 'edad' },
     { h: 'Dirección',               k: 'direccion' },
     { h: 'Departamento',            k: 'departamento' },
@@ -173,6 +182,7 @@ const COLS_PDF = [
   { h: 'Fecha 1ª Consulta',   k: 'fecha_consulta' },
   { h: 'Depto.',              k: 'departamento' },
   { h: 'Municipio',           k: 'municipio' },
+  { h: 'Fecha Nac.',          k: 'fecha_nacimiento' },
   { h: 'Edad',                k: 'edad' },
   { h: 'Grado',               k: 'grado' },
   { h: 'Nivel',               k: 'nivel' },
@@ -185,14 +195,14 @@ const COLS_PDF = [
 // ────────────────────────────────────────────────────────────────────────────
 // EXPORTAR EXCEL
 // ────────────────────────────────────────────────────────────────────────────
-export function exportarExcel(casos, nombre = 'SIGEC_Casos') {
+export function exportarExcel(casos, nombre = 'SIRCE_Casos') {
   const columnas  = GRUPOS_EXCEL.flatMap(g => g.cols)
   const flatCols  = columnas.map(c => c.h)
   const totalCols = flatCols.length
   const filas     = casos.map(c => { const d = datosCaso(c); return columnas.map(col => d[col.k]) })
 
   // Fila de título + fila de grupos + fila de columnas + datos
-  const tituloRow = [`Base de Datos de Casos de Embarazos en Niñas — SIGEC, MINEDUC Guatemala (Generado: ${new Date().toLocaleDateString('es-GT', { dateStyle: 'long' })})`]
+  const tituloRow = [`Base de Datos de Casos de Embarazos en Niñas — SIRCE, MINEDUC Guatemala (Generado: ${new Date().toLocaleDateString('es-GT', { dateStyle: 'long' })})`]
   const grupoRow  = []
   GRUPOS_EXCEL.forEach(g => { grupoRow.push(g.label); for (let i = 1; i < g.cols.length; i++) grupoRow.push('') })
 
@@ -271,7 +281,7 @@ export function exportarExcel(casos, nombre = 'SIGEC_Casos') {
     sinQuejas:         casos.filter(c => c.estado === 'sin Quejas').length,
   }
   const resumenRows = [
-    ['Reporte SIGEC — MINEDUC Guatemala'],
+    ['Reporte SIRCE — MINEDUC Guatemala'],
     [`Generado: ${new Date().toLocaleDateString('es-GT', { dateStyle: 'full' })}`],
     [],
     ['RESUMEN DE CASOS'],
@@ -280,9 +290,24 @@ export function exportarExcel(casos, nombre = 'SIGEC_Casos') {
     ['Sin Verificar en el SIRE',                                       porEstado.sinVerificarSire],
     ['Verificados en el Sistema de Quejas, Comentarios o Sugerencias',  porEstado.verificadosQuejas],
     ['Sin Quejas',                                                     porEstado.sinQuejas],
+    ['Mayores de 14 años o sin registro',                              casos.filter(esMayorOSinRegistro).length],
   ]
+
+  // Mismos totales por departamento y municipio que muestra el dashboard
+  const porDepto = contarPorDepartamento(casos)
+  resumenRows.push([], ['CASOS POR DEPARTAMENTO'], ['Departamento', 'Casos'])
+  porDepto.items.forEach(d => resumenRows.push([d.nombre, d.total]))
+  if (porDepto.sinDepartamento) resumenRows.push(['Sin departamento registrado', porDepto.sinDepartamento])
+  resumenRows.push(['Total', totalCasos])
+
+  const porMuni = contarPorMunicipio(casos)
+  resumenRows.push([], ['CASOS POR MUNICIPIO'], ['Municipio', 'Casos', 'Departamento'])
+  porMuni.items.forEach(m => resumenRows.push([m.nombre, m.total, m.departamento]))
+  if (porMuni.sinMunicipio) resumenRows.push(['Sin municipio registrado', porMuni.sinMunicipio])
+  resumenRows.push(['Total', totalCasos])
+
   const wsRes = XLSX.utils.aoa_to_sheet(resumenRows)
-  wsRes['!cols'] = [{ wch: 25 }, { wch: 15 }]
+  wsRes['!cols'] = [{ wch: 45 }, { wch: 15 }, { wch: 22 }]
   XLSX.utils.book_append_sheet(wb, wsRes, 'Resumen')
 
   const hoy = new Date().toLocaleDateString('es-GT').replace(/\//g, '-')
@@ -305,17 +330,22 @@ function drawHBar(doc, x, y, barMaxW, barH, fillW, fillColor, bgColor = [240, 24
   }
 }
 
-// Caja de estadística coloreada
+// Caja de estadística coloreada. Las etiquetas largas se reparten en dos
+// líneas para que no se salgan de la caja.
 function drawStatBox(doc, x, y, w, h, value, label, color) {
   doc.setFillColor(...color)
   doc.roundedRect(x, y, w, h, 2, 2, 'F')
   doc.setTextColor(255, 255, 255)
-  doc.setFontSize(20)
-  doc.setFont('helvetica', 'bold')
-  doc.text(String(value), x + w / 2, y + h * 0.55, { align: 'center' })
   doc.setFontSize(7)
   doc.setFont('helvetica', 'normal')
-  doc.text(label, x + w / 2, y + h * 0.82, { align: 'center' })
+  const lineas = doc.splitTextToSize(String(label), w - 4).slice(0, 2)
+  const dosLineas = lineas.length > 1
+  doc.setFontSize(20)
+  doc.setFont('helvetica', 'bold')
+  doc.text(String(value), x + w / 2, y + h * (dosLineas ? 0.48 : 0.55), { align: 'center' })
+  doc.setFontSize(7)
+  doc.setFont('helvetica', 'normal')
+  doc.text(lineas, x + w / 2, y + h * (dosLineas ? 0.72 : 0.82), { align: 'center' })
 }
 
 // Barras verticales (gráfica de columnas)
@@ -383,19 +413,21 @@ function drawDonut(doc, cx, cy, r, segments) {
 // ────────────────────────────────────────────────────────────────────────────
 // EXPORTAR PDF (con gráficas)
 // ────────────────────────────────────────────────────────────────────────────
-export function exportarPDF(casos, nombre = 'SIGEC_Casos', resumenFiltros = '', { pixelarNombres = false } = {}) {
+export function exportarPDF(casos, nombre = 'SIRCE_Casos', resumenFiltros = '', { pixelarNombres = false } = {}) {
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' })
   const W = 297, H = 210
   const PAD = 12
   const hoy = new Date().toLocaleDateString('es-GT', { dateStyle: 'full' })
   const hoyCorto = new Date().toLocaleDateString('es-GT').replace(/\//g, '-')
 
-  // ── Métricas ──────────────────────────────────────────────────────────────
+  // ── Métricas (mismos cálculos que las tarjetas y gráficas del dashboard) ──
   const total              = casos.length
+  const mayoresOSinReg     = casos.filter(esMayorOSinRegistro).length
   const verificadosSire    = casos.filter(c => c.estado === 'Verificados en el SIRE').length
   const sinVerificarSire   = casos.filter(c => c.estado === 'sin Verificar en el SIRE').length
   const verificadosQuejas  = casos.filter(c => c.estado === 'Verificados en el Sistema de Quejas, Comentarios o Sugerencias').length
   const sinQuejas          = casos.filter(c => c.estado === 'sin Quejas').length
+  const pct = (n) => (total > 0 ? `${((n / total) * 100).toFixed(1)}%` : '0.0%')
 
   // Mensual
   const MESES_S = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
@@ -404,29 +436,12 @@ export function exportarPDF(casos, nombre = 'SIGEC_Casos', resumenFiltros = '', 
     v: casos.filter(c => (c.fecha_primera_consulta || c.fecha_ingreso) && new Date(`${c.fecha_primera_consulta || c.fecha_ingreso}T00:00:00`).getMonth() === i).length
   }))
 
-  // Edad
-  const edadRangos = [
-    { l: '≤12',  min: 0,  max: 12 },
-    { l: '13a',  min: 13, max: 13 },
-    { l: '14a',  min: 14, max: 14 },
-    { l: '15a',  min: 15, max: 15 },
-    { l: '≥16',  min: 16, max: 99 },
-  ].map(r => ({
-    ...r,
-    v: casos.filter(c => { const e = Number(c.nina?.edad); return e >= r.min && e <= r.max }).length
-  }))
+  // Edad: mismos rangos que la gráfica "Casos por edad"
+  const porEdad = contarPorEdad(casos)
 
-  // Departamentos top-8
-  const deptCount = {}
-  casos.forEach(c => {
-    const d = c.nina?.municipio?.departamento?.nombre
-            || c.nina?.departamento?.nombre
-            || c.departamental?.departamento?.nombre || 'N/A'
-    deptCount[d] = (deptCount[d] || 0) + 1
-  })
-  const topDept = Object.entries(deptCount)
-    .sort((a, b) => b[1] - a[1]).slice(0, 8)
-    .map(([l, v]) => ({ l: l.length > 14 ? l.slice(0, 12) + '…' : l, v }))
+  // Departamentos y municipios: todos, no solo los primeros
+  const porDepto = contarPorDepartamento(casos)
+  const porMuni  = contarPorMunicipio(casos)
 
   // Estado donut segments — paleta institucional (azul + gris)
   const estadoSegs = [
@@ -436,6 +451,34 @@ export function exportarPDF(casos, nombre = 'SIGEC_Casos', resumenFiltros = '', 
     { l: 'Sin Quejas',           v: sinQuejas,         c: NAVY },
   ]
 
+  // Franja de título de las páginas de tablas. Se dibuja en cada página que
+  // genera la tabla para que el contenido que continúa conserve su título.
+  const encabezadoTabla = (titulo, detalle) => {
+    doc.setFillColor(...NAVY)
+    doc.rect(0, 0, W, 15, 'F')
+    doc.setTextColor(255, 255, 255)
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'bold')
+    doc.text(titulo, PAD, 10)
+    doc.setFontSize(7.5)
+    doc.setFont('helvetica', 'normal')
+    doc.text(detalle, W - PAD, 10, { align: 'right' })
+  }
+  // Arriba deja lugar a la franja de título y abajo al pie de página
+  const MARGEN_TABLA = { top: 20, left: PAD, right: PAD, bottom: 14 }
+  // Columnas numéricas alineadas a la derecha también en encabezado y total
+  const alinearDerecha = (columnas) => (data) => {
+    if (columnas.includes(data.column.index)) data.cell.styles.halign = 'right'
+  }
+  const ESTILO_TABLA = {
+    styles: { fontSize: 6.5, cellPadding: 1.2, overflow: 'linebreak' },
+    headStyles: { fillColor: NAVY, textColor: 255, fontStyle: 'bold', fontSize: 7 },
+    footStyles: { fillColor: [217, 226, 243], textColor: NAVY_DARK, fontStyle: 'bold', fontSize: 7 },
+    alternateRowStyles: { fillColor: [240, 242, 247] },
+    showHead: 'everyPage',
+    showFoot: 'lastPage',
+  }
+
   // ── PÁGINA 1: DASHBOARD DE GRÁFICAS ──────────────────────────────────────
   // Header
   doc.setFillColor(...NAVY)
@@ -443,7 +486,7 @@ export function exportarPDF(casos, nombre = 'SIGEC_Casos', resumenFiltros = '', 
   doc.setTextColor(255, 255, 255)
   doc.setFontSize(12)
   doc.setFont('helvetica', 'bold')
-  doc.text('SIGEC — Registro de Embarazos en Niñas en Edad Escolar', PAD, 10)
+  doc.text('SIRCE — Registro de Embarazos en Niñas en Edad Escolar', PAD, 10)
   doc.setFontSize(7.5)
   doc.setFont('helvetica', 'normal')
   doc.text('Ministerio de Educación de Guatemala', PAD, 15)
@@ -451,26 +494,28 @@ export function exportarPDF(casos, nombre = 'SIGEC_Casos', resumenFiltros = '', 
 
   let curY = 22
   if (resumenFiltros) {
-    doc.setFillColor(240, 242, 247)
-    doc.roundedRect(PAD, curY, W - PAD * 2, 7, 1, 1, 'F')
     doc.setFontSize(6.5)
+    const lineasFiltro = doc.splitTextToSize(`Filtros aplicados: ${resumenFiltros}`, W - PAD * 2 - 4)
+    const altoFiltro = 3 + lineasFiltro.length * 3
+    doc.setFillColor(240, 242, 247)
+    doc.roundedRect(PAD, curY, W - PAD * 2, altoFiltro, 1, 1, 'F')
     doc.setTextColor(...NAVY_DARK)
-    doc.text(`Filtros aplicados: ${resumenFiltros}`, PAD + 2, curY + 4.5)
-    curY += 10
+    doc.text(lineasFiltro, PAD + 2, curY + 4)
+    curY += altoFiltro + 3
   }
 
-  // ── Stat boxes — paleta institucional (azul + gris) ────────────────────────
+  // ── Stat boxes — las mismas seis tarjetas del dashboard ────────────────────
   const boxes = [
-    { label: 'Total',                  value: total,             color: NAVY },
-    { label: 'Verificados SIRE',       value: verificadosSire,   color: STEEL },
-    { label: 'Sin Verificar SIRE',     value: sinVerificarSire,  color: SLATE  },
-    { label: 'Verificados Quejas',     value: verificadosQuejas, color: NAVY_DARK },
-    { label: 'Sin Quejas',             value: sinQuejas,         color: [170, 180, 195] },
+    { label: 'Total',                              value: total,             color: NAVY },
+    { label: 'Mayores de 14 años o sin registro',  value: mayoresOSinReg,    color: SLATE },
+    { label: 'Verificados SIRE',                   value: verificadosSire,   color: STEEL },
+    { label: 'Sin Verificar SIRE',                 value: sinVerificarSire,  color: SLATE  },
+    { label: 'Verificados Quejas',                 value: verificadosQuejas, color: NAVY_DARK },
+    { label: 'Sin Quejas',                         value: sinQuejas,         color: [170, 180, 195] },
   ]
-  const boxW = 50, boxH = 20, boxGap = 3
-  const totalBoxW = boxes.length * boxW + (boxes.length - 1) * boxGap
-  const bx0 = (W - totalBoxW) / 2
-  boxes.forEach((b, i) => drawStatBox(doc, bx0 + i * (boxW + boxGap), curY, boxW, boxH, b.value, b.label, b.color))
+  const boxGap = 3, boxH = 20
+  const boxW = (W - PAD * 2 - (boxes.length - 1) * boxGap) / boxes.length
+  boxes.forEach((b, i) => drawStatBox(doc, PAD + i * (boxW + boxGap), curY, boxW, boxH, b.value, b.label, b.color))
   curY += boxH + 8
 
   // ── ZONA PRINCIPAL: 3 columnas ────────────────────────────────────────────
@@ -504,13 +549,12 @@ export function exportarPDF(casos, nombre = 'SIGEC_Casos', resumenFiltros = '', 
   // Leyenda — debajo de la dona, sin solaparse
   let ly = donaCY + donaR + 6
   estadoSegs.forEach(seg => {
-    const pct = total > 0 ? ((seg.v / total) * 100).toFixed(1) : '0.0'
     doc.setFillColor(...seg.c)
     doc.roundedRect(COL1_X + 8, ly, 4, 4, 0.5, 0.5, 'F')
     doc.setFontSize(6.5)
     doc.setTextColor(60)
     doc.setFont('helvetica', 'normal')
-    doc.text(`${seg.l}: ${seg.v} (${pct}%)`, COL1_X + 14, ly + 3.2)
+    doc.text(`${seg.l}: ${seg.v} (${pct(seg.v)})`, COL1_X + 14, ly + 3.2)
     ly += 6
   })
 
@@ -525,67 +569,101 @@ export function exportarPDF(casos, nombre = 'SIGEC_Casos', resumenFiltros = '', 
   doc.setFontSize(7.5)
   doc.setFont('helvetica', 'bold')
   doc.setTextColor(60)
-  doc.text('Por Edad', COL3_X, curY)
+  doc.text('Casos por Edad', COL3_X, curY)
 
-  const maxEdad = Math.max(...edadRangos.map(e => e.v), 1)
-  edadRangos.forEach((item, i) => {
-    const barMaxW = COL3_W - 30
-    const fillW = Math.max((item.v / maxEdad) * barMaxW, item.v > 0 ? 2 : 0)
-    const by = curY + 5 + i * 10
+  const maxEdad = Math.max(...porEdad.map(e => e.total), 1)
+  const ETIQUETA_EDAD_W = 22
+  const edadBarMaxW = COL3_W - ETIQUETA_EDAD_W - 10
+  porEdad.forEach((item, i) => {
+    const fillW = Math.max((item.total / maxEdad) * edadBarMaxW, item.total > 0 ? 2 : 0)
+    const by = curY + 4 + i * 7.5
 
     doc.setFontSize(6.5)
     doc.setFont('helvetica', 'normal')
     doc.setTextColor(60)
-    doc.text(item.l, COL3_X, by + 5.5)
-    drawHBar(doc, COL3_X + 12, by, barMaxW, 7, fillW, STEEL)
+    doc.text(item.label, COL3_X, by + 4)
+    drawHBar(doc, COL3_X + ETIQUETA_EDAD_W, by, edadBarMaxW, 5.5, fillW, STEEL)
     doc.setFontSize(6)
-    doc.setTextColor(60)
-    doc.text(String(item.v), COL3_X + 12 + barMaxW + 2, by + 5.5)
+    doc.text(String(item.total), COL3_X + ETIQUETA_EDAD_W + edadBarMaxW + 2, by + 4)
   })
 
-  // ── Fila inferior: Top departamentos ──────────────────────────────────────
-  const dY = curY + 58
-  if (dY + 40 < H - 5) {
-    doc.setFontSize(7.5)
-    doc.setFont('helvetica', 'bold')
-    doc.setTextColor(60)
-    doc.text('Casos por Departamento (Top 8)', COL2_X, dY)
+  // ── Fila inferior: todos los departamentos (dos columnas de barras) ────────
+  // El detalle con porcentajes y el desglose por municipio va en la página 2.
+  const deptos = [...porDepto.items]
+  if (porDepto.sinDepartamento) deptos.push({ nombre: 'Sin departamento registrado', total: porDepto.sinDepartamento })
+  const dY = Math.max(ly, curY + 62) + 4
+  doc.setFontSize(7.5)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(60)
+  doc.text('Casos por Departamento', PAD, dY)
 
-    const maxD = Math.max(...topDept.map(d => d.v), 1)
-    const dBarMaxW = (COL2_W + COL3_W + 16) - 35
-    topDept.forEach((item, i) => {
-      const fillW = Math.max((item.v / maxD) * dBarMaxW, item.v > 0 ? 2 : 0)
-      const by = dY + 4 + i * 7.5
-
+  if (deptos.length) {
+    const porColumna = Math.ceil(deptos.length / 2)
+    const filaH = Math.min(6.5, (H - 12 - (dY + 3)) / porColumna)
+    const colW = (W - PAD * 2 - 10) / 2
+    const ETIQUETA_DEPTO_W = 40
+    const deptoBarMaxW = colW - ETIQUETA_DEPTO_W - 10
+    const maxD = Math.max(...deptos.map(d => d.total), 1)
+    deptos.forEach((item, i) => {
+      const x = PAD + Math.floor(i / porColumna) * (colW + 10)
+      const by = dY + 3 + (i % porColumna) * filaH
+      const fillW = Math.max((item.total / maxD) * deptoBarMaxW, item.total > 0 ? 2 : 0)
       doc.setFontSize(6)
       doc.setFont('helvetica', 'normal')
       doc.setTextColor(60)
-      doc.text(item.l, COL2_X, by + 5)
-      drawHBar(doc, COL2_X + 30, by, dBarMaxW, 6, fillW, NAVY)
-      doc.setFontSize(5.5)
-      doc.setTextColor(60)
-      doc.text(String(item.v), COL2_X + 30 + dBarMaxW + 2, by + 4.5)
+      doc.text(item.nombre, x, by + filaH * 0.62)
+      drawHBar(doc, x + ETIQUETA_DEPTO_W, by + filaH * 0.15, deptoBarMaxW, filaH * 0.7, fillW, NAVY)
+      doc.text(String(item.total), x + ETIQUETA_DEPTO_W + deptoBarMaxW + 2, by + filaH * 0.62)
+    })
+  } else {
+    doc.setFontSize(6.5)
+    doc.setFont('helvetica', 'normal')
+    doc.text('No hay casos para los filtros aplicados.', PAD, dY + 6)
+  }
+
+  // ── PÁGINA 2+: CASOS POR DEPARTAMENTO Y POR MUNICIPIO ─────────────────────
+  if (total > 0) {
+    doc.addPage()
+    const tituloResumen = () => encabezadoTabla('Casos por Departamento y Municipio', `${total} casos`)
+    tituloResumen()
+
+    autoTable(doc, {
+      ...ESTILO_TABLA,
+      head: [['Departamento', 'Casos', '% del total']],
+      body: deptos.map(d => [d.nombre, d.total, pct(d.total)]),
+      foot: [['Total', total, pct(total)]],
+      startY: MARGEN_TABLA.top,
+      margin: { ...MARGEN_TABLA, right: W - PAD - 120 },
+      columnStyles: { 1: { cellWidth: 20 }, 2: { cellWidth: 22 } },
+      didParseCell: alinearDerecha([1, 2]),
+      didDrawPage: tituloResumen,
+    })
+
+    const munis = porMuni.items.map((m, i) => [i + 1, m.nombre, m.departamento, m.total, pct(m.total)])
+    if (porMuni.sinMunicipio) munis.push(['', 'Sin municipio registrado', '', porMuni.sinMunicipio, pct(porMuni.sinMunicipio)])
+
+    autoTable(doc, {
+      ...ESTILO_TABLA,
+      head: [['#', 'Municipio', 'Departamento', 'Casos', '% del total']],
+      body: munis,
+      foot: [['', 'Total', '', total, pct(total)]],
+      startY: doc.lastAutoTable.finalY + 8,
+      margin: MARGEN_TABLA,
+      columnStyles: {
+        0: { cellWidth: 10 },
+        3: { cellWidth: 20 },
+        4: { cellWidth: 22 },
+      },
+      didParseCell: alinearDerecha([0, 3, 4]),
+      didDrawPage: tituloResumen,
     })
   }
 
-  // Pie de página 1
-  doc.setFontSize(6)
-  doc.setTextColor(180)
-  doc.text(`SIGEC — MINEDUC  ·  Generado ${hoy}  ·  Página 1`, W / 2, H - 5, { align: 'center' })
-
-  // ── PÁGINA 2: TABLA DE DATOS ─────────────────────────────────────────────
+  // ── PÁGINA SIGUIENTE: LISTADO DE CASOS ───────────────────────────────────
   if (total > 0) {
     doc.addPage()
-
-    doc.setFillColor(...NAVY)
-    doc.rect(0, 0, W, 15, 'F')
-    doc.setTextColor(255, 255, 255)
-    doc.setFontSize(10)
-    doc.setFont('helvetica', 'bold')
-    doc.text('Listado de Casos', PAD, 10)
-    doc.setFontSize(7.5)
-    doc.setFont('helvetica', 'normal')
-    doc.text(`${total} registros`, W - PAD, 10, { align: 'right' })
+    const tituloListado = () => encabezadoTabla('Listado de Casos', `${total} registros`)
+    tituloListado()
 
     const colsPDF = COLS_PDF.map(c => c.h)
     if (pixelarNombres) colsPDF[1] = 'Nombre (protegido)'
@@ -593,36 +671,40 @@ export function exportarPDF(casos, nombre = 'SIGEC_Casos', resumenFiltros = '', 
       const d   = datosCaso(c)
       const row = COLS_PDF.map(col => d[col.k])
       if (pixelarNombres && row[1]) {
+        // Solo caracteres de la codificación estándar del PDF (WinAnsi)
         const inicial = String(row[1]).charAt(0).toUpperCase()
-        row[1] = `${inicial}. ████████████`
+        row[1] = `${inicial}. ••••••••••`
       }
       return row
     })
 
     autoTable(doc, {
-      head: [colsPDF],
-      body,
-      startY: 18,
+      ...ESTILO_TABLA,
       styles: { fontSize: 6, cellPadding: 1.2, overflow: 'linebreak' },
       headStyles: { fillColor: NAVY, textColor: 255, fontStyle: 'bold', fontSize: 6.5 },
-      alternateRowStyles: { fillColor: [240, 242, 247] },
-      margin: { left: PAD, right: PAD },
+      head: [colsPDF],
+      body,
+      startY: MARGEN_TABLA.top,
+      margin: MARGEN_TABLA,
       columnStyles: {
         1:  { cellWidth: 30 },   // Nombre
         5:  { cellWidth: 17 },   // Depto.
         6:  { cellWidth: 18 },   // Municipio
-        11: { cellWidth: 26 },   // Centro Educativo
-        12: { cellWidth: 30 },   // Dirección Centro
+        12: { cellWidth: 26 },   // Centro Educativo
+        13: { cellWidth: 30 },   // Dirección Centro
       },
-      didDrawPage: ({ pageNumber }) => {
-        doc.setFontSize(6)
-        doc.setTextColor(180)
-        doc.text(
-          `SIGEC — MINEDUC  ·  Página ${pageNumber}  ·  ${hoy}`,
-          W / 2, H - 5, { align: 'center' }
-        )
-      }
+      didDrawPage: tituloListado,
     })
+  }
+
+  // ── Pie de página con la numeración del documento completo ───────────────
+  const paginas = doc.getNumberOfPages()
+  for (let i = 1; i <= paginas; i++) {
+    doc.setPage(i)
+    doc.setFontSize(6)
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(150)
+    doc.text(`SIRCE — MINEDUC  ·  Generado ${hoy}  ·  Página ${i} de ${paginas}`, W / 2, H - 5, { align: 'center' })
   }
 
   doc.save(`${nombre}_${hoyCorto}.pdf`)
@@ -671,7 +753,7 @@ export function exportarAuditoriaExcel(registros, filtrosTexto = '') {
   })
 
   const totalCols = COLS.length
-  const tituloRow = [`SIGEC — Bitácora de Auditoría — Ministerio de Educación de Guatemala (Generado: ${new Date().toLocaleString('es-GT', { dateStyle: 'long', timeStyle: 'short' })})`]
+  const tituloRow = [`SIRCE — Bitácora de Auditoría — Ministerio de Educación de Guatemala (Generado: ${new Date().toLocaleString('es-GT', { dateStyle: 'long', timeStyle: 'short' })})`]
 
   const ws = XLSX.utils.aoa_to_sheet([tituloRow, COLS, ...filas])
 
@@ -717,7 +799,7 @@ export function exportarAuditoriaExcel(registros, filtrosTexto = '') {
   registros.forEach(r => { porAccion[r.accion] = (porAccion[r.accion] || 0) + 1 })
 
   const resumenRows = [
-    ['SIGEC — Bitácora de Auditoría'],
+    ['SIRCE — Bitácora de Auditoría'],
     ['Ministerio de Educación de Guatemala'],
     [`Generado: ${new Date().toLocaleString('es-GT', { dateStyle: 'full', timeStyle: 'short' })}`],
     [],
@@ -731,7 +813,7 @@ export function exportarAuditoriaExcel(registros, filtrosTexto = '') {
   XLSX.utils.book_append_sheet(wb, wsRes, 'Resumen')
 
   const hoy = new Date().toLocaleDateString('es-GT').replace(/\//g, '-')
-  XLSX.writeFile(wb, `SIGEC_Auditoria_${hoy}.xlsx`)
+  XLSX.writeFile(wb, `SIRCE_Auditoria_${hoy}.xlsx`)
 
   registrarDescarga('excel', `Exportó la bitácora de auditoría a Excel (${registros.length} registros)${filtrosTexto ? ` — ${filtrosTexto}` : ''}`)
 }
@@ -763,7 +845,7 @@ export async function exportarAuditoriaPDF(registros, filtrosTexto = '', usuario
   // ── Encabezado con logos ──────────────────────────────────────────────────
   drawPdfHeader(doc, {
     sigec, mineduc,
-    title: 'SIGEC — Bitácora de Auditoría',
+    title: 'SIRCE — Bitácora de Auditoría',
     subtitle: 'Ministerio de Educación de Guatemala',
   })
 
@@ -824,7 +906,7 @@ export async function exportarAuditoriaPDF(registros, filtrosTexto = '', usuario
   // Pie de página 1
   doc.setFontSize(6)
   doc.setTextColor(140, 140, 140)
-  doc.text(`SIGEC — MINEDUC  ·  Documento generado el ${hoy}  ·  Página 1`, W / 2, H - 5, { align: 'center' })
+  doc.text(`SIRCE — MINEDUC  ·  Documento generado el ${hoy}  ·  Página 1`, W / 2, H - 5, { align: 'center' })
 
   // ── PÁGINA 2+: TABLA DE REGISTROS ────────────────────────────────────────────
   doc.addPage()
@@ -865,13 +947,13 @@ export async function exportarAuditoriaPDF(registros, filtrosTexto = '', usuario
       doc.setFontSize(6)
       doc.setTextColor(140, 140, 140)
       doc.text(
-        `SIGEC — MINEDUC  ·  Página ${pageNumber}  ·  ${hoy}`,
+        `SIRCE — MINEDUC  ·  Página ${pageNumber}  ·  ${hoy}`,
         W / 2, H - 5, { align: 'center' }
       )
     }
   })
 
-  doc.save(`SIGEC_Auditoria_${hoyCorto}.pdf`)
+  doc.save(`SIRCE_Auditoria_${hoyCorto}.pdf`)
 
   registrarDescarga('pdf', `Exportó la bitácora de auditoría a PDF (${total} registros)${filtrosTexto ? ` — ${filtrosTexto}` : ''}`)
 }

@@ -53,6 +53,11 @@ users: [],
 
       roleId: user.roleId,
 
+      // Alcance del perfil "Consulta"
+      departamentoId: user.departamento_id ?? null,
+
+      departamento: user.departamento?.nombre ?? null,
+
       active: user.isActive,
 
       memberSince: user.createdAt?.split('T')[0],
@@ -127,6 +132,7 @@ users: [],
           name:     userData.name,
           email:    userData.email,
           roleId:   userData.roleId,
+          departamento_id: userData.departamentoId || null,
           password: userData.password || 'Guatemala123',
         }
         await api.post('/users', payload)
@@ -144,6 +150,7 @@ users: [],
           name:   updatedUser.name,
           email:  updatedUser.email,
           roleId: updatedUser.roleId,
+          departamento_id: updatedUser.departamentoId || null,
         }
         if (updatedUser.password) payload.password = updatedUser.password
         await api.put(`/users/${updatedUser.id}`, payload)

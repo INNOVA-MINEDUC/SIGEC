@@ -3,133 +3,184 @@
 </template>
 
 <script setup>
-import * as am5 from "@amcharts/amcharts5"
-import * as am5map from "@amcharts/amcharts5/map"
-import am5themes_Animated from "@amcharts/amcharts5/themes/Animated"
-import { ref, onMounted, onBeforeUnmount, watch } from "vue"
+import * as am5 from "@amcharts/amcharts5";
+import * as am5map from "@amcharts/amcharts5/map";
+import am5themes_Animated from "@amcharts/amcharts5/themes/Animated";
+import { ref, onMounted, onBeforeUnmount, watch } from "vue";
 
-import guatemalaDepartamentos from "../helpers/Departamentos2.json"
-import guatemalaMunicipios from "../helpers/Municipios2.json"
+import guatemalaDepartamentos from "../helpers/Departamentos2.json";
 
-import { useCasosStore } from "@/stores/casos"
+import { useCasosStore } from "@/stores/casos";
+import { departamentoDeCaso } from "@/helpers/estadisticasCasos";
+import {
+  normGeo,
+  poligonoDeCaso,
+  poligonoDeMunicipio,
+  featuresMunicipiosDe,
+} from "@/helpers/mapaGeo";
 
-const casosStore = useCasosStore()
-const chartdiv = ref(null)
-let root
+// El dashboard controla los filtros y este componente dibuja el mapa.
+const props = defineProps({
+  departamento: {
+    type: String,
+    default: "",
+  },
+  municipio: {
+    type: String,
+    default: "",
+  },
+  bloquearDepartamento: {
+    type: Boolean,
+    default: false,
+  },
+});
 
-// ── Escala de color (choropleth) ────────────────────────────────────────────
-const COLOR_VACIO  = am5.color(0xeef2f7)   // 0 casos → gris muy claro
-const COLOR_MIN    = am5.color(0xbcd0ec)   // pocos casos → azul claro
-const COLOR_MAX    = am5.color(0x0b1b33)   // más casos → azul muy oscuro
+const emit = defineEmits([
+  "seleccionar-departamento",
+  "seleccionar-municipio",
+  "regresar",
+]);
 
-// Quita tildes y cualquier carácter que no sea letra/número/espacio: el GeoJSON
-// trae caracteres invisibles (p. ej. guion suave en "San Agustí­n") que
-// impedían emparejar nombres que a simple vista son iguales.
-const norm = (s) =>
-  String(s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
-    .replace(/[^a-z0-9 ]/g, "").replace(/\s+/g, " ").trim()
+const casosStore = useCasosStore();
+const chartdiv = ref(null);
 
-// Departamento del caso: municipio→depto, o depto de residencia, o el departamental
-const deptoDeCaso = (c) =>
-  c.nina?.municipio?.departamento?.nombre ||
-  c.nina?.departamento?.nombre ||
-  c.departamental?.departamento?.nombre || null
+let root = null;
+let rafId = null;
+const detenerWatchers = [];
 
-// Nombres del catálogo (BD) que en el GeoJSON están escritos distinto
-const ALIAS_MUNICIPIO_GEO = {
-  "san ildefonso ixtahuacan":  "san idelfonso ixtahuacan",
-  "san juan ermita":           "san juan la ermita",
-  "santa lucia cotzumalguapa": "santa lucia cotzulmalguapa",
-  "santa maria de jesus":      "santa maria de jesis",
-  "san pablo jocopilas":       "san pablo jocopila",
-}
+// ─────────────────────────────────────────────────────────────
+// Colores del mapa
+// ─────────────────────────────────────────────────────────────
 
-// Polígonos municipales agrupados por departamento (nombres normalizados)
-const municipiosGeoPorDepto = new Map()
-for (const f of guatemalaMunicipios.features) {
-  const d = norm(f.properties?.departamen)
-  if (!municipiosGeoPorDepto.has(d)) municipiosGeoPorDepto.set(d, [])
-  municipiosGeoPorDepto.get(d).push(norm(f.properties?.municipio))
-}
+const COLOR_VACIO = am5.color(0xdde4ee);
+const COLOR_MIN = am5.color(0xbcd0ec);
+const COLOR_MAX = am5.color(0x0b1b33);
+const COLOR_BORDE = am5.color(0xffffff);
+const COLOR_SELECCION = am5.color(0x17c4e8);
+const COLOR_HOVER = am5.color(0x17c4e8);
 
-// Municipio del caso expresado como el nombre de su polígono en el mapa.
-// 1) igual, 2) alias, 3) un nombre contiene al otro dentro del mismo
-// departamento ("santa cruz barillas" ↔ "barillas") si hay un único candidato.
-const municipioDeCaso = (c) => {
-  const nombre = norm(c.nina?.municipio?.nombre)
-  if (!nombre) return null
-  const lista = municipiosGeoPorDepto.get(norm(c.nina?.municipio?.departamento?.nombre)) || []
-  const m = ALIAS_MUNICIPIO_GEO[nombre] || nombre
-  if (lista.includes(m)) return m
-  const cand = lista.filter(g => ` ${m} `.includes(` ${g} `) || ` ${g} `.includes(` ${m} `))
-  return cand.length === 1 ? cand[0] : nombre
-}
+const TEXTO_CLARO = am5.color(0xffffff);
+const TEXTO_OSCURO = am5.color(0x10233f);
 
-// Cuenta casos del store agrupados por el nombre que devuelve fn (normalizado)
+// ─────────────────────────────────────────────────────────────
+// Contar casos por departamento o municipio
+// ─────────────────────────────────────────────────────────────
+
 const contarPor = (fn) => {
-  const m = new Map()
-  for (const c of casosStore.casos) {
-    const n = norm(fn(c))
-    if (n) m.set(n, (m.get(n) || 0) + 1)
+  const conteo = new Map();
+
+  for (const caso of casosStore.casos) {
+    const nombre = normGeo(fn(caso));
+
+    if (nombre) {
+      conteo.set(nombre, (conteo.get(nombre) || 0) + 1);
+    }
   }
-  return m
-}
+
+  return conteo;
+};
 
 onMounted(() => {
-  root = am5.Root.new(chartdiv.value)
-  root._logo.dispose()
-  root.setThemes([am5themes_Animated.new(root)])
+  if (!chartdiv.value) return;
+
+  root = am5.Root.new(chartdiv.value);
+  root._logo?.dispose();
+
+  root.setThemes([am5themes_Animated.new(root)]);
+
+  // ───────────────────────────────────────────────────────────
+  // Configuración general del mapa
+  // ───────────────────────────────────────────────────────────
 
   const chart = root.container.children.push(
     am5map.MapChart.new(root, {
-      panX: "translateX",
-      panY: "translateY",
-      wheelX: "zoomX",
-      wheelY: "zoomY",
-      projection: am5map.geoMercator()
+      panX: "none",
+      panY: "none",
+      wheelX: "none",
+      wheelY: "none",
+      projection: am5map.geoMercator(),
     })
-  )
+  );
+
+  // ───────────────────────────────────────────────────────────
+  // Tooltip que toma el color del polígono
+  // ───────────────────────────────────────────────────────────
+
+  const crearTooltip = () => {
+    const tooltip = am5.Tooltip.new(root, {
+      getFillFromSprite: false,
+      getLabelFillFromSprite: false,
+      autoTextColor: false,
+      pointerOrientation: "vertical",
+    });
+
+    tooltip.get("background").setAll({
+      fill: COLOR_VACIO,
+      fillOpacity: 0.97,
+      stroke: COLOR_BORDE,
+      strokeWidth: 1.5,
+    });
+
+    tooltip.label.setAll({
+      fill: TEXTO_OSCURO,
+      fontSize: 13,
+      fontWeight: "600",
+    });
+
+    return tooltip;
+  };
+
+  // Configuración común de los polígonos (departamentos y municipios).
+  const configurarPoligonos = (series, tooltipText) => {
+    series.set("tooltip", crearTooltip());
+
+    series.mapPolygons.template.setAll({
+      tooltipText,
+      interactive: true,
+      cursorOverStyle: "pointer",
+      fill: COLOR_VACIO,
+      stroke: COLOR_BORDE,
+      strokeWidth: 0.5,
+      tooltipY: 0,
+      stateAnimationDuration: 120,
+    });
+
+    // El hover solo resalta el borde para que se siga
+    // viendo el color real del polígono.
+    series.mapPolygons.template.states.create("hover", {
+      stroke: COLOR_HOVER,
+      strokeWidth: 2.5,
+    });
+  };
+
+  // ───────────────────────────────────────────────────────────
+  // Mapa de departamentos
+  // ───────────────────────────────────────────────────────────
 
   const departamentosSeries = chart.series.push(
-    am5map.MapPolygonSeries.new(root, { geoJSON: guatemalaDepartamentos })
-  )
-  departamentosSeries.mapPolygons.template.setAll({
-    tooltipText: "{departamen}: {casos} casos",
-    interactive: true,
-    fill: COLOR_VACIO,
-    stroke: am5.color(0xffffff),
-    strokeWidth: 0.5
-  })
+    am5map.MapPolygonSeries.new(root, {
+      geoJSON: guatemalaDepartamentos,
+    })
+  );
+
+  configurarPoligonos(departamentosSeries, "{departamen}: {casos} casos");
+
+  // ───────────────────────────────────────────────────────────
+  // Mapa de municipios
+  // ───────────────────────────────────────────────────────────
 
   const municipiosSeries = chart.series.push(
-    am5map.MapPolygonSeries.new(root, { visible: false })
-  )
-  municipiosSeries.mapPolygons.template.setAll({
-    tooltipText: "{municipio}: {casos} casos",
-    interactive: true,
-    fill: COLOR_VACIO,
-    stroke: am5.color(0xffffff),
-    strokeWidth: 0.5
-  })
-  municipiosSeries.mapPolygons.template.states.create("hover", {
-    fill: am5.color(0x17c4e8)
-  })
+    am5map.MapPolygonSeries.new(root, {
+      visible: false,
+    })
+  );
 
-  const municipioSeleccionadoSeries = chart.series.push(
-    am5map.MapPolygonSeries.new(root, { visible: false })
-  )
-  municipioSeleccionadoSeries.mapPolygons.template.setAll({
-    tooltipText: "{municipio}: {casos} casos",
-    interactive: true,
-    fill: COLOR_VACIO,
-    stroke: am5.color(0xffffff),
-    strokeWidth: 0.5
-  })
-  municipioSeleccionadoSeries.mapPolygons.template.states.create("hover", {
-    fill: am5.color(0x17c4e8)
-  })
+  configurarPoligonos(municipiosSeries, "{municipio}: {casos} casos");
 
-  // ── Leyenda de intensidad ──────────────────────────────────────────────────
+  // ───────────────────────────────────────────────────────────
+  // Leyenda de intensidad
+  // ───────────────────────────────────────────────────────────
+
   const heatLegend = chart.children.push(
     am5.HeatLegend.new(root, {
       orientation: "horizontal",
@@ -138,15 +189,20 @@ onMounted(() => {
       startText: "Menos casos",
       endText: "Más casos",
       stepCount: 5,
-      width: am5.percent(55),
+      startValue: 0,
+      endValue: 1,
+      width: am5.percent(chartdiv.value.clientWidth < 500 ? 85 : 55),
       x: am5.p50,
       centerX: am5.p50,
       y: am5.percent(97),
-      centerY: am5.p100
+      centerY: am5.p100,
     })
-  )
+  );
 
-  // Total de casos mostrado en el mapa (mismo número que la card "Casos Totales")
+  // ───────────────────────────────────────────────────────────
+  // Etiqueta del total de casos
+  // ───────────────────────────────────────────────────────────
+
   const totalLabel = chart.children.push(
     am5.Label.new(root, {
       text: "",
@@ -154,70 +210,21 @@ onMounted(() => {
       y: 10,
       fontSize: 14,
       fontWeight: "600",
-      fill: am5.color(0x10233f),
-      background: am5.RoundedRectangle.new(root, { fill: am5.color(0xffffff), fillOpacity: 0.85 }),
-      paddingTop: 6, paddingBottom: 6, paddingLeft: 10, paddingRight: 10
+      fill: TEXTO_OSCURO,
+      background: am5.RoundedRectangle.new(root, {
+        fill: am5.color(0xffffff),
+        fillOpacity: 0.85,
+      }),
+      paddingTop: 6,
+      paddingBottom: 6,
+      paddingLeft: 10,
+      paddingRight: 10,
     })
-  )
+  );
 
-  // Pinta una serie según cuántos casos tiene cada polígono (choropleth).
-  //   fn: cómo obtener el nombre del caso; campoGeo: propiedad del GeoJSON
-  const pintarSerie = (series, fn, campoGeo) => {
-    const counts = contarPor(fn)
-    let max = 0
-    counts.forEach((v) => { if (v > max) max = v })
-
-    let ubicados = 0
-    series.mapPolygons.each((poly) => {
-      const ctx = poly.dataItem?.dataContext
-      if (!ctx) return
-      const nombre = ctx[campoGeo] ?? ctx.nombre
-      const count = counts.get(norm(nombre)) || 0
-      ubicados += count
-      ctx.casos = count   // para el tooltip {casos}
-      if (count <= 0) {
-        poly.set("fill", COLOR_VACIO)
-      } else {
-        // 0.15 de piso para que 1 caso ya se distinga del vacío
-        const t = max > 0 ? 0.15 + 0.85 * (count / max) : 0
-        poly.set("fill", am5.Color.interpolate(t, COLOR_MIN, COLOR_MAX))
-      }
-    })
-
-    heatLegend.set("startValue", 0)
-    heatLegend.set("endValue", max)
-
-    // Total del mapa = total de las cards. Los casos que no se pueden ubicar
-    // en un polígono (sin municipio/departamento registrado) se indican aparte.
-    const total = casosStore.casos.length
-    const sinUbicar = total - ubicados
-    const nivel = vista === "nacional" ? "departamento" : "municipio"
-    totalLabel.set("text",
-      `Total: ${total} casos` +
-      (sinUbicar > 0 ? `  ·  ${sinUbicar} sin ${nivel} registrado` : ""))
-  }
-
-  // Repinta la serie que esté visible según el nivel de navegación actual.
-  let vista = "nacional" // 'nacional' | 'departamento' | 'municipio'
-  const repintarVisible = () => {
-    if (vista === "nacional") pintarSerie(departamentosSeries, deptoDeCaso, "departamen")
-    else if (vista === "departamento") pintarSerie(municipiosSeries, municipioDeCaso, "municipio")
-    else pintarSerie(municipioSeleccionadoSeries, municipioDeCaso, "municipio")
-  }
-
-  // Cuando cada serie termina de dibujar sus polígonos, se pinta si es la visible.
-  departamentosSeries.events.on("datavalidated", () => {
-    if (vista === "nacional") pintarSerie(departamentosSeries, deptoDeCaso, "departamen")
-  })
-  municipiosSeries.events.on("datavalidated", () => {
-    if (vista === "departamento") pintarSerie(municipiosSeries, municipioDeCaso, "municipio")
-  })
-  municipioSeleccionadoSeries.events.on("datavalidated", () => {
-    if (vista === "municipio") pintarSerie(municipioSeleccionadoSeries, municipioDeCaso, "municipio")
-  })
-
-  // Cuando cambian los casos del store (carga inicial, drill-down, filtros) repinta.
-  watch(() => casosStore.casos, repintarVisible, { deep: false })
+  // ───────────────────────────────────────────────────────────
+  // Botón para regresar
+  // ───────────────────────────────────────────────────────────
 
   const backContainer = chart.children.push(
     am5.Container.new(root, {
@@ -229,136 +236,316 @@ onMounted(() => {
       cursorOverStyle: "pointer",
       background: am5.RoundedRectangle.new(root, {
         fill: am5.color(0xffffff),
-        fillOpacity: 0.2
+        fillOpacity: 0.2,
       }),
-      visible: false
+      visible: false,
     })
-  )
+  );
+
   backContainer.children.push(
-    am5.Label.new(root, { text: "🔙 Regresar", centerY: am5.p50 })
-  )
-
-  let lastDepartamentoDataItem = null
-  let lastDepartamentoNombre = null
-
-  // ─── Click departamento ────────────────────────────────────────────────────
-  departamentosSeries.mapPolygons.template.events.on("click", (ev) => {
-    const dataItem = ev.target.dataItem
-    const data = dataItem.dataContext
-
-    const deptNombre = data.departamen ?? data.nombre
-    lastDepartamentoDataItem = dataItem
-    lastDepartamentoNombre = deptNombre
-
-    console.log("[MAPA] Departamento:", deptNombre)
-
-    casosStore.fetchPorDepartamento(deptNombre).then(() => {
-      console.log(`[STORE] Total casos (${deptNombre}):`, casosStore.total)
-      console.log("[STORE] Datos:", casosStore.casos)
+    am5.Label.new(root, {
+      text: "🔙 Regresar",
+      centerY: am5.p50,
     })
+  );
 
-    const filtered = guatemalaMunicipios.features.filter((f) => {
-      return f?.properties?.departamen?.trim().toLowerCase() === deptNombre.trim().toLowerCase()
-    })
+  // ───────────────────────────────────────────────────────────
+  // Estado de navegación del mapa
+  // ───────────────────────────────────────────────────────────
 
-    if (filtered.length === 0) {
-      console.warn("[MAPA] Sin municipios para:", deptNombre)
-      return
-    }
+  let vista = "nacional";
+  let deptosListos = false;
+  let deptoCargado = null;
 
-    vista = "departamento"
-    departamentosSeries.zoomToDataItem(dataItem).waitForStop().then(() => {
-      municipiosSeries.set("geoJSON", { type: "FeatureCollection", features: filtered })
-      municipiosSeries.show()
-      departamentosSeries.hide(100)
-      backContainer.show()
-    })
-  })
+  const municipioSeleccionado = () => {
+    return vista === "municipio"
+      ? poligonoDeMunicipio(props.municipio, props.departamento)
+      : null;
+  };
 
-  // ─── Click municipio ───────────────────────────────────────────────────────
-  municipiosSeries.mapPolygons.template.events.on("click", (ev) => {
-    const dataItem = ev.target.dataItem
-    const data = dataItem.dataContext
+  // ───────────────────────────────────────────────────────────
+  // Pintar polígonos según la cantidad de casos
+  // ───────────────────────────────────────────────────────────
 
-    const munNombre = data.municipio ?? data.nombre
-    const deptNombre = lastDepartamentoNombre
+  const pintarSerie = (series, obtenerNombre, campoGeo) => {
+    const conteos = contarPor(obtenerNombre);
+    const seleccionado = municipioSeleccionado();
 
-    console.log("[MAPA] Municipio:", munNombre, "| Departamento:", deptNombre)
+    let maximo = 0;
+    conteos.forEach((cantidad) => {
+      if (cantidad > maximo) maximo = cantidad;
+    });
 
-    // El filtro del servidor compara contra el nombre del catálogo (BD), que puede
-    // escribirse distinto al del polígono ("Santa Cruz Barillas" vs "Barillas").
-    const casoDelMunicipio = casosStore.casos.find(c => municipioDeCaso(c) === norm(munNombre))
-    const munNombreBD = casoDelMunicipio?.nina?.municipio?.nombre || munNombre
+    let ubicados = 0;
 
-    casosStore.fetchPorMunicipio(munNombreBD, deptNombre).then(() => {
-      console.log(`[STORE] Total casos (${munNombre}):`, casosStore.total)
-      console.log("[STORE] Datos:", casosStore.casos)
-    })
+    series.mapPolygons.each((poligono) => {
+      const contexto = poligono.dataItem?.dataContext;
+      if (!contexto) return;
 
-    const filtered = guatemalaMunicipios.features.filter((f) => {
-      return f?.properties?.municipio?.trim().toLowerCase() === munNombre.trim().toLowerCase()
-    })
+      const nombre = normGeo(contexto[campoGeo] ?? contexto.nombre);
+      const cantidad = conteos.get(nombre) || 0;
+      const esSeleccionado = seleccionado !== null && nombre === seleccionado;
 
-    vista = "municipio"
-    municipiosSeries.zoomToDataItem(dataItem).waitForStop().then(() => {
-      municipioSeleccionadoSeries.set("geoJSON", { type: "FeatureCollection", features: filtered })
-      municipioSeleccionadoSeries.show()
-      municipiosSeries.hide(100)
-      backContainer.show()
-    })
-  })
+      ubicados += cantidad;
 
-  // ─── Botón regresar ────────────────────────────────────────────────────────
-  backContainer.events.on("click", () => {
-    if (municipioSeleccionadoSeries.get("visible")) {
-      // Municipio → departamento
-      vista = "departamento"
-      municipioSeleccionadoSeries.hide()
-      municipiosSeries.show()
+      // Alimenta el tooltip "{...}: {casos} casos".
+      contexto.casos = cantidad;
 
-      if (lastDepartamentoDataItem) {
-        departamentosSeries.zoomToDataItem(lastDepartamentoDataItem)
+      // Color base según la cantidad de casos.
+      let color = COLOR_VACIO;
+      let intensidad = 0;
+
+      if (cantidad > 0 && maximo > 0) {
+        intensidad = 0.15 + 0.85 * (cantidad / maximo);
+        color = am5.Color.interpolate(intensidad, COLOR_MIN, COLOR_MAX);
       }
 
-      console.log("[MAPA] Regresando a departamento:", lastDepartamentoNombre)
-      casosStore.fetchPorDepartamento(lastDepartamentoNombre).then(() => {
-        console.log(`[STORE] Total casos (${lastDepartamentoNombre}):`, casosStore.total)
-      })
+      // Se guardan para usarlos en el hover.
+      contexto.colorBase = color;
+      contexto.colorTexto = intensidad > 0.5 ? TEXTO_CLARO : TEXTO_OSCURO;
 
+      poligono.set("fill", color);
+
+      // Borde especial para el municipio seleccionado.
+      poligono.set("stroke", esSeleccionado ? COLOR_SELECCION : COLOR_BORDE);
+      poligono.set("strokeWidth", esSeleccionado ? 3 : 0.5);
+
+      if (esSeleccionado) {
+        poligono.toFront();
+      }
+    });
+
+    // Actualizar la leyenda (mínimo 1 para evitar división entre 0).
+    heatLegend.set("startValue", 0);
+    heatLegend.set("endValue", Math.max(maximo, 1));
+
+    // Actualizar el total mostrado.
+    const total = casosStore.casos.length;
+    const sinUbicar = total - ubicados;
+    const nivel = vista === "nacional" ? "departamento" : "municipio";
+
+    totalLabel.set(
+      "text",
+      `Total: ${total} casos` +
+        (sinUbicar > 0 ? ` · ${sinUbicar} sin ${nivel} registrado` : "")
+    );
+  };
+
+  // ───────────────────────────────────────────────────────────
+  // Repintar el mapa que está visible
+  // ───────────────────────────────────────────────────────────
+
+  const repintarVisible = () => {
+    if (!root) return;
+
+    if (vista === "nacional") {
+      pintarSerie(departamentosSeries, departamentoDeCaso, "departamen");
     } else {
-      // Departamento → nacional
-      vista = "nacional"
-      chart.goHome()
-      departamentosSeries.show()
-      municipiosSeries.hide()
-      backContainer.hide()
-
-      lastDepartamentoDataItem = null
-      lastDepartamentoNombre = null
-
-      console.log("[MAPA] Regresando a vista nacional")
-      casosStore.fetchTodos().then(() => {
-        console.log("[STORE] Total casos (todos):", casosStore.total)
-      })
+      pintarSerie(municipiosSeries, poligonoDeCaso, "municipio");
     }
-  })
+  };
 
-  // ─── Carga inicial ─────────────────────────────────────────────────────────
-  casosStore.fetchTodos().then(() => {
-    console.log("[STORE] Carga inicial. Total:", casosStore.total)
-    console.log("[STORE] Datos:", casosStore.casos)
-  })
-})
+  // Agrupa varios repintados seguidos en uno solo por frame.
+  const programarRepintado = () => {
+    if (rafId) cancelAnimationFrame(rafId);
+
+    rafId = requestAnimationFrame(() => {
+      rafId = null;
+      repintarVisible();
+    });
+  };
+
+  // ───────────────────────────────────────────────────────────
+  // Hover: tooltip con el color del polígono + indicador en leyenda
+  // ───────────────────────────────────────────────────────────
+
+  const registrarHover = (series) => {
+    series.mapPolygons.template.events.on("pointerover", (evento) => {
+      const contexto = evento.target.dataItem?.dataContext;
+      if (!contexto) return;
+
+      const cantidad = contexto.casos || 0;
+      const color = contexto.colorBase || COLOR_VACIO;
+      const texto = contexto.colorTexto || TEXTO_OSCURO;
+
+      const tooltip = series.get("tooltip");
+      if (tooltip) {
+        tooltip.get("background").set("fill", color);
+        tooltip.label.set("fill", texto);
+      }
+
+      heatLegend.showValue(cantidad, `${cantidad} casos`);
+    });
+
+    series.mapPolygons.template.events.on("pointerout", () => {
+      heatLegend.getTooltip()?.hide();
+    });
+  };
+
+  registrarHover(departamentosSeries);
+  registrarHover(municipiosSeries);
+
+  // ───────────────────────────────────────────────────────────
+  // Buscar el departamento seleccionado
+  // ───────────────────────────────────────────────────────────
+
+  const dataItemDepartamento = () => {
+    const departamento = normGeo(props.departamento);
+    if (!departamento) return null;
+
+    return (
+      departamentosSeries.dataItems.find(
+        (item) => normGeo(item.dataContext?.departamen) === departamento
+      ) || null
+    );
+  };
+
+  // ───────────────────────────────────────────────────────────
+  // Aplicar selección de departamento y municipio
+  // ───────────────────────────────────────────────────────────
+
+  const aplicarSeleccion = () => {
+    if (!root || !deptosListos) return;
+
+    heatLegend.getTooltip()?.hide();
+
+    const dataItem = dataItemDepartamento();
+
+    // Sin departamento: vista nacional.
+    if (!dataItem) {
+      vista = "nacional";
+      deptoCargado = null;
+
+      municipiosSeries.hide();
+      departamentosSeries.show();
+
+      backContainer.hide();
+      chart.goHome();
+
+      programarRepintado();
+      return;
+    }
+
+    vista = props.municipio ? "municipio" : "departamento";
+
+    if (vista === "municipio" || !props.bloquearDepartamento) {
+      backContainer.show();
+    } else {
+      backContainer.hide();
+    }
+
+    // Encuadrar el departamento completo.
+    departamentosSeries.zoomToDataItem(dataItem);
+
+    const departamento = normGeo(props.departamento);
+
+    // Cargar los municipios solo cuando cambia el departamento.
+    // El repintado lo hace el evento "datavalidated".
+    if (deptoCargado !== departamento) {
+      deptoCargado = departamento;
+
+      municipiosSeries.set("geoJSON", {
+        type: "FeatureCollection",
+        features: featuresMunicipiosDe(props.departamento),
+      });
+
+      municipiosSeries.show();
+      departamentosSeries.hide(100);
+      return;
+    }
+
+    municipiosSeries.show();
+    departamentosSeries.hide(100);
+
+    programarRepintado();
+  };
+
+  // ───────────────────────────────────────────────────────────
+  // Eventos de carga de las series
+  // ───────────────────────────────────────────────────────────
+
+  departamentosSeries.events.on("datavalidated", () => {
+    if (!deptosListos) {
+      deptosListos = true;
+      aplicarSeleccion();
+      return;
+    }
+
+    if (vista === "nacional") {
+      programarRepintado();
+    }
+  });
+
+  municipiosSeries.events.on("datavalidated", () => {
+    if (vista !== "nacional") {
+      programarRepintado();
+    }
+  });
+
+  // ───────────────────────────────────────────────────────────
+  // Clics
+  // ───────────────────────────────────────────────────────────
+
+  departamentosSeries.mapPolygons.template.events.on("click", (evento) => {
+    const nombre = evento.target.dataItem?.dataContext?.departamen;
+    if (nombre) emit("seleccionar-departamento", nombre);
+  });
+
+  municipiosSeries.mapPolygons.template.events.on("click", (evento) => {
+    const nombre = evento.target.dataItem?.dataContext?.municipio;
+    if (nombre) emit("seleccionar-municipio", nombre);
+  });
+
+  backContainer.events.on("click", () => {
+    emit("regresar");
+  });
+
+  // ───────────────────────────────────────────────────────────
+  // Watchers (se guardan para detenerlos al desmontar)
+  // ───────────────────────────────────────────────────────────
+
+  detenerWatchers.push(
+    watch(
+      () => [props.departamento, props.municipio, props.bloquearDepartamento],
+      aplicarSeleccion
+    )
+  );
+
+  detenerWatchers.push(
+    watch(() => casosStore.casos, programarRepintado, { deep: false })
+  );
+});
+
+// ─────────────────────────────────────────────────────────────
+// Liberar recursos al desmontar el componente
+// ─────────────────────────────────────────────────────────────
 
 onBeforeUnmount(() => {
-  if (root) root.dispose()
-})
+  detenerWatchers.forEach((detener) => detener());
+  detenerWatchers.length = 0;
+
+  if (rafId) {
+    cancelAnimationFrame(rafId);
+    rafId = null;
+  }
+
+  if (root) {
+    root.dispose();
+    root = null;
+  }
+});
 </script>
 
 <style scoped>
 #chartdivmap {
   width: 100%;
   height: 650px;
-  filter: drop-shadow(2px 20px 12px);
+  /* Se quitó filter: drop-shadow(...) porque hacía que el mapa se trabara. */
+}
+
+@media (max-width: 700px) {
+  #chartdivmap {
+    height: 440px;
+  }
 }
 </style>

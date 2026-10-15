@@ -68,8 +68,11 @@
                   </td>
                   <td>
                     <span :class="['role-badge', 'role-' + (user.role?.toLowerCase() || 'user')]">
-                      {{ ROLE_LABELS[user.role?.toLowerCase()] || 'Usuario' }}
+                      {{ ROLE_LABELS[user.role?.toLowerCase()] || user.role || 'Usuario' }}
                     </span>
+                    <div v-if="user.departamento" class="user-depto">
+                      {{ formatearNombreGeografico(user.departamento) }}
+                    </div>
                   </td>
                   <td>
                     <div class="status-indicator" @click="openToggleDialog(user)" style="cursor:pointer">
@@ -105,7 +108,7 @@
             <v-col cols="12">
               <v-select
                 v-model="editedItem.roleId"
-                :items="[{title: 'Admin', value: 1}, {title: 'Usuario', value: 2}, {title: 'Moderador', value: 3}]"
+                :items="rolesDisponibles"
                 item-title="title"
                 item-value="value"
                 label="Rol"
@@ -113,6 +116,21 @@
                 density="comfortable"
                 color="#10233f"
   base-color="#10233f"
+              />
+            </v-col>
+            <v-col v-if="requiereDepartamento" cols="12">
+              <v-select
+                v-model="editedItem.departamentoId"
+                :items="departamentosDisponibles"
+                item-title="title"
+                item-value="value"
+                label="Departamento asignado"
+                hint="El perfil Consulta solo verá los casos de este departamento"
+                persistent-hint
+                variant="outlined"
+                density="comfortable"
+                color="#10233f"
+                base-color="#10233f"
               />
             </v-col>
             <v-col cols="12">
@@ -130,6 +148,7 @@
             </v-col>
           </v-row>
         </v-card-text>
+        <p v-if="errorGuardar" class="error-guardar" role="alert">{{ errorGuardar }}</p>
         <v-card-actions class="px-6 pb-6 pt-0">
           <v-spacer />
           <v-btn variant="text"  color="grey-darken-2" @click="closeDialog" class="text-none font-weight-medium">Cancelar</v-btn>
@@ -174,16 +193,27 @@ import { ref, computed, nextTick, onMounted } from 'vue'
 import AppNavbar from '@/components/AppNavbar.vue'
 import AppFooter from '@/components/AppFooter.vue'
 import { useUserStore } from '@/stores/users'
+import api from '@/helpers/api'
+import { ROLE_LABELS, tieneAlcanceDepartamental } from '@/helpers/permisos'
+import { formatearNombreGeografico } from '@/helpers/formatoNombres'
 import heroImage from '@/assets/ninas embarazadas -39.png'
 
+// Filtro de la tabla: todos los perfiles conocidos
 const roles = [
   { title: 'Todos', value: '' },
-  { title: 'Admin', value: 'admin' },
-  { title: 'Moderador', value: 'moderator' },
-  { title: 'Usuario', value: 'user' },
+  ...Object.entries(ROLE_LABELS).map(([value, title]) => ({ title, value })),
 ]
 
-const ROLE_LABELS = { admin: 'Admin', moderator: 'Moderador', user: 'Usuario' }
+// Perfiles asignables, desde el catálogo de roles del backend
+const catalogoRoles = ref([])
+const rolesDisponibles = computed(() =>
+  catalogoRoles.value.map(r => ({ title: ROLE_LABELS[r.name] || r.name, value: r.id, name: r.name }))
+)
+
+// Departamentos para el alcance del perfil "Consulta"
+const departamentosDisponibles = ref([])
+
+const errorGuardar = ref('')
 
 const userStore = useUserStore()
 
@@ -201,6 +231,7 @@ const defaultItem = {
   name: '',
   email: '',
   roleId: 2,
+  departamentoId: null,
   password: '',
   isActive: true
 }
@@ -221,8 +252,15 @@ const filteredUsers = computed(() => {
   })
 })
 
+// El perfil "Consulta" necesita un departamento asignado
+const requiereDepartamento = computed(() => {
+  const rol = rolesDisponibles.value.find(r => r.value === editedItem.value.roleId)
+  return tieneAlcanceDepartamental(rol?.name)
+})
+
 // ── Methods ────────────────────────────────────────────
 function openDialog(item = null) {
+  errorGuardar.value = ''
   isEditing.value  = !!item
   editedItem.value = item ? { ...item } : { ...defaultItem }
   dialog.value     = true
@@ -234,15 +272,22 @@ function closeDialog() {
 }
 
 async function saveUser() {
+  errorGuardar.value = ''
+  if (requiereDepartamento.value && !editedItem.value.departamentoId) {
+    errorGuardar.value = 'Seleccione el departamento al que tendrá acceso el perfil Consulta.'
+    return
+  }
+  // Los demás perfiles no llevan departamento (el backend también lo limpia)
+  const datos = { ...editedItem.value, departamentoId: requiereDepartamento.value ? editedItem.value.departamentoId : null }
   try {
     if (isEditing.value) {
-      await userStore.updateUser(editedItem.value)
+      await userStore.updateUser(datos)
     } else {
-      await userStore.createUser(editedItem.value)
+      await userStore.createUser(datos)
     }
     closeDialog()
-  } catch {
-    // error ya logueado en el store
+  } catch (error) {
+    errorGuardar.value = error.response?.data?.message || 'No se pudo guardar el usuario.'
   }
 }
 
@@ -261,8 +306,18 @@ async function confirmToggle() {
 
 
 
-onMounted(() => {
+onMounted(async () => {
   userStore.fetchUsers()
+  try {
+    const [rRoles, rDept] = await Promise.all([api.get('/roles'), api.get('/dept')])
+    catalogoRoles.value = rRoles.data || []
+    departamentosDisponibles.value = (rDept.data.data || []).map(d => ({
+      title: formatearNombreGeografico(d.nombre),
+      value: d.id,
+    }))
+  } catch (error) {
+    console.error('Error cargando roles o departamentos:', error)
+  }
 })
 </script>
 
@@ -335,6 +390,10 @@ background: linear-gradient(to bottom,
 .role-admin     { background-color: #10233f; color: #ffffff; }
 .role-moderator { background-color: #ff9797; color: #ffffff; }
 .role-user      { background-color: #f5f5f5; color: #6d6d6d; }
+.role-consulta         { background-color: #e0f6fb; color: #0b6f86; }
+.role-consulta_general { background-color: #17c4e8; color: #10233f; }
+.user-depto    { margin-top: 0.25rem; font-size: 11px; color: #6a8299; }
+.error-guardar { margin: 0 1.5rem 0.75rem; font-size: 0.8rem; color: #b71c1c; }
 
 .text-gray { color: #1a1a1a; font-size: 13px; font-weight: 500; }
 

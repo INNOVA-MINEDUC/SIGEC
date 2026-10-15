@@ -24,6 +24,21 @@ export default {
         createdAt: new Date(),
         updatedAt: new Date(),
       },
+
+      // Solo lectura (ver migración 20261009000000-roles-consulta.js)
+      {
+        name: 'consulta',
+        description: 'Consulta: solo lectura, limitado al departamento asignado',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+
+      {
+        name: 'consulta_general',
+        description: 'Consulta general: solo lectura, alcance nacional',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
     ], { ignoreDuplicates: true });
   },
 
