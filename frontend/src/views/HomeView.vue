@@ -73,7 +73,8 @@ const router = useRouter()
   position: relative;
   width: 100%;
   overflow: hidden;
-  height: 500px;
+  /* Se reduce con el ancho de pantalla: 500px en escritorio, 360px en teléfono */
+  height: clamp(360px, 55vw, 500px);
 }
 
 .hero-bg {
@@ -99,7 +100,7 @@ const router = useRouter()
   flex-direction: column;
   align-items: center;
   justify-content: flex-end;
-  padding-bottom: 3.5rem;
+  padding-bottom: clamp(1.75rem, 5vw, 3.5rem);
   padding-inline: 1.5rem;
   text-align: center;
 }
@@ -107,7 +108,7 @@ const router = useRouter()
 .hero-title {
   color: white;
   text-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  font-size: 48px;
+  font-size: clamp(1.75rem, 5.5vw, 3rem);
   font-weight: 700;
   line-height: 1.15;
   max-width: 800px;
@@ -117,7 +118,7 @@ const router = useRouter()
 .hero-subtitle {
   margin-top: 1rem;
   color: white;
-  font-size: 1.125rem;
+  font-size: clamp(0.95rem, 2.2vw, 1.125rem);
   font-weight: 500;
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   max-width: 700px;
@@ -187,24 +188,30 @@ const router = useRouter()
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4rem;
+  gap: 2.5rem;
 }
 
-@media (min-width: 768px) {
+/* Dos columnas desde tablet horizontal; texto e imagen se reparten el ancho
+   (antes la imagen fija de 520px dejaba el texto en ~140px a 768px). */
+@media (min-width: 900px) {
   .about-container {
     flex-direction: row;
     justify-content: space-between;
+    gap: 3.5rem;
+  }
+  .about-text,
+  .about-image {
+    flex: 1 1 0;
   }
 }
 
 .about-text {
-  flex: 1;
   max-width: 32rem;
 }
 
 .about-text h2 {
   color: #6d6d6d;
-  font-size: 32px;
+  font-size: clamp(1.5rem, 4vw, 2rem);
   font-weight: 700;
   line-height: 1.2;
   margin-bottom: 1.5rem;
@@ -247,10 +254,16 @@ const router = useRouter()
 
 .about-image img {
   width: 100%;
-  height: 380px;
+  height: clamp(220px, 45vw, 380px);
   object-fit: cover;
   border-radius: 1.5rem;
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+}
+
+@media (max-width: 600px) {
+  .about { padding: 3rem 0; }
+  .about-container { padding: 0 1rem; }
+  .primary-btn { width: 100%; }
 }
 
 /* STATS */

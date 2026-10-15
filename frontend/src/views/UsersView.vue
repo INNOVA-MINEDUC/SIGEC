@@ -57,7 +57,7 @@
               </thead>
               <tbody>
                 <tr v-for="user in filteredUsers" :key="user.id">
-                  <td>
+                  <td class="col-usuario">
                     <div class="user-info">
                       <div class="avatar-bubble">{{ user.name ? user.name.charAt(0).toUpperCase() : 'U' }}</div>
                       <div>
@@ -66,7 +66,7 @@
                       </div>
                     </div>
                   </td>
-                  <td>
+                  <td class="col-rol">
                     <span :class="['role-badge', 'role-' + (user.role?.toLowerCase() || 'user')]">
                       {{ ROLE_LABELS[user.role?.toLowerCase()] || user.role || 'Usuario' }}
                     </span>
@@ -74,7 +74,7 @@
                       {{ formatearNombreGeografico(user.departamento) }}
                     </div>
                   </td>
-                  <td>
+                  <td class="col-estado">
                     <div class="status-indicator" @click="openToggleDialog(user)" style="cursor:pointer">
                       <span :class="['dot', user.active ? 'active' : 'inactive']"></span>
                       {{ user.active ? 'Activo' : 'Inactivo' }}
@@ -85,7 +85,7 @@
                   </td>
                 </tr>
                 <tr v-if="filteredUsers.length === 0">
-                  <td colspan="5" class="text-center py-4 text-muted">No se encontraron usuarios.</td>
+                  <td colspan="4" class="text-center py-4 text-muted celda-vacia">No se encontraron usuarios.</td>
                 </tr>
               </tbody>
             </table>
@@ -333,7 +333,7 @@ onMounted(async () => {
 .mt-6 { margin-top: 1.5rem; }
 
 /* HERO */
-.hero-dash { position: relative; width: 100%; overflow: hidden; height: 500px; }
+.hero-dash { position: relative; width: 100%; overflow: hidden; height: clamp(260px, 45vw, 500px); }
 .hero-bg   { width: 100%; height: 100%; object-fit: cover; object-position: center top; }
 .hero-overlay {
   position: absolute; inset: 0;
@@ -345,10 +345,10 @@ background: linear-gradient(to bottom,
 .hero-content {
   position: absolute; inset: 0;
   display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
-  padding-bottom: 3.5rem; padding-inline: 1.5rem; text-align: center;
+  padding-bottom: clamp(1.75rem, 5vw, 3.5rem); padding-inline: 1.5rem; text-align: center;
 }
-.hero-top-text { color: white; font-size: 32px; font-weight: 700; text-shadow: 0 4px 10px rgba(0,0,0,0.3); margin-bottom: -0.25rem; line-height: 1.1; }
-.hero-title    { color: white; text-shadow: 0 4px 12px rgba(0,0,0,0.3); font-size: 64px; font-weight: 700; line-height: 1.15; margin-bottom: 0; }
+.hero-top-text { color: white; font-size: clamp(1.25rem, 3.5vw, 2rem); font-weight: 700; text-shadow: 0 4px 10px rgba(0,0,0,0.3); margin-bottom: -0.25rem; line-height: 1.1; }
+.hero-title    { color: white; text-shadow: 0 4px 12px rgba(0,0,0,0.3); font-size: clamp(2rem, 7vw, 4rem); font-weight: 700; line-height: 1.15; margin-bottom: 0; }
 
 /* HEADER */
 .users-header    { display: flex; justify-content: space-between; align-items: flex-end; background-color: #10233f; padding: 2rem; border-radius: 20px;}
@@ -412,4 +412,47 @@ background: linear-gradient(to bottom,
 .delete-btn:hover { background-color: #fef2f2; }
 .text-right   { text-align: right; }
 .text-center { text-align: center; }
+
+/* ── RESPONSIVE ────────────────────────────────────────────────────────── */
+/* Tablet: encabezado y filtros se acomodan en varias líneas */
+@media (max-width: 768px) {
+  .container-max { padding: 0 1rem; }
+  .users-header { flex-wrap: wrap; align-items: center; gap: 1rem; padding: 1.5rem; border-radius: 16px; }
+  .filters-row { flex-wrap: wrap; gap: 1.25rem; padding: 1.25rem 1rem; }
+  .search-box { max-width: none; flex: 1 1 260px; height: 44px; }
+  .role-filter { flex: 1 1 200px; }
+  .select-wrapper { width: 100%; }
+}
+
+/* Teléfono: cada usuario es una tarjeta (datos arriba; rol, estado y editar abajo) */
+@media (max-width: 600px) {
+  .section-title { font-size: 20px; }
+  .btn-pink { width: 100%; padding: 0.8rem 1.5rem; }
+
+  .users-table thead { display: none; }
+  .users-table,
+  .users-table tbody { display: block; }
+  .users-table tr {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "usuario usuario"
+      "rol     acciones"
+      "estado  acciones";
+    gap: 0.5rem 1rem;
+    align-items: center;
+    padding: 1rem;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .users-table tr:last-child { border-bottom: none; }
+  .users-table td { padding: 0; border-bottom: none; }
+  .users-table .col-usuario { grid-area: usuario; }
+  .users-table .col-rol     { grid-area: rol; }
+  .users-table .col-estado  { grid-area: estado; }
+  .users-table .actions-cell { grid-area: acciones; }
+  .users-table .celda-vacia { grid-column: 1 / -1; }
+  .user-email { overflow-wrap: anywhere; }
+  .status-indicator { padding: 0.25rem 0; }
+  .edit-btn { width: 44px; height: 44px; margin: 0; border: 1px solid #d8f0fc; border-radius: 0.5rem; }
+}
 </style>

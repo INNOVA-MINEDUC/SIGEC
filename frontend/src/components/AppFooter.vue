@@ -112,4 +112,15 @@ import logoDigecade1 from '@/assets/LOGOS_DCE1.png'
   opacity: 0.8;
   border-top: 1px solid #f472b6;
 }
+
+/* Teléfono: logos más pequeños y centrados */
+@media (max-width: 600px) {
+  .footer { margin-top: 2.5rem; }
+  .footer-container { padding: 0 1rem; }
+  .footer-logo { justify-content: center; gap: 0.75rem 1.25rem; padding-top: 2rem; margin-bottom: 2rem; }
+  .footer-logo-img { height: 3.25rem; }
+  .footer-grid { gap: 1.75rem; }
+  .footer-item span { overflow-wrap: anywhere; }
+  .footer-bottom { text-align: center; }
+}
 </style>

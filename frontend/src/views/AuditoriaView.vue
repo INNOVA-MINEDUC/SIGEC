@@ -74,17 +74,17 @@
               </thead>
               <tbody>
                 <tr v-for="reg in registros" :key="reg.id">
-                  <td class="text-gray">{{ formatFecha(reg.createdAt) }}</td>
-                  <td>
+                  <td class="text-gray col-fecha">{{ formatFecha(reg.createdAt) }}</td>
+                  <td class="col-usuario">
                     <div class="user-name">{{ reg.usuario?.name || 'Sistema' }}</div>
                     <div class="user-email">{{ reg.usuario?.email || '' }}</div>
                   </td>
-                  <td>
+                  <td class="col-accion">
                     <span class="accion-badge" :class="`accion-${reg.accion}`">
                       {{ accionLabel(reg.accion) }}
                     </span>
                   </td>
-                  <td class="text-gray">{{ reg.descripcion }}</td>
+                  <td class="text-gray col-descripcion">{{ reg.descripcion }}</td>
                 </tr>
                 <tr v-if="!cargando && registros.length === 0">
                   <td colspan="4" class="text-center py-4 text-muted">No se encontraron registros.</td>
@@ -252,7 +252,7 @@ onMounted(() => cargar(1))
 .mt-6 { margin-top: 1.5rem; }
 
 /* HERO */
-.hero-dash { position: relative; width: 100%; overflow: hidden; height: 500px; }
+.hero-dash { position: relative; width: 100%; overflow: hidden; height: clamp(260px, 45vw, 500px); }
 .hero-bg   { width: 100%; height: 100%; object-fit: cover; object-position: center top; }
 .hero-overlay {
   position: absolute; inset: 0;
@@ -264,10 +264,10 @@ onMounted(() => cargar(1))
 .hero-content {
   position: absolute; inset: 0;
   display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
-  padding-bottom: 3.5rem; padding-inline: 1.5rem; text-align: center;
+  padding-bottom: clamp(1.75rem, 5vw, 3.5rem); padding-inline: 1.5rem; text-align: center;
 }
-.hero-top-text { color: white; font-size: 32px; font-weight: 700; text-shadow: 0 4px 10px rgba(0,0,0,0.3); margin-bottom: -0.25rem; line-height: 1.1; }
-.hero-title    { color: white; text-shadow: 0 4px 12px rgba(0,0,0,0.3); font-size: 64px; font-weight: 700; line-height: 1.15; margin-bottom: 0; }
+.hero-top-text { color: white; font-size: clamp(1.25rem, 3.5vw, 2rem); font-weight: 700; text-shadow: 0 4px 10px rgba(0,0,0,0.3); margin-bottom: -0.25rem; line-height: 1.1; }
+.hero-title    { color: white; text-shadow: 0 4px 12px rgba(0,0,0,0.3); font-size: clamp(2rem, 7vw, 4rem); font-weight: 700; line-height: 1.15; margin-bottom: 0; }
 
 /* HEADER */
 .audit-header    { display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 1rem; background-color: #10233f; padding: 2rem; border-radius: 20px; }
@@ -342,4 +342,46 @@ onMounted(() => cargar(1))
 
 .text-center { text-align: center; }
 .text-muted  { color: #a0a0a0; }
+
+/* ── RESPONSIVE ────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .container-max { padding: 0 1rem; }
+  .audit-header { padding: 1.5rem; border-radius: 16px; }
+  .filters-row { gap: 1.25rem 1rem; padding: 1.25rem 1rem; }
+  .select-wrapper { width: 100%; }
+  .date-field { flex: 1 1 140px; }
+  .date-input { width: 100%; height: 44px; }
+}
+
+/* Teléfono: cada registro es una tarjeta (usuario y fecha, acción, descripción) */
+@media (max-width: 600px) {
+  .section-title { font-size: 20px; }
+  .export-actions { width: 100%; }
+  .btn-export { flex: 1; justify-content: center; padding-block: 0.7rem; }
+
+  .audit-table thead { display: none; }
+  .audit-table,
+  .audit-table tbody { display: block; }
+  .audit-table tr {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "usuario fecha"
+      "accion  accion"
+      "desc    desc";
+    gap: 0.4rem 0.75rem;
+    padding: 0.9rem 1rem;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .audit-table tr:last-child { border-bottom: none; }
+  .audit-table td { padding: 0; border-bottom: none; }
+  .audit-table td[colspan] { grid-column: 1 / -1; padding: 1rem 0; }
+  .audit-table .col-usuario     { grid-area: usuario; min-width: 0; }
+  .audit-table .col-fecha       { grid-area: fecha; font-size: 11px; color: #6d6d6d; text-align: right; white-space: nowrap; }
+  .audit-table .col-accion      { grid-area: accion; }
+  .audit-table .col-descripcion { grid-area: desc; font-size: 12.5px; line-height: 1.45; overflow-wrap: anywhere; }
+  .user-email { overflow-wrap: anywhere; }
+
+  .page-btn { width: 2.75rem; height: 2.75rem; }
+}
 </style>

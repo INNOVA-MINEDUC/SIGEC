@@ -36,6 +36,9 @@ const updateChart = () => {
 onMounted(() => {
   root = am5.Root.new("chartdivline")
   root._logo?.dispose()
+  // En pantallas táctiles el arrastre para desplazar la gráfica atrapaba el
+  // scroll de la página: ahora se requiere un toque previo para activarlo.
+  root.tapToActivate = true
   root.setThemes([am5themes_Animated.new(root)])
 
   const chart = root.container.children.push(

@@ -8,6 +8,7 @@ import 'vuetify/styles'
 import { createVuetify } from 'vuetify'
 import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
+import { es } from 'vuetify/locale'
 
 // Íconos de Material Design
 import '@mdi/font/css/materialdesignicons.css'
@@ -35,6 +36,11 @@ const vuetify = createVuetify({
   directives,
   icons: {
     defaultSet: 'mdi',
+  },
+  // Textos propios de Vuetify (paginación, tablas en modo móvil…) en español
+  locale: {
+    locale: 'es',
+    messages: { es },
   },
 })
 

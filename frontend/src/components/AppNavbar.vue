@@ -4,7 +4,20 @@
       <div class="logo-container">
         <img src="/imgs/logo.png" alt="Logo SIGEC" class="header-logo-img" />
       </div>
-      <div class="nav-links">
+
+      <!-- Tablet y teléfono: los enlaces se abren desde este botón -->
+      <button
+        class="menu-toggle"
+        type="button"
+        :aria-expanded="menuAbierto"
+        aria-controls="nav-links"
+        :aria-label="menuAbierto ? 'Cerrar menú' : 'Abrir menú'"
+        @click="menuAbierto = !menuAbierto"
+      >
+        <v-icon size="26">{{ menuAbierto ? 'mdi-close' : 'mdi-menu' }}</v-icon>
+      </button>
+
+      <div id="nav-links" class="nav-links" :class="{ abierto: menuAbierto }">
         <router-link
           v-for="link in navLinks"
           :key="link.name"
@@ -23,11 +36,14 @@
         <button class="nav-btn logout-btn" @click="logout">Cerrar Sesión</button>
       </div>
     </div>
+    <!-- Fondo del menú desplegable: un toque fuera lo cierra -->
+    <div v-if="menuAbierto" class="menu-backdrop" @click="menuAbierto = false"></div>
   </nav>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { puedeEditarCasos } from '@/helpers/permisos'
 import logoSisec from '@/assets/LOGO_SISEC.png'
@@ -55,6 +71,15 @@ const navLinks = computed(() => {
   if (auth.user?.role === 'admin') return [...base, ...ADMIN_LINKS]
   return base
 })
+
+// Menú desplegable (tablet y teléfono): se cierra al navegar o con Escape
+const menuAbierto = ref(false)
+const route = useRoute()
+watch(() => route.fullPath, () => { menuAbierto.value = false })
+
+const cerrarConEscape = (e) => { if (e.key === 'Escape') menuAbierto.value = false }
+onMounted(() => window.addEventListener('keydown', cerrarConEscape))
+onBeforeUnmount(() => window.removeEventListener('keydown', cerrarConEscape))
 
 async function logout() {
   // Se espera a logoutSession para que quede registrado el cierre en auditoría
@@ -144,10 +169,73 @@ async function logout() {
 }
 .logout-btn:hover { opacity: 0.9; }
 
-/* En pantallas pequeñas los enlaces ocupan varias líneas: la barra crece con
-   ellos y deja de ser fija para no tapar el contenido (p. ej. «Regresar» del mapa). */
-@media (max-width: 900px) {
-  .navbar { position: relative; }
-  .nav-container { height: auto; min-height: 4rem; flex-wrap: wrap; gap: 0.5rem; padding-block: 0.5rem; }
+/* ── Menú desplegable (tablet y teléfono) ─────────────────────────────── */
+.menu-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: #10233f;
+  cursor: pointer;
+}
+.menu-toggle:hover { background-color: #f1f4f8; }
+.menu-toggle:focus-visible { outline: 2px solid #17c4e8; outline-offset: 2px; }
+.menu-backdrop { display: none; }
+
+/* Con todos los enlaces de administrador la barra no cabe por debajo de
+   ~1100px: los enlaces pasan a un panel que se despliega bajo la barra. */
+@media (max-width: 1100px) {
+  .nav-container { position: relative; padding: 0 1rem; }
+  .header-logo-img { height: 38px; }
+  .menu-toggle { display: inline-flex; }
+
+  .nav-links {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 2;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.25rem;
+    padding: 0.75rem 1rem 1rem;
+    background-color: white;
+    border-top: 1px solid #eef0f4;
+    box-shadow: 0 12px 24px rgba(16, 35, 63, 0.12);
+    max-height: calc(100dvh - 4rem);
+    overflow-y: auto;
+  }
+  .nav-links.abierto { display: flex; animation: menuEntrada 0.18s ease-out; }
+
+  /* Enlaces con área táctil cómoda (≥ 44px) */
+  .nav-item {
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    border-bottom: none;
+    border-left: 3px solid transparent;
+    border-radius: 0.375rem;
+  }
+  .nav-item:hover { background-color: #f6f8fb; }
+  .nav-item-active { background-color: #fdf2f8; border-left-color: #f472b6; }
+  .divider { width: 100%; height: 1px; margin: 0.25rem 0; }
+  .logout-btn { justify-content: center; margin: 0.25rem 0 0; padding: 0.75rem 1rem; font-size: 1rem; }
+
+  .menu-backdrop {
+    display: block;
+    position: fixed;
+    inset: 4rem 0 0 0;
+    z-index: 1;
+    background: rgba(16, 35, 63, 0.35);
+  }
+}
+
+@keyframes menuEntrada {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 </style>

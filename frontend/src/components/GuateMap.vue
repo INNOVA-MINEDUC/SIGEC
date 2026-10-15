@@ -99,6 +99,10 @@ onMounted(() => {
       wheelX: "none",
       wheelY: "none",
       projection: am5map.geoMercator(),
+      // Franja inferior reservada para la leyenda de intensidad: el mapa se
+      // ajusta al área interior y la leyenda ya no tapa la costa sur cuando
+      // el contenedor es más ancho que alto (tablet).
+      paddingBottom: 56,
     })
   );
 
@@ -194,8 +198,9 @@ onMounted(() => {
       width: am5.percent(chartdiv.value.clientWidth < 500 ? 85 : 55),
       x: am5.p50,
       centerX: am5.p50,
-      y: am5.percent(97),
-      centerY: am5.p100,
+      y: am5.p100,
+      centerY: am5.p0,
+      dy: 6,
     })
   );
 
@@ -541,6 +546,13 @@ onBeforeUnmount(() => {
   width: 100%;
   height: 650px;
   /* Se quitó filter: drop-shadow(...) porque hacía que el mapa se trabara. */
+}
+
+/* Una sola columna (tablet vertical): ancho de sobra, se acota la altura */
+@media (max-width: 900px) {
+  #chartdivmap {
+    height: 540px;
+  }
 }
 
 @media (max-width: 700px) {

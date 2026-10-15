@@ -1,0 +1,23 @@
+/* ── Base responsiva compartida por todas las vistas ─────────────────────── */
+
+/* Evita que el navegador móvil agrande el texto por su cuenta al girar el equipo */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* Las imágenes nunca desbordan su contenedor */
+img,
+video {
+  max-width: 100%;
+}
+
+/* iOS (Safari y cualquier navegador en iPhone/iPad) amplía la página al
+   enfocar un campo con letra menor a 16px y no la regresa al salir. */
+@supports (-webkit-touch-callout: none) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}

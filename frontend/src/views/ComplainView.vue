@@ -65,7 +65,7 @@
               </div>
 
               <p class="text-gray-info" style="margin: 0.25rem 0 0 0;">Fecha de ingreso del caso:</p>
-              <div class="field-row">
+              <div class="field-row field-row--fecha">
                 <div class="input-box" style="flex: 1;">
                   <select v-model="form.fechaIngresoDia" :class="{ 'empty-select': !form.fechaIngresoDia }">
                     <option value="" disabled selected>Día</option>
@@ -121,7 +121,7 @@
               </div>
 
               <p class="text-gray-info" style="margin: 0.25rem 0 0 0;">Fecha de primera consulta:</p>
-              <div class="field-row">
+              <div class="field-row field-row--fecha">
                 <div class="input-box" style="flex: 1;">
                   <select v-model="form.consultaDia" :class="{ 'empty-select': !form.consultaDia }">
                     <option value="" disabled selected>Día</option>
@@ -151,7 +151,7 @@
               </div>
 
               <p class="text-gray-info" style="margin: 0.25rem 0 0 0;">Fecha de nacimiento:</p>
-              <div class="field-row">
+              <div class="field-row field-row--fecha">
                 <div class="input-box" style="flex: 1;">
                   <select v-model="form.nacimientoDia" :class="{ 'empty-select': !form.nacimientoDia }">
                     <option value="" disabled selected>Día</option>
@@ -975,7 +975,7 @@ async function submitForm() {
   font-family: system-ui, -apple-system, sans-serif;
   min-height: 100vh;
 }
-.hero { position: relative; width: 100%; overflow: hidden; height: 500px; }
+.hero { position: relative; width: 100%; overflow: hidden; height: clamp(360px, 55vw, 500px); }
 .hero-bg { width: 100%; height: 100%; object-fit: cover; object-position: center; }
 .hero-overlay {
   position: absolute; inset: 0;
@@ -987,11 +987,11 @@ async function submitForm() {
 .hero-content {
   position: absolute; inset: 0;
   display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
-  padding-bottom: 3.5rem; padding-inline: 1.5rem; text-align: center;
+  padding-bottom: clamp(1.75rem, 5vw, 3.5rem); padding-inline: 1.5rem; text-align: center;
 }
-.hero-top-text { color: white; font-size: 32px; font-weight: 700; text-shadow: 0 4px 10px rgba(0,0,0,0.3); margin-bottom: -0.25rem; line-height: 1.1; }
-.hero-title    { color: white; text-shadow: 0 4px 12px rgba(0,0,0,0.3); font-size: 64px; font-weight: 700; line-height: 1.15; max-width: 900px; margin-bottom: 0; }
-.hero-subtitle { margin-top: 1rem; color: white; font-size: 1.125rem; font-weight: 500; text-shadow: 0 2px 8px rgba(0,0,0,0.3); max-width: 700px; }
+.hero-top-text { color: white; font-size: clamp(1.25rem, 3.5vw, 2rem); font-weight: 700; text-shadow: 0 4px 10px rgba(0,0,0,0.3); margin-bottom: -0.25rem; line-height: 1.1; }
+.hero-title    { color: white; text-shadow: 0 4px 12px rgba(0,0,0,0.3); font-size: clamp(2rem, 7vw, 4rem); font-weight: 700; line-height: 1.15; max-width: 900px; margin-bottom: 0; }
+.hero-subtitle { margin-top: 1rem; color: white; font-size: clamp(0.95rem, 2.2vw, 1.125rem); font-weight: 500; text-shadow: 0 2px 8px rgba(0,0,0,0.3); max-width: 700px; }
 .form-section   { padding: 3.5rem 0; background-color: #f5f5f5; }
 .form-container { max-width: 56rem; margin: 0 auto; padding: 0 1.5rem; }
 .step-indicator { display: flex; align-items: center; width: 100%; margin-bottom: 1.5rem; padding: 0 1rem; }
@@ -1074,5 +1074,43 @@ async function submitForm() {
 .step-fade-leave-to {
   opacity: 0;
   transform: translateX(-24px);
+}
+
+/* El texto del select no queda debajo de la flecha */
+.input-box select { padding-right: 1.25rem; }
+
+/* ── RESPONSIVE ────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .form-section { padding: 2rem 0; }
+  .form-container { padding: 0 1rem; }
+  .form-card { padding: 1.5rem 1.25rem; }
+}
+
+/* Teléfono: un campo por renglón (salvo Día/Mes/Año) y botones grandes */
+@media (max-width: 600px) {
+  .form-card { padding: 1.25rem 1rem; }
+  .form-header h2 { font-size: 1rem; }
+
+  .field-row:not(.field-row--fecha) { flex-direction: column; }
+  /* !important: las filas traen flex en línea (style="flex: 3") y la utilidad
+     w-50 de Vuetify fija width: 50% !important */
+  .field-row:not(.field-row--fecha) > .input-box { flex: 0 0 auto !important; width: 100% !important; }
+  .field-row--fecha { gap: 0.5rem; }
+  .field-row--fecha .input-box { padding-inline: 0.6rem; }
+
+  .input-box { padding-block: 0.75rem; }
+
+  /* Pasos: solo se muestra el nombre del paso actual */
+  .step-indicator { padding: 0; }
+  .step-label:not(.active) { display: none; }
+  .step-line { margin: 0 0.5rem; }
+  .step-circle { width: 1.75rem; height: 1.75rem; }
+
+  .form-actions { gap: 0.75rem; margin-top: 1.5rem; }
+  .btn-prev { padding: 0.75rem 0.5rem; }
+  .btn-next { flex: 1; max-width: 14rem; padding: 0.8rem 1.25rem; font-size: 0.95rem; }
+
+  .estado-actual-banner { font-size: 0.72rem; }
+  .estado-chip { white-space: normal; }
 }
 </style>

@@ -413,11 +413,34 @@ async function submitLogin() {
 }
 
 /* ── RESPONSIVE ─────────────────────────────────────────────────────── */
+/* Tablet vertical: el panel de marca se angosta para dar aire al formulario */
+@media (max-width: 1024px) {
+  .brand-panel { width: 40%; padding: 2.5rem 1.75rem; }
+  .form-panel { width: 60%; }
+}
+
+/* Teléfono: panel de marca compacto arriba y formulario debajo */
 @media (max-width: 768px) {
-  .login-page { flex-direction: column; }
-  .brand-panel { width: 100%; padding: 2rem 1.5rem; }
+  .login-page { flex-direction: column; min-height: 100dvh; }
+  .brand-panel { width: 100%; padding: 1.75rem 1.25rem 1.5rem; }
+  .brand-logos { gap: 12px; margin-bottom: 1rem; }
+  .logo-sigec { height: 46px; }
+  .logo-mineduc { height: 38px; }
+  .logo-divider { height: 36px; }
   .brand-title { font-size: 2rem; }
+  .brand-subtitle { font-size: 0.9rem; margin-bottom: 0.75rem; }
+  .brand-tagline { white-space: normal; margin-bottom: 0; justify-content: center; text-align: center; }
   .brand-description { display: none; }
-  .form-panel { width: 100%; padding: 2rem 1rem; }
+  .form-panel { width: 100%; flex: 1; align-items: flex-start; padding: 1.5rem 1rem 2rem; }
+  .form-inner { padding: 1.75rem 1.25rem; }
+  .field-input { padding: 0.85rem 0; }
+  .btn-login { padding: 0.95rem; font-size: 1rem; }
+
+  /* La alerta ocupa el ancho de la pantalla en lugar de 320px fijos */
+  .alert-box { top: 12px; left: 12px; right: 12px; width: auto; }
+}
+
+@media (max-width: 380px) {
+  .brand-line { display: none; }
 }
 </style>

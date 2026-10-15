@@ -231,7 +231,7 @@
 
     <!-- STAT CARDS -->
     <section class="py-8 bg-white">
-  <div class="kpi-grid">
+        <div class="kpi-grid">
           <div class="kpi-card" v-for="item in kpiPrincipales" :key="item.id">
             <div class="kpi-icon-wrap">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
@@ -245,9 +245,11 @@
     </section>
 
         <section class="pb-2 text-center">
-      <div class="container-max" style="background-color: #10233f; border-radius: 10px; padding-block: 1rem;">
-        <h2 class="chart-title">Gráficas geográficas y edades</h2>
-        <p class="chart-subtitle">Distribución de casos por departamentos, municipios y edades según los filtros aplicados.</p>
+      <div class="container-max">
+        <div class="banner-box">
+          <h2 class="chart-title">Gráficas geográficas y edades</h2>
+          <p class="chart-subtitle">Distribución de casos por departamentos, municipios y edades según los filtros aplicados.</p>
+        </div>
       </div>
     </section>
 
@@ -296,9 +298,11 @@
 
     <!-- CHARTS -->
     <section class="pb-2 text-center">
-      <div class="container-max" style="background-color: #10233f; border-radius: 10px; padding-block: 1rem;">
-        <h2 class="chart-title">Gráficas por mes y estado de casos</h2>
-        <p class="chart-subtitle">Distribución de casos por mes y estado según los filtros aplicados.</p>
+      <div class="container-max">
+        <div class="banner-box">
+          <h2 class="chart-title">Gráficas por mes y estado de casos</h2>
+          <p class="chart-subtitle">Distribución de casos por mes y estado según los filtros aplicados.</p>
+        </div>
       </div>
     </section>
 
@@ -738,7 +742,9 @@ const exportarPDFClick = async () => {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
   gap: 10px;
-  margin-bottom: 10px;
+  margin: 0 auto 10px;
+  max-width: 80rem;
+  padding: 0 1.5rem;
 }
 
 .kpi-card {
@@ -814,7 +820,7 @@ const exportarPDFClick = async () => {
 .gap-5         { gap: 1.25rem; }
 
 /* HERO */
-.hero-dash { position: relative; width: 100%; overflow: hidden; height: 500px; }
+.hero-dash { position: relative; width: 100%; overflow: hidden; height: clamp(360px, 55vw, 500px); }
 .hero-bg   { width: 100%; height: 100%; object-fit: cover; object-position: center; }
 .hero-overlay {
   position: absolute; inset: 0;
@@ -826,11 +832,11 @@ const exportarPDFClick = async () => {
 .hero-content {
   position: absolute; inset: 0;
   display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
-  padding-bottom: 3.5rem; padding-inline: 1.5rem; text-align: center;
+  padding-bottom: clamp(1.75rem, 5vw, 3.5rem); padding-inline: 1.5rem; text-align: center;
 }
-.hero-top-text { color: white; font-size: 32px; font-weight: 700; text-shadow: 0 4px 10px rgba(0,0,0,0.3); margin-bottom: -0.25rem; line-height: 1.1; }
-.hero-title    { color: white; text-shadow: 0 4px 12px rgba(0,0,0,0.3); font-size: 64px; font-weight: 700; line-height: 1.15; max-width: 900px; margin-bottom: 0; }
-.hero-subtitle { margin-top: 1rem; color: white; font-size: 1.125rem; font-weight: 500; text-shadow: 0 2px 8px rgba(0,0,0,0.3); max-width: 700px; }
+.hero-top-text { color: white; font-size: clamp(1.25rem, 3.5vw, 2rem); font-weight: 700; text-shadow: 0 4px 10px rgba(0,0,0,0.3); margin-bottom: -0.25rem; line-height: 1.1; }
+.hero-title    { color: white; text-shadow: 0 4px 12px rgba(0,0,0,0.3); font-size: clamp(2rem, 7vw, 4rem); font-weight: 700; line-height: 1.15; max-width: 900px; margin-bottom: 0; }
+.hero-subtitle { margin-top: 1rem; color: white; font-size: clamp(0.95rem, 2.2vw, 1.125rem); font-weight: 500; text-shadow: 0 2px 8px rgba(0,0,0,0.3); max-width: 700px; }
 
 /* FILTERS */
 .filters-section { background: #fff; border-bottom: 1px solid #eaeaea; padding: 1.5rem 0; }
@@ -974,22 +980,11 @@ const exportarPDFClick = async () => {
 .grid-2-col { display: grid; grid-template-columns: 1fr 1fr; }
 .grid-mapa  { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); }
 
-/* Tarjetas y botones de exportación en pantallas pequeñas */
-@media (max-width: 1100px) { .kpi-grid { grid-template-columns: repeat(3, 1fr); padding: 0 1rem; } }
-@media (max-width: 600px) {
-  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
-  .filters-footer { flex-direction: column; align-items: stretch; gap: 0.75rem; }
-  .footer-right { flex-wrap: wrap; }
-}
 .deptos-container { display: flex; flex-direction: column; min-width: 0; }
 .municipios-container { padding: 0 1.5rem 1.5rem; }
 .age-card { padding: 2rem 1.5rem 1.5rem; }
 .pb-8 { padding-bottom: 2rem; }
 
-@media (max-width: 900px) {
-  .grid-mapa, .grid-2-col { grid-template-columns: 1fr; }
-  .unified-right { padding: 0 1.5rem 1.5rem; }
-}
 .card-box {
   background-color: #ffffff; border: none; border-radius: 0.75rem;
   padding: 1.5rem; box-shadow: 0 2px 4px rgba(0,0,0,0.02);
@@ -997,6 +992,54 @@ const exportarPDFClick = async () => {
 .unified-card  { padding: 0; }
 .unified-left  { padding: 1.5rem; }
 .unified-right { padding: 2.5rem 1.5rem 1.5rem; }
+
+/* Franja azul con el título de cada grupo de gráficas */
+.banner-box { background-color: #10233f; border-radius: 10px; padding: 1rem 1.25rem; }
+
+/* ── RESPONSIVE ────────────────────────────────────────────────────────── */
+/* Tablet: tarjetas en 3 columnas y mapa/listados uno debajo del otro */
+@media (max-width: 1100px) {
+  .kpi-grid { grid-template-columns: repeat(3, 1fr); padding: 0 1rem; }
+}
+@media (max-width: 900px) {
+  .grid-mapa, .grid-2-col { grid-template-columns: 1fr; }
+  .unified-right { padding: 0 1.5rem 1.5rem; }
+}
+
+/* Teléfono */
+@media (max-width: 600px) {
+  .container-max { padding: 0 1rem; }
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .kpi-card { padding: 16px 10px 14px; }
+  .kpi-card:hover { transform: none; }
+  .kpi-label { font-size: 9.5px; letter-spacing: .04em; overflow-wrap: anywhere; }
+
+  .filters-section { padding: 1rem 0; }
+  .filters-card { padding: 1rem; }
+  .filters-header { flex-wrap: wrap; gap: 0.5rem; }
+  /* Con una sola columna, «span 2» crearía una columna fantasma y desbordaría */
+  .span-2 { grid-column: 1 / -1; }
+  /* En una columna los filtros avanzados miden más de 1000px */
+  .advanced-wrapper.open { max-height: 2400px; }
+
+  .filters-footer { flex-direction: column; align-items: stretch; gap: 0.75rem; }
+  .btn-clear { justify-content: center; }
+  .footer-right { flex-wrap: wrap; }
+  .footer-right > * { flex: 1 1 auto; }
+  .btn-export, .btn-apply, .btn-clear { justify-content: center; padding-block: 0.7rem; }
+  .pdf-group { flex: 1 1 100%; }
+  .pdf-group > * { flex: 1; justify-content: center; padding-block: 0.7rem; }
+  .btn-apply { flex-basis: 100%; }
+
+  .py-8 { padding-top: 1.25rem; padding-bottom: 1.25rem; }
+  .card-box { padding: 1rem; }
+  .unified-card { padding: 0; }
+  .unified-left { padding: 0.5rem; }
+  .unified-right { padding: 0 1rem 1rem; }
+  .municipios-container { padding: 0 1rem 1rem; }
+  .age-card { padding: 1.25rem 1rem 1rem; }
+  .hero-subtitle br { display: none; }
+}
 .map-container {
   min-height: 280px; display: flex; align-items: center;
   justify-content: center; overflow: hidden;
@@ -1010,4 +1053,9 @@ const exportarPDFClick = async () => {
 /* CHART WRAPPERS */
 .chart-container { display: flex; align-items: center; justify-content: center; }
 .chart-container > div { width: 100%; }
+
+@media (max-width: 600px) {
+  .chart-title    { font-size: 1.05rem; }
+  .chart-subtitle { font-size: 0.8rem; }
+}
 </style>

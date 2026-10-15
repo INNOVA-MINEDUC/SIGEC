@@ -271,7 +271,8 @@
             :headers="historyHeaders"
             :items="uploadHistory"
             density="comfortable"
-             items-per-page-text="Registros por página"
+            items-per-page-text="Registros por página"
+            mobile-breakpoint="sm"
           />
           <div v-else class="empty-state">No hay cargas registradas aún</div>
         </div>
@@ -605,16 +606,16 @@ async function onArchivoInicial(payload) {
 }
 
 /* ── HERO ── */
-.hero             { position: relative; width: 100%; overflow: hidden; height: 500px; }
+.hero             { position: relative; width: 100%; overflow: hidden; height: clamp(260px, 45vw, 500px); }
 .hero-bg          { width: 100%; height: 100%; object-fit: cover; object-position: center; }
 .hero-overlay     { position: absolute; inset: 0;
   background: linear-gradient(to bottom,
       rgba(16, 35, 63, 0) 0%,
       rgba(16, 35, 63, 0.2) 40%,
       rgba(16, 35, 63, 0.95) 100%); }
-.hero-content     { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 3.5rem; padding-inline: 1.5rem; text-align: center; }
-.hero-title       { color: white; text-shadow: 0 4px 12px rgba(0,0,0,0.3); font-size: 64px; font-weight: 700; line-height: 1.15; max-width: 900px; margin-bottom: 0; }
-.hero-subtitle    { margin-top: 0.5rem; color: white; font-size: 1.5rem; font-weight: 700; text-shadow: 0 2px 8px rgba(0,0,0,0.3); max-width: 700px; }
+.hero-content     { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: clamp(1.75rem, 5vw, 3.5rem); padding-inline: 1.5rem; text-align: center; }
+.hero-title       { color: white; text-shadow: 0 4px 12px rgba(0,0,0,0.3); font-size: clamp(2rem, 7vw, 4rem); font-weight: 700; line-height: 1.15; max-width: 900px; margin-bottom: 0; }
+.hero-subtitle    { margin-top: 0.5rem; color: white; font-size: clamp(1rem, 3vw, 1.5rem); font-weight: 700; text-shadow: 0 2px 8px rgba(0,0,0,0.3); max-width: 700px; }
 
 /* ── CONTENT SECTION ── */
 .content-section  { background-color: #ffffff; padding: 3rem 1.5rem 0; }
@@ -647,7 +648,7 @@ async function onArchivoInicial(payload) {
   margin-bottom: 0.25rem;
 }
 .section-heading {
-  font-size: 2rem;
+  font-size: clamp(1.35rem, 4vw, 2rem);
   font-weight: 700;
   color: #333;
   line-height: 1.25;
@@ -1012,5 +1013,27 @@ async function onArchivoInicial(payload) {
   background: #fff3e0; color: #e65100;
   border-radius: 0.5rem; padding: 0.5rem 0.75rem;
   font-size: 0.78rem; margin-bottom: 1rem;
+}
+/* ── RESPONSIVE ── */
+@media (max-width: 768px) {
+  .content-section { padding: 2rem 1rem 0; }
+  .main-card { padding: 1.25rem; }
+  .card-right { padding: 0.75rem; }
+}
+
+@media (max-width: 600px) {
+  .main-card { padding: 1rem; border-radius: 0.75rem; }
+  .section-label { font-size: 16px; }
+  .upload-btn { width: 100%; padding: 0.8rem 1.5rem; }
+  .inicial-btn { padding: 0.6rem 0.9rem; font-size: 0.78rem; }
+  .resultado-card { padding: 1rem; }
+  .resultado-grid { grid-template-columns: repeat(2, 1fr); gap: 0.6rem; }
+  .resultado-item { padding: 0.75rem 0.5rem; }
+  .resultado-num { font-size: 1.5rem; }
+  .uploading-state { padding: 1.5rem 0.5rem; text-align: center; }
+  .validacion-error,
+  .validacion-warn { padding: 0.85rem 1rem; }
+  .history-header { margin-top: 2rem; }
+  .modal-actions .modal-btn { flex: 1; padding-block: 0.7rem; }
 }
 </style>

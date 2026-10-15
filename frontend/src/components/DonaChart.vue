@@ -1,9 +1,9 @@
 <template>
-  <div id="chartdivdona"></div>
+  <div ref="chartdiv" id="chartdivdona" :class="{ angosto }"></div>
 </template>
 
 <script setup>
-import { onMounted, onBeforeUnmount, watch } from "vue"
+import { ref, nextTick, onMounted, onBeforeUnmount, watch } from "vue"
 import * as am5 from "@amcharts/amcharts5"
 import * as am5percent from "@amcharts/amcharts5/percent"
 import am5themes_Animated from "@amcharts/amcharts5/themes/Animated"
@@ -13,7 +13,14 @@ const casosStore = useCasosStore()
 
 let root
 let series
-let legend
+let observador
+let creando = false
+
+// Con menos de 360px de ancho (teléfono) la leyenda lateral dejaba la dona en
+// ~90px: se pasa debajo y el contenedor crece para que ambas quepan.
+const ANCHO_LEYENDA_LATERAL = 360
+const chartdiv = ref(null)
+const angosto  = ref(false)
 
 const buildData = () => [
   { casos: "Verificados en el SIRE",      value: casosStore.casosPorEstado("Verificados en el SIRE").length },
@@ -22,8 +29,8 @@ const buildData = () => [
   { casos: "Sin Quejas",                  value: casosStore.casosPorEstado("sin Quejas").length },
 ]
 
-onMounted(() => {
-  root = am5.Root.new("chartdivdona")
+const crearGrafica = () => {
+  root = am5.Root.new(chartdiv.value)
   root._logo?.dispose()
   root.setThemes([am5themes_Animated.new(root)])
 
@@ -31,7 +38,7 @@ onMounted(() => {
     am5percent.PieChart.new(root, {
       radius: am5.percent(100),
       innerRadius: am5.percent(50),
-      layout: root.horizontalLayout
+      layout: angosto.value ? root.verticalLayout : root.horizontalLayout
     })
   )
 
@@ -58,12 +65,11 @@ onMounted(() => {
     strokeOpacity: 1
   })
 
-  legend = chart.children.push(
-    am5.Legend.new(root, {
-      centerY: am5.percent(50),
-      y: am5.percent(50),
-      layout: root.verticalLayout
-    })
+  // Al costado se centra en vertical; debajo de la dona, en horizontal
+  const legend = chart.children.push(
+    am5.Legend.new(root, angosto.value
+      ? { centerX: am5.p50, x: am5.p50, marginTop: 12, layout: root.verticalLayout }
+      : { centerY: am5.percent(50), y: am5.percent(50), layout: root.verticalLayout })
   )
 
   legend.valueLabels.template.setAll({
@@ -72,7 +78,7 @@ onMounted(() => {
   })
 
   legend.labels.template.setAll({
-    width: 140,
+    width: angosto.value ? 170 : 140,
     oversizedBehavior: "truncate"
   })
 
@@ -84,6 +90,27 @@ onMounted(() => {
   })
 
   series.appear(1000, 100)
+}
+
+// La disposición se fija al crear la gráfica (cambiarla en caliente deja
+// posiciones viejas del layout anterior); si el ancho cruza el umbral, por
+// ejemplo al girar la tablet, la gráfica se vuelve a crear.
+const revisarAncho = async () => {
+  if (!chartdiv.value || creando) return
+  const nuevo = chartdiv.value.clientWidth < ANCHO_LEYENDA_LATERAL
+  if (root && nuevo === angosto.value) return
+  creando = true
+  angosto.value = nuevo
+  if (root) { root.dispose(); root = null }
+  await nextTick()   // aplica la altura del modo angosto antes de dibujar
+  crearGrafica()
+  creando = false
+}
+
+onMounted(() => {
+  revisarAncho()
+  observador = new ResizeObserver(revisarAncho)
+  observador.observe(chartdiv.value)
 })
 
 watch(
@@ -96,6 +123,7 @@ watch(
 )
 
 onBeforeUnmount(() => {
+  observador?.disconnect()
   if (root) root.dispose()
 })
 </script>
@@ -105,5 +133,9 @@ onBeforeUnmount(() => {
   width: 100%;
   height: 300px;
   filter: drop-shadow(2px 20px 12px);
+}
+
+#chartdivdona.angosto {
+  height: 380px;
 }
 </style>

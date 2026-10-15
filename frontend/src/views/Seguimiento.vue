@@ -197,23 +197,23 @@
                 :key="caso.id"
                 :class="i % 2 === 0 ? 'row-even' : 'row-odd'"
               >
-                <td>
+                <td data-label="ID" class="celda-id">
                   {{ caso.numero_caso || 'Sin caso' }}
                 </td>
 
-                <td>
+                <td data-label="Nombre" class="celda-nombre">
                   {{ caso.nina?.nombre_completo || 'Sin nombre' }}
                 </td>
 
-                <td>
+                <td data-label="CUI">
                   {{ caso.nina?.cui || 'Sin CUI' }}
                 </td>
 
-                <td>
+                <td data-label="Código personal">
                   {{ caso.nina?.historialEducativo?.[0]?.codigo_personal || 'Sin código' }}
                 </td>
 
-                <td>
+                <td data-label="Queja">
                   <div class="queja-container">
                     <div class="queja-dot" :style="getQuejaStyle(caso)"></div>
                     <span class="queja-text">
@@ -222,17 +222,17 @@
                   </div>
                 </td>
 
-                <td>
+                <td data-label="Sistema educativo">
                   {{ caso.nina?.historialEducativo?.[0]?.status_actual || 'Sin registro' }}
                 </td>
 
-                <td>
+                <td data-label="Estado del caso" class="celda-estado">
                   <span class="status-badge" :style="getStatusStyle(caso.estado)">
                     {{ caso.estado || 'Sin estado' }}
                   </span>
                 </td>
 
-                <td>
+                <td class="celda-acciones">
                   <div class="acciones">
                     <button class="action-btn" @click="verDetalle(caso)">VER DETALLE</button>
                     <!-- Editar solo para perfiles con permiso (no los de consulta) -->
@@ -281,7 +281,8 @@
     <AppFooter />
 
     <!-- ── DETALLE DEL CASO (solo lectura) ── -->
-    <v-dialog v-model="detalleAbierto" max-width="760" scrollable>
+    <!-- En teléfono el detalle ocupa toda la pantalla -->
+    <v-dialog v-model="detalleAbierto" max-width="760" scrollable :fullscreen="xs">
       <v-card v-if="detalle" class="rounded-lg">
         <v-card-title class="detalle-titulo">
           <span>Caso {{ detalle.numero_caso || 'sin número' }}</span>
@@ -309,6 +310,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRouter } from 'vue-router'
+import { useDisplay } from 'vuetify'
 import api from '@/helpers/api'
 import { useSeguimientoFiltros } from '@/stores/seguimientoFiltros'
 import { useAuthStore } from '@/stores/auth'
@@ -319,6 +321,7 @@ import AppNavbar from '@/components/AppNavbar.vue'
 import AppFooter from '@/components/AppFooter.vue'
 
 const router = useRouter()
+const { xs } = useDisplay()
 
 // Filtros persistentes: sobreviven a salir y volver a la vista
 const filtrosStore = useSeguimientoFiltros()
@@ -526,8 +529,10 @@ const SECCIONES_DETALLE = [
    INDICADORES SECUNDARIOS
 ========================== */
 
+/* width: 100% (no 100vw): 100vw incluye la barra de desplazamiento y
+   provocaba scroll horizontal */
 .indicadores{
-  width: 100vw;
+  width: 100%;
   margin-bottom: 20px;
 }
 
@@ -776,7 +781,7 @@ const SECCIONES_DETALLE = [
 }
 
 /* HERO */
-.hero { position: relative; width: 100%; overflow: hidden; height: 500px; }
+.hero { position: relative; width: 100%; overflow: hidden; height: clamp(360px, 55vw, 500px); }
 .hero-bg { width: 100%; height: 100%; object-fit: cover; object-position: center; }
 .hero-overlay {
   position: absolute;
@@ -795,13 +800,13 @@ const SECCIONES_DETALLE = [
   flex-direction: column;
   align-items: center;
   justify-content: flex-end;
-  padding-bottom: 3.5rem;
+  padding-bottom: clamp(1.75rem, 5vw, 3.5rem);
   padding-inline: 1.5rem;
   text-align: center;
 }
-.hero-top-text { color: white; font-size: 32px; font-weight: 700; text-shadow: 0 4px 10px rgba(0,0,0,0.3); margin-bottom: -0.25rem; line-height: 1.1; }
-.hero-title    { color: white; text-shadow: 0 4px 12px rgba(0,0,0,0.3); font-size: 64px; font-weight: 700; line-height: 1.15; max-width: 900px; margin-bottom: 0; }
-.hero-subtitle { margin-top: 1rem; color: white; font-size: 1.125rem; font-weight: 500; text-shadow: 0 2px 8px rgba(0,0,0,0.3); max-width: 700px; }
+.hero-top-text { color: white; font-size: clamp(1.25rem, 3.5vw, 2rem); font-weight: 700; text-shadow: 0 4px 10px rgba(0,0,0,0.3); margin-bottom: -0.25rem; line-height: 1.1; }
+.hero-title    { color: white; text-shadow: 0 4px 12px rgba(0,0,0,0.3); font-size: clamp(2rem, 7vw, 4rem); font-weight: 700; line-height: 1.15; max-width: 900px; margin-bottom: 0; }
+.hero-subtitle { margin-top: 1rem; color: white; font-size: clamp(0.95rem, 2.2vw, 1.125rem); font-weight: 500; text-shadow: 0 2px 8px rgba(0,0,0,0.3); max-width: 700px; }
 
 /* STATS */
 .stats { padding: 4rem 0 3rem; background-color: white; }
@@ -828,8 +833,8 @@ const SECCIONES_DETALLE = [
 .container-max { max-width: 70rem; margin: 0 auto; padding: 0 1.5rem; }
 .search-bar-section { padding-bottom: 2rem; background-color: #ffffff; }
 .search-actions { display: flex; flex-wrap: wrap; align-items: stretch; gap: 1rem; }
-.search-pill { display: flex; flex: 1; min-width: 300px; background-color: #f8f8f8; border-radius: 9999px; overflow: hidden; }
-.pill-input { flex: 1; background-color: #81848b; border: none; padding: 0.875rem 1.5rem; font-size: 1rem; color: #fff; outline: none; }
+.search-pill { display: flex; flex: 1; min-width: min(300px, 100%); background-color: #f8f8f8; border-radius: 9999px; overflow: hidden; }
+.pill-input { flex: 1; min-width: 0; background-color: #81848b; border: none; padding: 0.875rem 1.5rem; font-size: 1rem; color: #fff; outline: none; }
 .pill-input::placeholder { color: #fff; }
 .pill-btn { background-color: #10233f; color: white; border: none; padding: 0 2.5rem; font-size: 1rem; font-weight: 500; cursor: pointer; transition: opacity 0.2s; }
 .pill-btn:hover { opacity: 0.9; }
@@ -930,5 +935,106 @@ td { padding: 1rem 1.5rem; color: #6d6d6d; font-size: 0.75rem; vertical-align: m
   .filters-wrapper {
     width: 100%;
   }
+}
+
+/* ── RESPONSIVE: tabla de casos como tarjetas (tablet vertical y teléfono) ── */
+@media (max-width: 768px) {
+  .container-max { padding: 0 1rem; }
+  .pill-btn { padding: 0 1.25rem; }
+  .pill-input { padding: 0.8rem 1.1rem; }
+  .table-header { flex-direction: column; align-items: stretch; }
+
+  .table-wrapper { border: none; overflow: visible; }
+  .table-wrapper table,
+  .table-wrapper tbody,
+  .table-wrapper tr,
+  .table-wrapper td { display: block; width: 100%; }
+  /* Encabezados ocultos a la vista pero disponibles para lectores de pantalla */
+  .table-wrapper thead {
+    position: absolute; width: 1px; height: 1px; overflow: hidden;
+    clip: rect(0, 0, 0, 0); white-space: nowrap;
+  }
+
+  .table-wrapper tbody tr {
+    margin-bottom: 0.85rem;
+    padding: 0.85rem 1rem;
+    border: 1px solid #e8ecf2;
+    border-radius: 0.75rem;
+    background-color: #ffffff;
+    box-shadow: 0 2px 8px rgba(16, 35, 63, 0.05);
+  }
+  .table-wrapper .row-odd { background-color: #ffffff; }
+
+  /* Cada dato en su renglón: etiqueta a la izquierda, valor a la derecha */
+  .table-wrapper td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.45rem 0;
+    border-bottom: 1px dashed #eef0f4;
+    text-align: right;
+    font-size: 0.8rem;
+    overflow-wrap: anywhere;
+  }
+  .table-wrapper td::before {
+    content: attr(data-label);
+    flex-shrink: 0;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #6a8299;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    text-align: left;
+  }
+
+  /* Nombre como título de la tarjeta e ID como dato secundario */
+  .table-wrapper .celda-nombre {
+    order: -2;
+    display: block;
+    padding-top: 0;
+    text-align: left;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #10233f;
+  }
+  .table-wrapper .celda-nombre::before { content: none; }
+  .table-wrapper tbody tr { display: flex; flex-direction: column; }
+  .table-wrapper .celda-id { order: -1; }
+
+  /* Estados largos ocupan dos o tres líneas: esquinas menos redondeadas */
+  .status-badge { font-size: 0.65rem; padding: 0.3rem 0.65rem; text-align: center; border-radius: 0.6rem; }
+  .queja-container { justify-content: flex-end; }
+
+  /* Acciones como botones a todo lo ancho, fáciles de tocar */
+  .table-wrapper .celda-acciones { border-bottom: none; padding: 0.75rem 0 0; }
+  .table-wrapper .celda-acciones::before { content: none; }
+  .acciones { flex-direction: row; width: 100%; gap: 0.5rem; }
+  .action-btn {
+    flex: 1;
+    padding: 0.7rem 0.5rem;
+    border: 1px solid #10233f;
+    border-radius: 0.5rem;
+    font-size: 0.72rem;
+  }
+  .acciones .action-btn:last-child:not(:first-child) { background-color: #10233f; color: #ffffff; }
+
+  .table-wrapper .empty-state { display: block; text-align: center; border: none; }
+  .table-wrapper .empty-state::before { content: none; }
+
+  .pagination { justify-content: center; gap: 0.75rem 1.5rem; }
+  .pag-buttons button { width: 2.5rem; height: 2.5rem; }
+}
+
+/* Indicadores en una columna: separadores horizontales. Va al final para
+   prevalecer sobre los bordes por posición del bloque de 768px. */
+@media (max-width: 576px) {
+  .sec-item,
+  .sec-item:nth-child(3) {
+    border-right: none;
+    border-bottom: 1px solid rgba(255, 255, 255, .08);
+  }
+  .sec-item:last-child { border-bottom: none; }
+  .sec-module { font-size: 10.5px; letter-spacing: .03em; line-height: 1.45; }
 }
 </style>
