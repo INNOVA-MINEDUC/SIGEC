@@ -1,6 +1,6 @@
 import multer from 'multer'
 import express from 'express'
-import { uploadExcel, CargaMasiva, ObtenerHistorial, CargaInicial } from '../controllers/UploadController.js'
+import { uploadExcel, CargaMasiva, ObtenerHistorial, CargaInicial, CargaQuejas } from '../controllers/UploadController.js'
 import { verifyToken }  from '../middleware/verifyToken.js'
 import { requireRole } from '../middleware/requireRole.js'
 
@@ -25,5 +25,9 @@ router.post('/masivo',    verifyToken, requireRole('admin'), upload.single('file
 // Importación de archivo en formato SIRE (reemplaza al seeder de carga inicial).
 // El administrador sube el Excel; los fallos se devuelven en la respuesta.
 router.post('/inicial',   verifyToken, requireRole('admin'), upload.single('file'), CargaInicial)
+
+// Base de quejas: agrega la queja a casos existentes y registra los nuevos sin
+// duplicar niñas. Con simular=true solo devuelve la vista previa.
+router.post('/quejas',    verifyToken, requireRole('admin'), upload.single('file'), CargaQuejas)
 
 export default router

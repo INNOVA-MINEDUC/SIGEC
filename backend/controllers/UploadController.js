@@ -9,6 +9,7 @@ import { registrarAuditoria } from '../utils/auditoria.js'
 import { validarUbicacion } from '../helpers/validarUbicacion.js'
 import { normalizarNivel } from '../helpers/nivelEducativo.js'
 import { procesarExcelCasos } from '../utils/cargaExcel.js'
+import { procesarBaseQuejas } from '../utils/cargaQuejas.js'
 import { normalizarComunidad } from '../helpers/comunidadLinguistica.js'
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -480,6 +481,64 @@ export const CargaInicial = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: 'Error procesando el archivo',
+      error:   error.message,
+    })
+  }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   IMPORTACIÓN DE LA BASE DE QUEJAS
+
+   Agrega la queja a los casos existentes que no la tienen y registra las niñas
+   que no existen, sin duplicarlas (ver utils/cargaQuejas.js).
+   `simular=true` devuelve la vista previa sin guardar nada; `anio` es el año de
+   las fechas Día/Mes cuando el archivo no lo trae.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+export const CargaQuejas = async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ success: false, message: 'No se envió ningún archivo' })
+  }
+
+  const simular = String(req.body?.simular ?? '') === 'true'
+  const anioActual = new Date().getFullYear()
+  const anio = Number(req.body?.anio) || anioActual
+  if (anio < 2000 || anio > anioActual + 1) {
+    return res.status(400).json({ success: false, message: `Año no válido: ${req.body?.anio}` })
+  }
+
+  try {
+    const resultado = await procesarBaseQuejas(req.file.buffer, {
+      nombreArchivo: req.file.originalname,
+      usuarioId:     req.user?.id ?? null,
+      anio,
+      simular,
+    })
+
+    if (!resultado.ok) {
+      return res.status(400).json({ success: false, message: resultado.message })
+    }
+
+    if (!simular) {
+      registrarAuditoria({
+        usuario_id:  req.user?.id,
+        accion:      'carga_masiva',
+        entidad:     'CargaArchivo',
+        entidad_id:  resultado.carga_id,
+        descripcion: `Importó la base de quejas ${req.file.originalname}: `
+                   + `${resultado.nuevos} casos nuevos, ${resultado.actualizados} con queja agregada, `
+                   + `${resultado.sinCambios} sin cambios, ${resultado.otraQueja + resultado.conflictos} por revisar `
+                   + `de ${resultado.total} filas`,
+      })
+    }
+
+    return res.json({ success: true, archivo: req.file.originalname, anio, ...resultado })
+  } catch (error) {
+    console.error(error)
+    return res.status(500).json({
+      success: false,
+      message: 'Error procesando la base de quejas',
       error:   error.message,
     })
   }

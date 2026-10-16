@@ -72,14 +72,21 @@ const crearGrafica = () => {
       : { centerY: am5.percent(50), y: am5.percent(50), layout: root.verticalLayout })
   )
 
+  // Nombre y porcentaje con anchos fijos: el nombre largo se parte en dos
+  // líneas en lugar de montarse sobre el porcentaje.
+  legend.markers.template.setAll({ width: 14, height: 14 })
+
   legend.valueLabels.template.setAll({
+    width: 52,
+    fontSize: 13,
     textAlign: "right",
     text: "{valuePercentTotal.formatNumber('0.')}%"
   })
 
   legend.labels.template.setAll({
-    width: angosto.value ? 170 : 140,
-    oversizedBehavior: "truncate"
+    width: angosto.value ? 170 : 130,
+    fontSize: 13,
+    oversizedBehavior: "wrap"
   })
 
   // Cargar datos y esperar a que la serie los procese antes de pasarlos a la leyenda

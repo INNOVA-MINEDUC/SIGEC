@@ -60,15 +60,45 @@
                   />
                   <button
                     class="inicial-btn"
-                    :disabled="uploading || validando || cargandoInicial"
+                    :disabled="ocupado"
                     @click="fileInputInicial.click()"
                   >
                     <v-icon size="14">mdi-database-import</v-icon>
                     {{ cargandoInicial ? 'Importando…' : 'Importar archivo SIRE' }}
                   </button>
+
                 </div>
               </div>
             </div>
+          </div>
+
+          <!-- Base de quejas: botón propio. Agrega la queja a los casos que no la
+               tienen y registra los que no existen, sin duplicar niñas; siempre
+               pasa por una vista previa. Los otros botones también reconocen este
+               formato y lo envían aquí. -->
+          <div class="quejas-franja">
+            <div class="quejas-icono">
+              <v-icon size="26" color="#10233f">mdi-file-document-multiple-outline</v-icon>
+            </div>
+            <div class="quejas-texto">
+              <div class="quejas-titulo">Importar quejas</div>
+              <p class="quejas-desc">
+                Base de quejas (Nombre completo, Código personal, Queja No., …). Agrega el número de
+                queja a los casos que no lo tienen y registra los casos que no existen, sin duplicar
+                niñas. Antes de guardar se muestra una vista previa.
+              </p>
+            </div>
+            <input
+              type="file"
+              ref="fileInputQuejas"
+              accept=".xlsx,.xls"
+              class="file-input"
+              @change="onArchivoQuejas"
+            />
+            <button class="quejas-btn" :disabled="ocupado" @click="fileInputQuejas.click()">
+              <v-icon size="18">mdi-upload</v-icon>
+              {{ quejas.cargando ? 'Procesando…' : 'Subir quejas' }}
+            </button>
           </div>
 
           <!-- Resultado de la carga inicial (flujo propio, no pisa el de arriba) -->
@@ -205,6 +235,85 @@
             </div>
           </div>
 
+          <!-- Base de quejas: procesando / error / vista previa y resultado -->
+          <div v-if="quejas.cargando" class="uploading-state">
+            <v-progress-circular indeterminate color="#10233f" size="32" />
+            <span>
+              {{ quejas.cargando === 'vista'
+                ? 'Analizando la base de quejas (todavía no se guarda nada)…'
+                : 'Importando la base de quejas…' }}
+            </span>
+          </div>
+
+          <div v-if="quejas.error && !quejas.cargando" class="validacion-error">
+            <v-icon size="20" color="#c62828">mdi-alert-circle</v-icon>
+            <div>
+              <div class="val-title">No se pudo procesar la base de quejas</div>
+              <div class="val-msg">{{ quejas.error }}</div>
+            </div>
+          </div>
+
+          <div v-if="quejas.resultado && !quejas.cargando" class="resultado-card">
+            <div class="inicial-head">
+              <v-icon size="18" color="#10233f">mdi-file-document-multiple-outline</v-icon>
+              <span>
+                {{ quejas.resultado.simulacion ? 'Vista previa' : 'Importación completada' }}
+                — {{ quejas.resultado.archivo }}
+              </span>
+            </div>
+
+            <div v-if="quejas.resultado.simulacion" class="aviso-previa">
+              <v-icon size="16" color="#1565c0">mdi-eye-outline</v-icon>
+              Todavía no se guardó ningún cambio. Revise el detalle y presione «Confirmar importación».
+            </div>
+            <div v-for="a in quejas.resultado.advertencias" :key="a" class="resultado-warn-banner">
+              <v-icon size="16" color="#e65100">mdi-information-outline</v-icon>
+              {{ a }}
+            </div>
+
+            <div class="resultado-grid">
+              <div v-for="t in tarjetasQuejas" :key="t.label" class="resultado-item" :class="t.clase">
+                <div class="resultado-num">{{ t.valor }}</div>
+                <div class="resultado-label">{{ t.label }}</div>
+              </div>
+            </div>
+
+            <div v-for="b in bloquesQuejas" :key="b.clave" class="detalle-bloque">
+              <div class="detalle-titulo">
+                <v-icon size="16" :color="b.color">{{ b.icono }}</v-icon>
+                {{ b.titulo }} ({{ b.filas.length }})
+              </div>
+              <p v-if="b.nota" class="detalle-nota">{{ b.nota }}</p>
+              <div class="detalle-scroll">
+                <table class="detalle-tabla">
+                  <thead>
+                    <tr><th v-for="c in b.columnas" :key="c.k">{{ c.h }}</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="f in b.filas" :key="b.clave + f.fila">
+                      <td v-for="c in b.columnas" :key="c.k" :class="c.clase">{{ f[c.k] ?? '—' }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="inicial-actions">
+              <button class="ghost-btn" @click="descargarDetalleQuejas">
+                <v-icon size="15">mdi-microsoft-excel</v-icon>
+                Descargar detalle
+              </button>
+              <template v-if="quejas.resultado.simulacion">
+                <button class="ghost-btn" @click="cerrarQuejas">Cancelar</button>
+                <button class="confirm-btn" @click="enviarQuejas(false)">
+                  <v-icon size="15">mdi-check</v-icon>
+                  Confirmar importación
+                </button>
+              </template>
+              <button v-else class="clear-btn" @click="cerrarQuejas">LIMPIAR</button>
+            </div>
+          </div>
+
           <!-- Validando / Cargando -->
           <div v-if="cargandoInicial" class="uploading-state">
             <v-progress-circular indeterminate color="#10233f" size="32" />
@@ -305,12 +414,46 @@
       </div>
     </div>
 
+    <!-- ── Modal: año de las fechas de la base de quejas (trae Día/Mes sin año) ── -->
+    <div v-if="quejas.modal" class="modal-overlay" @click.self="cerrarQuejas">
+      <div class="modal-box" role="dialog" aria-modal="true">
+        <div class="modal-head">
+          <v-icon size="20" color="#10233f">mdi-file-document-multiple-outline</v-icon>
+          <span>Importar base de quejas</span>
+        </div>
+        <div v-if="quejas.detectado" class="aviso-previa">
+          <v-icon size="16" color="#1565c0">mdi-information-outline</v-icon>
+          Este archivo tiene el formato de la base de quejas: se importará con el flujo de quejas.
+        </div>
+        <p class="modal-text">
+          <strong>{{ quejas.archivo?.name }}</strong><br />
+          Primero se mostrará una vista previa: no se guardará nada hasta que la confirme.
+        </p>
+        <label class="modal-label" for="anio-quejas">Año de las fechas (el archivo solo trae día y mes)</label>
+        <input
+          id="anio-quejas"
+          type="number"
+          class="modal-date"
+          v-model.number="quejas.anio"
+          :min="2000"
+          :max="anioActual + 1"
+          @keydown.enter="anioQuejasValido && enviarQuejas(true)"
+        />
+        <div class="modal-actions">
+          <button class="modal-btn ghost" @click="cerrarQuejas">Cancelar</button>
+          <button class="modal-btn primary" :disabled="!anioQuejasValido" @click="enviarQuejas(true)">
+            Ver vista previa
+          </button>
+        </div>
+      </div>
+    </div>
+
     <AppFooter />
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import * as XLSX from 'xlsx'
 import AppNavbar from '@/components/AppNavbar.vue'
 import AppFooter from '@/components/AppFooter.vue'
@@ -468,6 +611,26 @@ async function validarColumnas(file) {
   return { headers, faltanObligatorias, faltanImportantes }
 }
 
+// Formato "base de quejas": la fila con "Nombre completo" está entre las
+// primeras y trae "Queja No." / "No. de queja", sin CUI. Cualquier botón de
+// carga lo reconoce y lo envía al flujo de quejas en vez de rechazarlo.
+const RE_COLUMNA_QUEJA = /queja\s*no\b|no\.?\s*de\s*queja|numero\s*de\s*queja/
+async function esFormatoQuejas(file) {
+  try {
+    const wb   = XLSX.read(await file.arrayBuffer(), { type: 'array', sheetRows: 8 })
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, defval: null })
+    const i = rows.findIndex(f => (f || []).some(c => norm(c).includes('nombre completo')))
+    if (i < 0) return false
+    const headers  = rows[i].filter(Boolean).map(c => norm(c))
+    const tieneQueja = headers.some(h => RE_COLUMNA_QUEJA.test(h))
+    const tieneCui   = headers.some(h => /\bcui\b/.test(h))
+    // El formato SIRE también trae queja, pero con CUI y encabezados en la fila 5
+    return tieneQueja && (!tieneCui || i < 4)
+  } catch {
+    return false
+  }
+}
+
 // ── Upload ─────────────────────────────────────────────
 async function onFileChange(payload) {
   const file =
@@ -479,6 +642,12 @@ async function onFileChange(payload) {
   if (!file.name.match(/\.(xls|xlsx)$/)) {
     validacion.value = { error: 'Solo se aceptan archivos Excel (.xlsx / .xls)', advertencias: [], nombreArchivo: file.name }
     if (fileInput.value) fileInput.value.value = ''
+    return
+  }
+
+  if (await esFormatoQuejas(file)) {
+    if (fileInput.value) fileInput.value.value = ''
+    abrirQuejas(file, true)
     return
   }
 
@@ -572,6 +741,12 @@ async function onArchivoInicial(payload) {
   const file = payload?.target?.files?.[0]
   if (!file) return
 
+  if (await esFormatoQuejas(file)) {
+    if (fileInputInicial.value) fileInputInicial.value.value = ''
+    abrirQuejas(file, true)
+    return
+  }
+
   cargandoInicial.value  = true
   errorInicial.value     = null
   resultadoInicial.value = null
@@ -593,6 +768,146 @@ async function onArchivoInicial(payload) {
     // Permite volver a elegir el mismo archivo si se reintenta
     if (fileInputInicial.value) fileInputInicial.value.value = ''
   }
+}
+
+// ── Base de quejas ─────────────────────────────────────────────────────────
+// Flujo en dos pasos sobre el mismo archivo: vista previa (simular=true, no
+// guarda nada) y, si el usuario la confirma, la importación real.
+const anioActual      = new Date().getFullYear()
+const fileInputQuejas = ref(null)
+const quejas = reactive({
+  archivo:   null,
+  anio:      anioActual,
+  modal:     false,
+  cargando:  false,     // 'vista' | 'importar' | false
+  resultado: null,
+  error:     null,
+  detectado: false,     // true si llegó por otro botón y se reconoció el formato
+})
+
+const ocupado = computed(() => uploading.value || validando.value || cargandoInicial.value || !!quejas.cargando)
+const anioQuejasValido = computed(() => Number.isInteger(quejas.anio) && quejas.anio >= 2000 && quejas.anio <= anioActual + 1)
+
+function abrirQuejas(file, detectado = false) {
+  quejas.archivo   = file
+  quejas.resultado = null
+  quejas.error     = null
+  quejas.detectado = detectado
+  quejas.modal     = true
+}
+
+function onArchivoQuejas(e) {
+  const file = e.target.files?.[0]
+  e.target.value = ''   // permite volver a elegir el mismo archivo
+  if (file) abrirQuejas(file)
+}
+
+function cerrarQuejas() {
+  quejas.modal     = false
+  quejas.archivo   = null
+  quejas.resultado = null
+  quejas.error     = null
+}
+
+async function enviarQuejas(simular) {
+  if (!quejas.archivo || !anioQuejasValido.value) return
+  quejas.modal    = false
+  quejas.cargando = simular ? 'vista' : 'importar'
+  quejas.error    = null
+  try {
+    const formData = new FormData()
+    formData.append('file', quejas.archivo)
+    formData.append('anio', String(quejas.anio))
+    formData.append('simular', String(simular))
+    const { data } = await api.post('/upload/quejas', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    quejas.resultado = data
+    if (!simular) await fetchHistorial()
+  } catch (error) {
+    quejas.error = error.response?.data?.message || error.message
+  } finally {
+    quejas.cargando = false
+  }
+}
+
+const tarjetasQuejas = computed(() => {
+  const r = quejas.resultado
+  if (!r) return []
+  return [
+    { label: 'Total filas',               valor: r.total },
+    { label: 'Casos nuevos',              valor: r.nuevos,       clase: 'success' },
+    { label: 'Queja agregada',            valor: r.actualizados, clase: 'info' },
+    { label: 'Ya registradas (sin cambios)', valor: r.sinCambios },
+    { label: 'Ya tienen otra queja',      valor: r.otraQueja,    clase: 'warn' },
+    { label: 'Conflictos (no importados)', valor: r.conflictos,  clase: 'warn' },
+  ]
+})
+
+// Tablas de detalle: solo las que tienen filas, primero lo que requiere revisión
+const bloquesQuejas = computed(() => {
+  const r = quejas.resultado
+  if (!r) return []
+  return [
+    {
+      clave: 'conflictos', titulo: 'Conflictos: no se importaron', icono: 'mdi-close-circle-outline', color: '#c62828',
+      nota: 'Revise estos registros manualmente: los datos del archivo contradicen a un caso existente.',
+      filas: r.conflictosDetalle,
+      columnas: [{ h: 'Fila', k: 'fila', clase: 'col-fila' }, { h: 'Nombre', k: 'nombre' }, { h: 'Código personal', k: 'codigo' },
+                 { h: 'Queja', k: 'queja' }, { h: 'Motivo', k: 'motivo', clase: 'col-motivo' }],
+    },
+    {
+      clave: 'otra', titulo: 'Ya tienen otra queja: no se sobrescribió', icono: 'mdi-alert-outline', color: '#e65100',
+      nota: 'Puede ser una segunda queja de la misma niña o un error de una carga anterior. La observación indica cuando la queja del archivo está registrada en el caso de otra niña.',
+      filas: r.otraQuejaDetalle,
+      columnas: [{ h: 'Fila', k: 'fila', clase: 'col-fila' }, { h: 'Caso', k: 'numero_caso' }, { h: 'Nombre', k: 'nombre' },
+                 { h: 'Queja actual', k: 'queja_actual' }, { h: 'Queja del archivo', k: 'queja' },
+                 { h: 'Observación', k: 'observacion', clase: 'col-motivo' }],
+    },
+    {
+      clave: 'agregada', titulo: 'Queja agregada a casos existentes', icono: 'mdi-flag-plus-outline', color: '#1565c0',
+      filas: r.quejaAgregadaDetalle,
+      columnas: [{ h: 'Fila', k: 'fila', clase: 'col-fila' }, { h: 'Caso', k: 'numero_caso' }, { h: 'Nombre', k: 'nombre' },
+                 { h: 'Queja agregada', k: 'queja', clase: 'col-queja' }],
+    },
+    {
+      clave: 'nuevos', titulo: 'Casos nuevos', icono: 'mdi-account-plus-outline', color: '#2e7d32',
+      filas: r.nuevosDetalle,
+      columnas: [{ h: 'Fila', k: 'fila', clase: 'col-fila' }, { h: 'Caso', k: 'numero_caso' }, { h: 'Nombre', k: 'nombre' },
+                 { h: 'Código personal', k: 'codigo' }, { h: 'Queja', k: 'queja' }],
+    },
+    {
+      clave: 'ubicacion', titulo: 'Registrados sin ubicación completa', icono: 'mdi-map-marker-alert-outline', color: '#e65100',
+      filas: r.sinUbicacion,
+      columnas: [{ h: 'Fila', k: 'fila', clase: 'col-fila' }, { h: 'Caso', k: 'numero_caso' }, { h: 'Nombre', k: 'nombre' },
+                 { h: 'Problema', k: 'motivo', clase: 'col-motivo' }],
+    },
+  ].filter(b => b.filas?.length)
+})
+
+// Excel con el detalle (una hoja por tabla) para revisar los pendientes
+function descargarDetalleQuejas() {
+  const r = quejas.resultado
+  if (!r) return
+  const wb = XLSX.utils.book_new()
+  const resumen = [
+    ['Archivo', r.archivo],
+    ['Tipo', r.simulacion ? 'Vista previa (sin guardar)' : 'Importación'],
+    ['Año de las fechas', r.anio],
+    [],
+    ...tarjetasQuejas.value.map(t => [t.label, t.valor]),
+    [],
+    ...(r.advertencias ?? []).map(a => ['Advertencia', a]),
+  ]
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(resumen), 'Resumen')
+  for (const b of bloquesQuejas.value) {
+    const filas = b.filas.map(f => Object.fromEntries(b.columnas.map(c => [c.h, f[c.k] ?? ''])))
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(filas), b.titulo.slice(0, 31).replace(/[:\\/?*[\]]/g, ''))
+  }
+  const hoy = new Date().toISOString().slice(0, 10)
+  XLSX.writeFile(wb, `Detalle_base_quejas_${hoy}.xlsx`)
+  // Contiene datos personales: queda en la bitácora como las demás descargas
+  api.post('/auditoria/descarga', { tipo: 'excel', descripcion: `Descargó el detalle de la base de quejas "${r.archivo}"` }).catch(() => {})
 }
 </script>
 
@@ -683,7 +998,7 @@ async function onArchivoInicial(payload) {
   grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
 }
 .field-label { font-size: 0.75rem; color: #9e9e9e; }
-.field-value { font-size: 0.875rem; font-weight: 700; color: #333; }
+.field-value { font-size: 0.875rem; font-weight: 700; color: #333; overflow-wrap: anywhere; }
 
 /* ── UPLOAD ZONE ── */
 .card-right {
@@ -752,6 +1067,8 @@ async function onArchivoInicial(payload) {
   width: 100%;
   display: flex;
   justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 .inicial-btn {
   display: inline-flex;
@@ -783,8 +1100,51 @@ async function onArchivoInicial(payload) {
   display: flex;
   gap: 0.5rem;
   justify-content: center;
+  align-items: center;
   flex-wrap: wrap;
+  margin-top: 1.25rem;
 }
+.inicial-actions .clear-btn { margin-top: 0; }
+
+/* ── Base de quejas ── */
+.quejas-franja {
+  display: flex; align-items: center; gap: 1rem;
+  margin-top: 1.5rem; padding: 1rem 1.25rem;
+  background: #ffffff; border: 1px solid #d9e2f3; border-left: 4px solid #10233f;
+  border-radius: 0.75rem;
+}
+.quejas-icono {
+  flex-shrink: 0; width: 48px; height: 48px; border-radius: 50%;
+  background: #e3ecf8; display: flex; align-items: center; justify-content: center;
+}
+.quejas-texto { flex: 1; min-width: 0; }
+.quejas-titulo { font-size: 1rem; font-weight: 700; color: #10233f; margin-bottom: 0.15rem; }
+.quejas-desc { font-size: 0.78rem; color: #6d6d6d; line-height: 1.5; margin: 0; }
+.quejas-btn {
+  flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem;
+  background: #10233f; color: #ffffff; border: none; border-radius: 0.5rem;
+  padding: 0.7rem 1.4rem; font-size: 0.9rem; font-weight: 700; cursor: pointer; transition: opacity 0.2s;
+}
+.quejas-btn:hover:not(:disabled) { opacity: 0.9; }
+.quejas-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.aviso-previa {
+  display: flex; align-items: center; gap: 0.5rem;
+  background: #e3f0fb; color: #0d47a1;
+  border-radius: 0.5rem; padding: 0.55rem 0.75rem;
+  font-size: 0.8rem; font-weight: 600; margin-bottom: 0.75rem;
+}
+.detalle-nota { font-size: 0.72rem; color: #6d6d6d; margin: 0 0 0.4rem; line-height: 1.45; }
+.ghost-btn,
+.confirm-btn {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  border-radius: 0.5rem; padding: 0.625rem 1.1rem;
+  font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: opacity 0.2s, background 0.2s;
+}
+.ghost-btn { background: #ffffff; color: #10233f; border: 1px solid #cfd6e0; }
+.ghost-btn:hover { background: #f4f6f9; }
+.confirm-btn { background: #10233f; color: #ffffff; border: none; }
+.confirm-btn:hover { opacity: 0.9; }
+.modal-label { display: block; font-size: 0.75rem; font-weight: 600; color: #10233f; margin-bottom: 0.35rem; }
 /* ── Detalle de registros no insertados (en pantalla) ── */
 .detalle-bloque {
   margin-top: 1rem;
@@ -1035,5 +1395,11 @@ async function onArchivoInicial(payload) {
   .validacion-warn { padding: 0.85rem 1rem; }
   .history-header { margin-top: 2rem; }
   .modal-actions .modal-btn { flex: 1; padding-block: 0.7rem; }
+  .inicial-row { flex-direction: column; align-items: stretch; }
+  .quejas-franja { flex-wrap: wrap; }
+  .quejas-btn { width: 100%; }
+  /* Las tablas de detalle se desplazan a lo ancho en vez de aplastar el motivo */
+  .detalle-tabla { min-width: 620px; }
+  .inicial-actions > * { flex: 1 1 100%; justify-content: center; }
 }
 </style>
