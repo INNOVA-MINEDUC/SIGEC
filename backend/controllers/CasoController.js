@@ -14,19 +14,21 @@ import CentroEducativo from "../models/CentroEducativo.js";
 
 import CargaArchivo from "../models/CargaArchivo.js";
 import { registrarAuditoria } from "../utils/auditoria.js";
-import { aplicarReglaDideduc } from "../helpers/dideduc.js";
+import { aplicarReglaDideduc, dideducSegunCentro } from "../helpers/dideduc.js";
 import { normalizarZona } from "../helpers/zonaGuatemala.js";
 import { normalizarComunidad } from "../helpers/comunidadLinguistica.js";
 import { normalizarNivel, NIVELES_EDUCATIVOS } from "../helpers/nivelEducativo.js";
 import { departamentoResidenciaId } from "../helpers/permisos.js";
+import { ESTADOS_CASO, ESTADOS_CASO_ANTERIORES, normalizarStatusActual } from "../helpers/estadosCaso.js";
 
 // Estados institucionales válidos para el campo CasoEmbarazo.estado
-export const ESTADOS_VALIDOS = [
-  'Verificados en el SIRE',
-  'sin Verificar en el SIRE',
-  'Verificados en el Sistema de Quejas, Comentarios o Sugerencias',
-  'sin Quejas',
-]
+export const ESTADOS_VALIDOS = ESTADOS_CASO
+
+// Mensaje cuando el departamento del centro tiene varias DIDEDUC (Guatemala,
+// Quiché) y la elegida no es de ese departamento.
+const mensajeDideducAmbigua = (d) =>
+  `La DIDEDUC seleccionada no corresponde al departamento del centro educativo. ` +
+  `Seleccione una de: ${d.opciones.map(o => o.nombre).join(', ')}.`
 
 // Resuelve el departamento de residencia de la niña: usa el que venga explícito
 // en el payload y, si no, lo deriva del municipio seleccionado. Devuelve null si
@@ -205,6 +207,7 @@ estado,
 sinQueja,
 queja,        // 'con' | 'sin' | null  → filtra por presencia de número de queja
 cui,          // 'con' | 'sin' | null  → filtra por presencia de CUI de la niña
+status_actual, // estado actual dentro del sistema educativo (historial educativo)
 busqueda,
 page    = 1,
 limit   = 10,
@@ -273,6 +276,17 @@ if(req.alcanceDepartamentoId){
 
 // Valores para los :parámetros de las condiciones literales
 const replacements = { alcanceDepto: req.alcanceDepartamentoId ?? null }
+
+/* Estado actual dentro del sistema educativo. La columna usa una collation que
+   no distingue mayúsculas ni tildes, así que "No inscrita" también encuentra los
+   registros cargados como "NO INSCRITA". */
+if(status_actual && status_actual !== 'Todos'){
+  replacements.statusActual = String(status_actual).trim()
+  andConditions.push(sequelize.literal(`EXISTS (
+    SELECT 1 FROM historial_educativo h
+    WHERE h.nina_id = CasoEmbarazo.nina_id AND h.status_actual = :statusActual
+  )`))
+}
 
 if(busqueda && busqueda.trim()){
   const searchPattern = `%${String(busqueda).trim()}%`
@@ -485,6 +499,7 @@ export const RegistrarCaso = async (req, res) => {
 
     // 2. Buscar o crear centro educativo
     let centroId = null
+    let municipioCentroId = null
     const se = situacion_educativa || {}
     if (se.codigo_udi || se.nombre_centro_educativo) {
       let centro = null
@@ -518,7 +533,15 @@ export const RegistrarCaso = async (req, res) => {
         })
         centro = ce
       }
-      if (centro) centroId = centro.id
+      if (centro) { centroId = centro.id; municipioCentroId = centro.municipio_id }
+    }
+    if (!municipioCentroId && se.municipio_id) municipioCentroId = Number(se.municipio_id)
+
+    // Regla de negocio: la DIDEDUC corresponde al departamento del centro educativo
+    const dideduc = await dideducSegunCentro(municipioCentroId, departamentalFinal, t)
+    if (dideduc.ambigua) {
+      await t.rollback()
+      return res.status(400).json({ success: false, message: mensajeDideducAmbigua(dideduc) })
     }
 
     // 3. Crear caso de embarazo
@@ -532,7 +555,7 @@ export const RegistrarCaso = async (req, res) => {
       institucion:            datos_nina.institucion || null,
       queja:                  numero_queja || null,
       estado:                 estado,
-      departamental_id:       departamentalFinal,
+      departamental_id:       dideduc.departamental_id,
     }, { transaction: t })
 
     // 4. Crear historial educativo
@@ -541,7 +564,7 @@ export const RegistrarCaso = async (req, res) => {
         nina_id:             nina.id,
         centro_educativo_id: centroId,
         codigo_personal:     se.codigo_personal || null,
-        status_actual:       se.status_actual || null,
+        status_actual:       normalizarStatusActual(se.status_actual),
         subsistema:          se.subsistema || null,
         grado:               se.grado || null,
         nivel:               nivelNormalizado,
@@ -855,11 +878,6 @@ export const ActualizarCaso = async (req, res) => {
     const { id } = req.params
     const { queja, estado, fecha_ingreso, departamental_id, datos_nina, situacion_educativa } = req.body
 
-    if (estado && !ESTADOS_VALIDOS.includes(estado)) {
-      await t.rollback()
-      return res.status(400).json({ success: false, message: `Estado no válido: usar uno de: ${ESTADOS_VALIDOS.join(', ')}` })
-    }
-
     // Mismo criterio que al registrar: se normaliza al valor canónico y se
     // rechaza cualquier nivel que no pertenezca al vocabulario del sistema.
     const nivelNormalizado = normalizarNivel(situacion_educativa?.nivel)
@@ -878,6 +896,15 @@ export const ActualizarCaso = async (req, res) => {
     }
 
     const estadoAnterior = caso.estado
+
+    // Un estado retirado del catálogo ("sin Quejas") solo se acepta si el caso ya
+    // lo tenía: así se puede editar el resto del caso sin forzar un cambio.
+    const estadoAceptado = ESTADOS_VALIDOS.includes(estado) ||
+      (ESTADOS_CASO_ANTERIORES.includes(estado) && estado === estadoAnterior)
+    if (estado && !estadoAceptado) {
+      await t.rollback()
+      return res.status(400).json({ success: false, message: `Estado no válido: usar uno de: ${ESTADOS_VALIDOS.join(', ')}` })
+    }
 
     // 1. Actualizar caso
     const casoUpdates = {}
@@ -976,7 +1003,7 @@ export const ActualizarCaso = async (req, res) => {
         nina_id:             caso.nina_id,
         centro_educativo_id: centroId || historialExistente?.centro_educativo_id || null,
         codigo_personal:     se.codigo_personal || null,
-        status_actual:       se.status_actual   || null,
+        status_actual:       normalizarStatusActual(se.status_actual),
         subsistema:          se.subsistema      || null,
         grado:               se.grado           || null,
         nivel:               nivelNormalizado,
@@ -991,6 +1018,25 @@ export const ActualizarCaso = async (req, res) => {
       } else {
         await HistorialEducativo.create(historialData, { transaction: t })
       }
+    }
+
+    // 4. Regla de negocio: la DIDEDUC corresponde al departamento del centro
+    //    educativo (el que se acaba de guardar o, si no se envió, el registrado).
+    const historialFinal = await HistorialEducativo.findOne({
+      where: { nina_id: caso.nina_id },
+      attributes: ['centro_educativo_id'],
+      include: [{ model: CentroEducativo, as: 'centroEducativo', attributes: ['municipio_id'] }],
+      transaction: t,
+    })
+    const municipioCentroId = historialFinal?.centroEducativo?.municipio_id
+      ?? (situacion_educativa?.municipio_id ? Number(situacion_educativa.municipio_id) : null)
+    const dideduc = await dideducSegunCentro(municipioCentroId, caso.departamental_id, t)
+    if (dideduc.ambigua) {
+      await t.rollback()
+      return res.status(400).json({ success: false, message: mensajeDideducAmbigua(dideduc) })
+    }
+    if (dideduc.departamental_id !== (caso.departamental_id ? Number(caso.departamental_id) : null)) {
+      await caso.update({ departamental_id: dideduc.departamental_id }, { transaction: t })
     }
 
     await t.commit()

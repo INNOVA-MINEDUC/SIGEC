@@ -65,9 +65,15 @@
       </div>
 
       <div class="sec-item">
-        <span class="sec-val sec-val--money">{{ displayKpis.sinQuejas.toLocaleString('es-GT') }}</span>
-        <span class="sec-label">Sin quejas</span>
-        <span class="sec-module">Cantidad de casos que, a la fecha de consulta, no cuentan con un registro en el sistema de quejas, comentarios o sugerencias.</span>
+        <span class="sec-val sec-val--money">{{ displayKpis.mayor14.toLocaleString('es-GT') }}</span>
+        <span class="sec-label">Mayor de 14 años</span>
+        <span class="sec-module">Cantidad de casos cuyo estado es «Mayor de 14 años».</span>
+      </div>
+
+      <div class="sec-item">
+        <span class="sec-val sec-val--money">{{ displayKpis.noExisteRegistro.toLocaleString('es-GT') }}</span>
+        <span class="sec-label">No existe registro</span>
+        <span class="sec-module">Cantidad de casos cuyo estado es «No existe registro» dentro del sistema de registros educativos.</span>
       </div>
     </div>
 
@@ -162,6 +168,19 @@
               @update:modelValue="handleFilter"
             />
 
+            <v-select
+              v-model="selectedStatusActual"
+              :items="statusActualOptions"
+              label="Estado actual dentro del sistema educativo"
+              prepend-inner-icon="mdi-school-outline"
+              variant="outlined"
+              density="compact"
+              hide-details
+              rounded="lg"
+              class="filter-select filter-select--ancho"
+              @update:modelValue="handleFilter"
+            />
+
             <v-btn
               color="primary"
               variant="tonal"
@@ -223,7 +242,7 @@
                 </td>
 
                 <td data-label="Sistema educativo">
-                  {{ caso.nina?.historialEducativo?.[0]?.status_actual || 'Sin registro' }}
+                  {{ formatearStatusActual(caso.nina?.historialEducativo?.[0]?.status_actual) || 'Sin registro' }}
                 </td>
 
                 <td data-label="Estado del caso" class="celda-estado">
@@ -316,6 +335,7 @@ import { useSeguimientoFiltros } from '@/stores/seguimientoFiltros'
 import { useAuthStore } from '@/stores/auth'
 import { puedeEditarCasos } from '@/helpers/permisos'
 import { datosCaso } from '@/composables/useExport'
+import { ESTADOS_CASO, STATUS_ACTUAL, estiloEstadoCaso, formatearStatusActual } from '@/helpers/estadosCaso'
 
 import AppNavbar from '@/components/AppNavbar.vue'
 import AppFooter from '@/components/AppFooter.vue'
@@ -336,7 +356,7 @@ const serverTotalPages = ref(1)
 const serverStats      = ref({})
 
 // ── Filtros y UI (desde el store persistente) ────────────────────────────────
-const { search, selectedDepartamental, selectedEstado, filtroQueja, filtroCui, itemsPerPage, page } =
+const { search, selectedDepartamental, selectedEstado, selectedStatusActual, filtroQueja, filtroCui, itemsPerPage, page } =
   storeToRefs(filtrosStore)
 
 const quejaOptions = [
@@ -353,26 +373,11 @@ const loading               = ref(false)
 
 const ITEMS_PER_PAGE_OPTIONS = [5, 10, 15, 20]
 
-const ESTADOS_CASO = [
-  'Verificados en el SIRE',
-  'sin Verificar en el SIRE',
-  'Verificados en el Sistema de Quejas, Comentarios o Sugerencias',
-  'sin Quejas',
-]
+// Opciones de "Estado" y "Estado actual": las mismas que usa Registro
+// (helpers/estadosCaso.js)
 
 // ── Helpers de estilo ──────────────────────────────────────────────────────────
-const normalizeText = (v) =>
-  String(v ?? '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim()
-
-const STATUS_STYLES = {
-  'verificados en el sire':          { backgroundColor: '#10233f', color: '#fff' },
-  'sin verificar en el sire':        { backgroundColor: '#6d6d6d', color: '#fff' },
-  'verificados en el sistema de quejas, comentarios o sugerencias': { backgroundColor: '#1F3864', color: '#fff' },
-  'sin quejas':                      { backgroundColor: '#b0b0b0', color: '#fff' },
-}
-
-const getStatusStyle = (estado) =>
-  STATUS_STYLES[normalizeText(estado)] || { backgroundColor: '#f0f0f0', color: '#6d6d6d' }
+const getStatusStyle = estiloEstadoCaso
 
 const tieneQueja    = (caso) => !!(caso.queja && String(caso.queja).trim() !== '')
 const getQuejaStyle = (caso) => ({
@@ -387,6 +392,7 @@ const fetchCasos = async (targetPage = 1) => {
     const { data } = await api.post('/caso', {
       departamental_id: selectedDepartamental.value || null,
       estado:           selectedEstado.value !== 'Todos' ? selectedEstado.value : null,
+      status_actual:    selectedStatusActual.value !== 'Todos' ? selectedStatusActual.value : null,
       queja:            filtroQueja.value !== 'Todos' ? filtroQueja.value : null,
       cui:              filtroCui.value !== 'Todos' ? filtroCui.value : null,
       busqueda:         search.value.trim() || null,
@@ -436,7 +442,8 @@ const displayKpis = computed(() => ({
   verificadosSire:     serverStats.value['Verificados en el SIRE'] ?? 0,
   sinVerificarSire:    serverStats.value['sin Verificar en el SIRE'] ?? 0,
   verificadosQuejas:   serverStats.value['Verificados en el Sistema de Quejas, Comentarios o Sugerencias'] ?? 0,
-  sinQuejas:           serverStats.value['sin Quejas'] ?? 0,
+  mayor14:             serverStats.value['Mayor de 14 años'] ?? 0,
+  noExisteRegistro:    serverStats.value['No existe registro'] ?? 0,
 }))
 
 // ── La tabla renderiza exactamente lo que devuelve el servidor ─────────────────
@@ -449,7 +456,13 @@ const endItem = computed(() =>
   Math.min(serverPage.value * itemsPerPage.value, serverTotal.value)
 )
 
-const estadoOptions = computed(() => ['Todos', ...ESTADOS_CASO])
+const estadoOptions       = ['Todos', ...ESTADOS_CASO]
+const statusActualOptions = ['Todos', ...STATUS_ACTUAL]
+
+// Un filtro guardado con una opción que ya no existe (p. ej. "sin Quejas")
+// dejaría la tabla filtrada sin que se vea por qué: vuelve a "Todos".
+if (!estadoOptions.includes(selectedEstado.value)) selectedEstado.value = 'Todos'
+if (!statusActualOptions.includes(selectedStatusActual.value)) selectedStatusActual.value = 'Todos'
 
 // ── Manejadores ───────────────────────────────────────────────────────────────
 const handleSearch       = () => fetchCasos(1)
@@ -550,7 +563,7 @@ const SECCIONES_DETALLE = [
 
 .sec-grid {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   background: #10233f;
 }
 
@@ -860,7 +873,13 @@ td { padding: 1rem 1.5rem; color: #6d6d6d; font-size: 0.75rem; vertical-align: m
 .status-badge { display: inline-block; padding: 0.25rem 0.625rem; border-radius: 9999px; font-size: .5rem; font-weight: 500; text-transform: uppercase; }
 .action-btn { color: #10233f; font-weight: 600; background: none; border: none; font-size: 0.65rem; letter-spacing: 0.05em; cursor: pointer; transition: opacity 0.2s; }
 .action-btn:hover { opacity: 0.7; }
-.acciones { display: flex; flex-direction: column; align-items: flex-start; gap: 0.35rem; }
+/* Un botón por fila, con forma de botón y separados entre sí */
+.acciones { display: flex; flex-direction: column; align-items: stretch; gap: 0.5rem; min-width: 8.5rem; }
+.acciones .action-btn {
+  width: 100%; padding: 0.5rem 0.75rem;
+  border: 1px solid #10233f; border-radius: 0.4rem; text-align: center;
+}
+.acciones .action-btn:hover { opacity: 1; background-color: #10233f; color: #ffffff; }
 
 /* DETALLE DEL CASO */
 .detalle-titulo {
@@ -904,6 +923,12 @@ td { padding: 1rem 1.5rem; color: #6d6d6d; font-size: 0.75rem; vertical-align: m
 .filter-select {
   width: 220px;
   min-width: 220px;
+}
+
+/* La etiqueta "Estado actual dentro del sistema educativo" es larga */
+.filter-select--ancho {
+  width: 330px;
+  min-width: 330px;
 }
 
 .queja-check {
@@ -1009,10 +1034,11 @@ td { padding: 1rem 1.5rem; color: #6d6d6d; font-size: 0.75rem; vertical-align: m
   /* Acciones como botones a todo lo ancho, fáciles de tocar */
   .table-wrapper .celda-acciones { border-bottom: none; padding: 0.75rem 0 0; }
   .table-wrapper .celda-acciones::before { content: none; }
-  .acciones { flex-direction: row; width: 100%; gap: 0.5rem; }
+  /* Un botón por fila, a todo el ancho */
+  .acciones { flex-direction: column; align-items: stretch; width: 100%; gap: 0.5rem; }
   .action-btn {
-    flex: 1;
-    padding: 0.7rem 0.5rem;
+    width: 100%;
+    padding: 0.75rem 0.5rem;
     border: 1px solid #10233f;
     border-radius: 0.5rem;
     font-size: 0.72rem;

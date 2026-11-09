@@ -7,8 +7,10 @@ import HistorialEducativo from '../models/HistorialEducativo.js'
 import CentroEducativo from '../models/CentroEducativo.js'
 import CargaArchivo from '../models/CargaArchivo.js'
 import { validarUbicacion } from '../helpers/validarUbicacion.js'
+import { dideducSegunCentro } from '../helpers/dideduc.js'
 import { normalizarNivel } from '../helpers/nivelEducativo.js'
 import { normalizarComunidad } from '../helpers/comunidadLinguistica.js'
+import { normalizarStatusActual } from '../helpers/estadosCaso.js'
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -121,8 +123,9 @@ export async function procesarExcelCasos(buffer, {
     if (nom) casoPorNombre.set(nom, c)
   }
 
-  const existingCentros = await CentroEducativo.findAll({ attributes: ['id', 'codigo_udi'] })
+  const existingCentros = await CentroEducativo.findAll({ attributes: ['id', 'codigo_udi', 'municipio_id'] })
   const centroPorUdi    = new Map(existingCentros.map(c => [normalizar(c.codigo_udi), c.id]))
+  const municipioCentroPorUdi = new Map(existingCentros.map(c => [normalizar(c.codigo_udi), c.municipio_id]))
 
   const maxCasoId  = Number((await CasoEmbarazo.max('id')) || 0)
   const yearSuffix = String(new Date().getFullYear()).slice(-3)
@@ -308,7 +311,9 @@ export async function procesarExcelCasos(buffer, {
     const pueblo               = toTitleCase(clean(pick('Pueblo de pertenencia', 'Pueblo'))) || null
     const comunidad_linguistica = normalizarComunidad(toTitleCase(clean(pick('Comunidad Linguistica', 'Comunidad Lingüística', 'Comunidad'))))
     const codigoPersonal       = clean(pick('Código personal', 'Codigo personal'))
-    const statusActual         = clean(pick('Status actual', 'Estatus actual'))
+    // El archivo trae el estado en mayúsculas ("NO INSCRITA"): se guarda con la
+    // misma escritura que usa el formulario ("No inscrita")
+    const statusActual         = normalizarStatusActual(clean(pick('Status actual', 'Estatus actual')))
     const grado                = clean(pick('Grado'))
     const resultado            = clean(pick('Resultado'))
     const anioRaw              = get('ano (2)') ?? pick('Ano Educativo')
@@ -324,10 +329,20 @@ export async function procesarExcelCasos(buffer, {
     // Resolución de ubicación del centro educativo
     const centroDeptoNombre      = clean(get('departamento'))
     const centroMunicipioNombre  = clean(pick('Zona o Municipio'))
-    const { municipio_id: centroMunicipioId } =
+    const { municipio_id: centroMunicipioId, departamental_id: departamentalCentro } =
       await validarUbicacion(centroDeptoNombre, centroMunicipioNombre)
     if (codigoUdi && !centroMunicipioId)
       problemasUbicacion.push(`Municipio del centro "${centroDeptoNombre}/${centroMunicipioNombre}" no resolvió`)
+
+    // Regla de negocio: la DIDEDUC del caso corresponde al departamento del centro
+    // educativo. Antes se tomaba la del municipio de residencia de la niña, y así
+    // quedaban casos con la DIDEDUC de otro departamento. Si el departamento tiene
+    // varias DIDEDUC y la de residencia no es de él, se usa la del centro.
+    const municipioCentro = (codigoUdi && municipioCentroPorUdi.get(normalizar(codigoUdi))) || centroMunicipioId || null
+    const dideducCentro   = await dideducSegunCentro(municipioCentro, departamental_id)
+    const departamentalCaso = dideducCentro.ambigua
+      ? (departamentalCentro ?? dideducCentro.opciones[0]?.id ?? departamental_id)
+      : dideducCentro.departamental_id
 
     const numeroCasoArchivo = clean(get('no. de caso'))
 
@@ -366,6 +381,7 @@ export async function procesarExcelCasos(buffer, {
           }, { transaction: t })
           centroEducativoId = centro.id
           centroPorUdi.set(udiNorm, centro.id)
+          municipioCentroPorUdi.set(udiNorm, centro.municipio_id)
         }
       }
 
@@ -402,7 +418,7 @@ export async function procesarExcelCasos(buffer, {
         estado:          queja
           ? 'Verificados en el Sistema de Quejas, Comentarios o Sugerencias'
           : 'Verificados en el SIRE',
-        departamental_id,
+        departamental_id: departamentalCaso,
       }, { transaction: t })
 
       if (nivelEducativo || codigoPersonal || statusActual || grado || resultado || anio || centroEducativoId) {
@@ -441,7 +457,7 @@ export async function procesarExcelCasos(buffer, {
         })
         console.warn(`  [SIN UBI fila ${filaNum}] "${nombreCompleto}" insertado pero: ${problemasUbicacion.join(' | ')}`)
       } else {
-        console.log(`  [OK   fila ${filaNum}] Caso ${numeroCaso} — "${nombreCompleto}" (${cuiFinal ?? 'sin CUI'}) nivel="${nivelEducativo ?? '-'}" depto_id=${departamental_id ?? 'null'}`)
+        console.log(`  [OK   fila ${filaNum}] Caso ${numeroCaso} — "${nombreCompleto}" (${cuiFinal ?? 'sin CUI'}) nivel="${nivelEducativo ?? '-'}" depto_id=${departamentalCaso ?? 'null'}`)
       }
 
     } catch (err) {

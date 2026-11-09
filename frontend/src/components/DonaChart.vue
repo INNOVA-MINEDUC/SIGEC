@@ -26,7 +26,8 @@ const buildData = () => [
   { casos: "Verificados en el SIRE",      value: casosStore.casosPorEstado("Verificados en el SIRE").length },
   { casos: "Sin Verificar en el SIRE",    value: casosStore.casosPorEstado("sin Verificar en el SIRE").length },
   { casos: "Verificados en Quejas",       value: casosStore.casosPorEstado("Verificados en el Sistema de Quejas, Comentarios o Sugerencias").length },
-  { casos: "Sin Quejas",                  value: casosStore.casosPorEstado("sin Quejas").length },
+  { casos: "Mayor de 14 años",            value: casosStore.casosPorEstado("Mayor de 14 años").length },
+  { casos: "No existe registro",          value: casosStore.casosPorEstado("No existe registro").length },
 ]
 
 const crearGrafica = () => {
@@ -56,6 +57,7 @@ const crearGrafica = () => {
     am5.color("#10233f"),
     am5.color("#1F3864"),
     am5.color("#6d6d6d"),
+    am5.color("#2E5395"),
     am5.color("#b0b0b0")
   ])
 

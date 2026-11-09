@@ -68,12 +68,10 @@ const router = useRouter()
   min-height: 100vh;
 }
 
-/* HERO */
 .hero {
   position: relative;
   width: 100%;
   overflow: hidden;
-  /* Se reduce con el ancho de pantalla: 500px en escritorio, 360px en teléfono */
   height: clamp(360px, 55vw, 500px);
 }
 

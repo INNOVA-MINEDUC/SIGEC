@@ -32,3 +32,42 @@ export async function aplicarReglaDideduc(municipioId, departamentalActual, tran
   if (!mun || !esIxcan(mun.nombre)) return departamentalActual
   return (await obtenerQuicheNorteId(transaction)) ?? departamentalActual
 }
+
+/**
+ * Regla de negocio: la DIDEDUC del caso corresponde al departamento al que
+ * pertenece el centro educativo (municipio del centro → departamento → DIDEDUC).
+ *
+ * - Sin municipio del centro no hay con qué comparar: se conserva la actual.
+ * - Centro en Ixcán → DIDEDUC Quiché Norte.
+ * - Si la DIDEDUC actual es del departamento del centro, se conserva (permite
+ *   elegir entre Guatemala Norte/Sur/Oriente/Occidente, o Quiché/Quiché Norte).
+ * - Si no lo es y el departamento tiene una sola DIDEDUC, se usa esa.
+ * - Si el departamento tiene varias, no se puede deducir: `ambigua` con las
+ *   opciones válidas para que quien llama decida (pedirla o usar una por defecto).
+ *
+ * @returns {{ departamental_id, ajustada: boolean, ambigua: boolean, opciones: {id, nombre}[], departamento_id }}
+ */
+export async function dideducSegunCentro(municipioCentroId, departamentalActual, transaction = null) {
+  const actual = departamentalActual ? Number(departamentalActual) : null
+  const sinCambio = { departamental_id: actual, ajustada: false, ambigua: false, opciones: [], departamento_id: null }
+  if (!municipioCentroId) return sinCambio
+
+  const mun = await Municipio.findByPk(municipioCentroId, { attributes: ['nombre', 'departamento_id'], transaction })
+  if (!mun) return sinCambio
+
+  const opciones = (await Departamental.findAll({
+    where: { departamento_id: mun.departamento_id },
+    attributes: ['id', 'nombre'],
+    order: [['id', 'ASC']],
+    transaction,
+  })).map(d => ({ id: d.id, nombre: d.nombre }))
+  const base = { opciones, departamento_id: mun.departamento_id, ambigua: false }
+
+  if (esIxcan(mun.nombre)) {
+    const quicheNorte = await obtenerQuicheNorteId(transaction)
+    if (quicheNorte) return { ...base, departamental_id: quicheNorte, ajustada: quicheNorte !== actual }
+  }
+  if (opciones.some(o => o.id === actual)) return { ...base, departamental_id: actual, ajustada: false }
+  if (opciones.length === 1) return { ...base, departamental_id: opciones[0].id, ajustada: true }
+  return { ...base, departamental_id: actual, ajustada: false, ambigua: opciones.length > 1 }
+}

@@ -6,6 +6,7 @@ import sigecLogoUrl from '@/assets/LOGO_SISEC.png'
 import mineducLogoUrl from '@/assets/logo_mineduc.png'
 import { normalizarComunidad } from '@/helpers/comunidadLinguistica'
 import { formatearNombreGeografico } from '@/helpers/formatoNombres'
+import { formatearStatusActual } from '@/helpers/estadosCaso'
 import {
   departamentoDeCaso, contarPorDepartamento, contarPorMunicipio, contarPorEdad, esMayorOSinRegistro,
 } from '@/helpers/estadisticasCasos'
@@ -102,7 +103,8 @@ export function datosCaso(caso) {
     direccion:        nina.direccion       || '',
     // Nombre oficial con mayúscula inicial ("Alta Verapaz"); la BD lo guarda en minúsculas
     departamento:     formatearNombreGeografico(departamentoDeCaso(caso)),
-    municipio:        nina.municipio?.nombre || '',
+    // El catálogo guarda los municipios en minúsculas ("san andrés itzapa")
+    municipio:        formatearNombreGeografico(nina.municipio?.nombre),
     zona:             nina.zona ? `Zona ${nina.zona}` : '',
     pueblo:           nina.pueblo                || '',
     // Denominación canónica ("Q'eqchi'", "K'iche'"), igual que en el formulario
@@ -117,7 +119,8 @@ export function datosCaso(caso) {
     grado:            hist.grado           || '',
     nivel:            hist.nivel           || '',
     anio:             hist.anio            || '',
-    status:           hist.status_actual   || '',
+    // Las cargas masivas lo guardaban en mayúsculas ("NO INSCRITA")
+    status:           formatearStatusActual(hist.status_actual),
     resultado:        hist.resultado       || '',
     codigo_personal:  hist.codigo_personal || '',
   }
@@ -125,52 +128,52 @@ export function datosCaso(caso) {
 
 // ── Columnas para Excel agrupadas por sección (Información General / Niña / Establecimiento / Situación Educativa)
 const GRUPOS_EXCEL = [
-  { label: 'Información General', cols: [
-    { h: 'No. Caso',                k: 'numero_caso' },
-    { h: 'Fecha Ingreso',           k: 'fecha_ingreso' },
-    { h: 'Fecha Primera Consulta',  k: 'fecha_consulta' },
+  { label: 'Información general', cols: [
+    { h: 'No. de caso',             k: 'numero_caso' },
+    { h: 'Fecha de ingreso',        k: 'fecha_ingreso' },
+    { h: 'Fecha de primera consulta', k: 'fecha_consulta' },
     { h: 'Estado',                  k: 'estado' },
-    { h: 'No. Notificación',        k: 'no_notificacion' },
+    { h: 'No. de notificación',     k: 'no_notificacion' },
     { h: 'Queja',                   k: 'queja' },
-    { h: 'Dirección Departamental de Educación (DIDEDUC)', k: 'dideduc' },
+    { h: 'DIDEDUC',                 k: 'dideduc' },
   ] },
-  { label: 'Datos de la Niña', cols: [
+  { label: 'Datos de la niña', cols: [
     { h: 'CUI',                     k: 'cui' },
-    { h: 'Nombre Completo',         k: 'nombre' },
-    { h: 'Fecha de Nacimiento',     k: 'fecha_nacimiento' },
+    { h: 'Nombre completo',         k: 'nombre' },
+    { h: 'Fecha de nacimiento',     k: 'fecha_nacimiento' },
     { h: 'Edad',                    k: 'edad' },
     { h: 'Dirección',               k: 'direccion' },
     { h: 'Departamento',            k: 'departamento' },
     { h: 'Municipio',               k: 'municipio' },
     { h: 'Zona',                    k: 'zona' },
     { h: 'Pueblo',                  k: 'pueblo' },
-    { h: 'Comunidad Lingüística',   k: 'comunidad' },
+    { h: 'Comunidad lingüística',   k: 'comunidad' },
   ] },
   { label: 'Establecimiento', cols: [
     { h: 'Institución',             k: 'institucion' },
-    { h: 'Centro Educativo',        k: 'centro' },
-    { h: 'Dirección del Centro Educativo', k: 'direccion_centro' },
+    { h: 'Centro educativo',        k: 'centro' },
+    { h: 'Dirección del centro educativo', k: 'direccion_centro' },
     { h: 'Código UDI',              k: 'codigo_udi' },
     { h: 'Área',                    k: 'area' },
     { h: 'Jornada',                 k: 'jornada' },
     { h: 'Sector',                  k: 'sector' },
   ] },
-  { label: 'Situación Educativa', cols: [
+  { label: 'Situación educativa', cols: [
     { h: 'Grado',                   k: 'grado' },
     { h: 'Nivel',                   k: 'nivel' },
-    { h: 'Último Año Cursado',      k: 'anio' },
-    { h: 'Status Sistema',          k: 'status' },
+    { h: 'Último año cursado',      k: 'anio' },
+    { h: 'Estado actual dentro del sistema educativo', k: 'status' },
     { h: 'Resultado',               k: 'resultado' },
-    { h: 'Código Personal',         k: 'codigo_personal' },
+    { h: 'Código personal',         k: 'codigo_personal' },
   ] },
 ]
 
 // Colores institucionales por sección (tonos de azul marino)
 const GRUPO_COLORES = {
-  'Información General': '203864',
-  'Datos de la Niña':     '2E5395',
+  'Información general': '203864',
+  'Datos de la niña':     '2E5395',
   'Establecimiento':      '4472C4',
-  'Situación Educativa':  '1F3864',
+  'Situación educativa':  '1F3864',
 }
 
 // Columnas de la tabla "Listado de Casos" del PDF
@@ -192,6 +195,21 @@ const COLS_PDF = [
   { h: 'Queja',               k: 'queja' },
 ]
 
+// Columnas del Excel que son fechas (datosCaso las entrega como "DD/MM/AAAA")
+const COLUMNAS_FECHA_EXCEL = new Set(['fecha_ingreso', 'fecha_consulta', 'fecha_nacimiento'])
+
+// "DD/MM/AAAA" → número de serie de Excel (días desde 1899-12-30). Se calcula
+// en UTC para que el día no cambie por la zona horaria. null si no es válida.
+function serialExcelDeFecha(texto) {
+  const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(String(texto ?? '').trim())
+  if (!m) return null
+  const [d, mes, a] = [Number(m[1]), Number(m[2]), Number(m[3])]
+  const utc = Date.UTC(a, mes - 1, d)
+  const f = new Date(utc)
+  if (f.getUTCFullYear() !== a || f.getUTCMonth() !== mes - 1 || f.getUTCDate() !== d) return null
+  return (utc - Date.UTC(1899, 11, 30)) / 86400000
+}
+
 // ────────────────────────────────────────────────────────────────────────────
 // EXPORTAR EXCEL
 // ────────────────────────────────────────────────────────────────────────────
@@ -207,6 +225,19 @@ export function exportarExcel(casos, nombre = 'SIRCE_Casos') {
   GRUPOS_EXCEL.forEach(g => { grupoRow.push(g.label); for (let i = 1; i < g.cols.length; i++) grupoRow.push('') })
 
   const ws = XLSX.utils.aoa_to_sheet([tituloRow, grupoRow, flatCols, ...filas])
+
+  // Las fechas iban como texto "DD/MM/AAAA": Excel no las reconoce como fecha y,
+  // según el equipo, las puede mostrar o reinterpretar de forma incompleta. Se
+  // escriben como fecha real con formato fijo DD/MM/AAAA, armada con el mismo
+  // día, mes y año (sin zona horaria, para no correr el día).
+  columnas.forEach((col, c) => {
+    if (!COLUMNAS_FECHA_EXCEL.has(col.k)) return
+    for (let r = 3; r < 3 + filas.length; r++) {
+      const ref = XLSX.utils.encode_cell({ r, c })
+      const serial = serialExcelDeFecha(ws[ref]?.v)
+      if (serial !== null) ws[ref] = { t: 'n', v: serial, z: 'dd/mm/yyyy' }
+    }
+  })
 
   // Combinar celdas: título (toda la fila) y cada grupo de encabezado
   ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: totalCols - 1 } }]
@@ -278,30 +309,32 @@ export function exportarExcel(casos, nombre = 'SIRCE_Casos') {
     verificadosSire:   casos.filter(c => c.estado === 'Verificados en el SIRE').length,
     sinVerificarSire:  casos.filter(c => c.estado === 'sin Verificar en el SIRE').length,
     verificadosQuejas: casos.filter(c => c.estado === 'Verificados en el Sistema de Quejas, Comentarios o Sugerencias').length,
-    sinQuejas:         casos.filter(c => c.estado === 'sin Quejas').length,
+    mayor14:           casos.filter(c => c.estado === 'Mayor de 14 años').length,
+    noExisteRegistro:  casos.filter(c => c.estado === 'No existe registro').length,
   }
   const resumenRows = [
     ['Reporte SIRCE — MINEDUC Guatemala'],
     [`Generado: ${new Date().toLocaleDateString('es-GT', { dateStyle: 'full' })}`],
     [],
-    ['RESUMEN DE CASOS'],
+    ['Resumen de casos'],
     ['Total de casos',                                                 totalCasos],
     ['Verificados en el SIRE',                                         porEstado.verificadosSire],
-    ['Sin Verificar en el SIRE',                                       porEstado.sinVerificarSire],
+    ['Sin verificar en el SIRE',                                       porEstado.sinVerificarSire],
     ['Verificados en el Sistema de Quejas, Comentarios o Sugerencias',  porEstado.verificadosQuejas],
-    ['Sin Quejas',                                                     porEstado.sinQuejas],
+    ['Mayor de 14 años',                                               porEstado.mayor14],
+    ['No existe registro',                                             porEstado.noExisteRegistro],
     ['Mayores de 14 años o sin registro',                              casos.filter(esMayorOSinRegistro).length],
   ]
 
   // Mismos totales por departamento y municipio que muestra el dashboard
   const porDepto = contarPorDepartamento(casos)
-  resumenRows.push([], ['CASOS POR DEPARTAMENTO'], ['Departamento', 'Casos'])
+  resumenRows.push([], ['Casos por departamento'], ['Departamento', 'Casos'])
   porDepto.items.forEach(d => resumenRows.push([d.nombre, d.total]))
   if (porDepto.sinDepartamento) resumenRows.push(['Sin departamento registrado', porDepto.sinDepartamento])
   resumenRows.push(['Total', totalCasos])
 
   const porMuni = contarPorMunicipio(casos)
-  resumenRows.push([], ['CASOS POR MUNICIPIO'], ['Municipio', 'Casos', 'Departamento'])
+  resumenRows.push([], ['Casos por municipio'], ['Municipio', 'Casos', 'Departamento'])
   porMuni.items.forEach(m => resumenRows.push([m.nombre, m.total, m.departamento]))
   if (porMuni.sinMunicipio) resumenRows.push(['Sin municipio registrado', porMuni.sinMunicipio])
   resumenRows.push(['Total', totalCasos])
@@ -426,7 +459,8 @@ export function exportarPDF(casos, nombre = 'SIRCE_Casos', resumenFiltros = '', 
   const verificadosSire    = casos.filter(c => c.estado === 'Verificados en el SIRE').length
   const sinVerificarSire   = casos.filter(c => c.estado === 'sin Verificar en el SIRE').length
   const verificadosQuejas  = casos.filter(c => c.estado === 'Verificados en el Sistema de Quejas, Comentarios o Sugerencias').length
-  const sinQuejas          = casos.filter(c => c.estado === 'sin Quejas').length
+  const mayor14            = casos.filter(c => c.estado === 'Mayor de 14 años').length
+  const noExisteRegistro   = casos.filter(c => c.estado === 'No existe registro').length
   const pct = (n) => (total > 0 ? `${((n / total) * 100).toFixed(1)}%` : '0.0%')
 
   // Mensual
@@ -448,7 +482,8 @@ export function exportarPDF(casos, nombre = 'SIRCE_Casos', resumenFiltros = '', 
     { l: 'Verificados SIRE',     v: verificadosSire,   c: NAVY_DARK },
     { l: 'Sin Verificar SIRE',   v: sinVerificarSire,  c: STEEL },
     { l: 'Verificados Quejas',   v: verificadosQuejas, c: SLATE },
-    { l: 'Sin Quejas',           v: sinQuejas,         c: NAVY },
+    { l: 'Mayor de 14 años',     v: mayor14,           c: NAVY },
+    { l: 'No existe registro',   v: noExisteRegistro,  c: [170, 180, 195] },
   ]
 
   // Franja de título de las páginas de tablas. Se dibuja en cada página que
@@ -511,7 +546,8 @@ export function exportarPDF(casos, nombre = 'SIRCE_Casos', resumenFiltros = '', 
     { label: 'Verificados SIRE',                   value: verificadosSire,   color: STEEL },
     { label: 'Sin Verificar SIRE',                 value: sinVerificarSire,  color: SLATE  },
     { label: 'Verificados Quejas',                 value: verificadosQuejas, color: NAVY_DARK },
-    { label: 'Sin Quejas',                         value: sinQuejas,         color: [170, 180, 195] },
+    { label: 'Mayor de 14 años',                   value: mayor14,           color: NAVY },
+    { label: 'No existe registro',                 value: noExisteRegistro,  color: [170, 180, 195] },
   ]
   const boxGap = 3, boxH = 20
   const boxW = (W - PAD * 2 - (boxes.length - 1) * boxGap) / boxes.length

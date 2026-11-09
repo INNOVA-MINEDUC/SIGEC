@@ -343,6 +343,7 @@ import { esMayorOSinRegistro } from '@/helpers/estadisticasCasos'
 import { normGeo, poligonoDeMunicipio } from '@/helpers/mapaGeo'
 import { formatearNombreGeografico } from '@/helpers/formatoNombres'
 import { tieneAlcanceDepartamental } from '@/helpers/permisos'
+import { ESTADOS_CASO, STATUS_ACTUAL } from '@/helpers/estadosCaso'
 
 import heroImage   from '@/assets/ninas embarazadas -37.png'
 
@@ -391,9 +392,15 @@ const kpiPrincipales = computed(() => {
       iconPath: 'M21 11.25v8.25a1.5 1.5 0 01-1.5 1.5H5.25a1.5 1.5 0 01-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 1014.625 7.5H12V4.875z'
     },
     {
-      id: 'sin_quejas',
-      label: 'Sin Quejas',
-      value: casosStore.casosPorEstado('sin Quejas').length,
+      id: 'mayor_14',
+      label: 'Mayor de 14 años',
+      value: casosStore.casosPorEstado('Mayor de 14 años').length,
+      iconPath: 'M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z'
+    },
+    {
+      id: 'no_existe_registro',
+      label: 'No existe registro',
+      value: casosStore.casosPorEstado('No existe registro').length,
       iconPath: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'
     }
   ]
@@ -437,16 +444,12 @@ const NIVELES = [
     nombre: "Nivel de Educación Media (Ciclo Diversificado)",
   },
 ];
-const STATUS_SISTEMA = ['Inscrita', 'No inscrita', 'Retirada', 'Mayor de 14 años', 'No existe Registro']
+// Misma escritura que Registro y Seguimiento (helpers/estadosCaso.js)
+const STATUS_SISTEMA = STATUS_ACTUAL
 const RESULTADOS   = ['Promovido', 'No Promovido', 'Retirado', 'Cursando actualmente']
 
-// Estados institucionales del caso
-const ESTADOS_CASO = [
-  'Verificados en el SIRE',
-  'sin Verificar en el SIRE',
-  'Verificados en el Sistema de Quejas, Comentarios o Sugerencias',
-  'sin Quejas',
-]
+// Estados institucionales del caso: los mismos que Registro y Seguimiento
+// (helpers/estadosCaso.js)
 
 // ── Estado de filtros ─────────────────────────────────────────────────────────
 const showAdvanced = ref(false)
@@ -740,7 +743,7 @@ const exportarPDFClick = async () => {
 
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(7, 1fr);
   gap: 10px;
   margin: 0 auto 10px;
   max-width: 80rem;
@@ -999,7 +1002,7 @@ const exportarPDFClick = async () => {
 /* ── RESPONSIVE ────────────────────────────────────────────────────────── */
 /* Tablet: tarjetas en 3 columnas y mapa/listados uno debajo del otro */
 @media (max-width: 1100px) {
-  .kpi-grid { grid-template-columns: repeat(3, 1fr); padding: 0 1rem; }
+  .kpi-grid { grid-template-columns: repeat(4, 1fr); padding: 0 1rem; }
 }
 @media (max-width: 900px) {
   .grid-mapa, .grid-2-col { grid-template-columns: 1fr; }

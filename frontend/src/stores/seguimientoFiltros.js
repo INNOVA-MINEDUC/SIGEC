@@ -13,6 +13,7 @@ export const useSeguimientoFiltros = defineStore('seguimientoFiltros', {
     search:                '',
     selectedDepartamental: null,
     selectedEstado:        'Todos',
+    selectedStatusActual:  'Todos',   // estado actual dentro del sistema educativo
     filtroQueja:           'Todos',   // 'Todos' | 'con' | 'sin'
     filtroCui:             'Todos',   // 'Todos' | 'con' | 'sin'
     itemsPerPage:          10,
@@ -25,6 +26,7 @@ export const useSeguimientoFiltros = defineStore('seguimientoFiltros', {
       this.search                = ''
       this.selectedDepartamental = null
       this.selectedEstado        = 'Todos'
+      this.selectedStatusActual  = 'Todos'
       this.filtroQueja           = 'Todos'
       this.filtroCui             = 'Todos'
       this.page                  = 1

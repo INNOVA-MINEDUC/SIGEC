@@ -93,10 +93,14 @@
                 <v-icon size="16" class="input-icon">mdi-map-marker-outline</v-icon>
                 <select v-model="form.direccionDepartamental" :class="{ 'empty-select': !form.direccionDepartamental }">
                   <option value="" disabled selected>Dirección Departamental de Educación</option>
-                  <option v-for="d in departamentales" :key="d.id" :value="d.id">{{ d.nombre }}</option>
+                  <option v-for="d in opcionesDideduc" :key="d.id" :value="d.id">{{ d.nombre }}</option>
                 </select>
                 <v-icon size="16" class="select-chevron">mdi-chevron-down</v-icon>
               </div>
+              <p v-if="avisoDideduc" class="aviso-dideduc">
+                <v-icon size="14">mdi-information-outline</v-icon>
+                {{ avisoDideduc }}
+              </p>
 
             </div>
             <p v-if="errores && step === 1" class="error-msg">{{ errores }}</p>
@@ -362,6 +366,20 @@
                   </div>
                 </div>
 
+                <!-- DIDEDUC del caso = la del departamento del centro educativo. Si el
+                     departamento tiene varias (Guatemala, Quiché) se elige aquí. -->
+                <div v-if="dideducesCentro.length > 1" class="input-box">
+                  <v-icon size="16" class="input-icon">mdi-office-building-marker-outline</v-icon>
+                  <select v-model="form.direccionDepartamental" :class="{ 'empty-select': !form.direccionDepartamental }">
+                    <option value="" disabled selected>DIDEDUC del centro educativo *</option>
+                    <option v-for="d in dideducesCentro" :key="d.id" :value="d.id">{{ d.nombre }}</option>
+                  </select>
+                  <v-icon size="16" class="select-chevron">mdi-chevron-down</v-icon>
+                </div>
+                <p v-else-if="dideducesCentro.length === 1" class="text-gray-info" style="margin: 0;">
+                  DIDEDUC según el centro educativo: <strong>{{ dideducesCentro[0].nombre }}</strong>
+                </p>
+
                 <div class="field-row" v-if="mostrarZonaEscuela">
                   <div class="input-box">
                     <v-icon size="16" class="input-icon">mdi-map-marker-outline</v-icon>
@@ -471,7 +489,7 @@
                       {{ casoId ? 'Estado del caso' : 'Estado del caso *' }}
                     </option>
                     <option
-                      v-for="est in ESTADOS_CASO"
+                      v-for="est in opcionesEstado"
                       :key="est"
                       :value="est"
                     >{{ est }}</option>
@@ -511,6 +529,7 @@ import { nextTick } from 'vue'
 import Swal from 'sweetalert2'
 import api from "@/helpers/api"
 import { COMUNIDADES_LINGUISTICAS, normalizarComunidad } from '@/helpers/comunidadLinguistica'
+import { ESTADOS_CASO, STATUS_ACTUAL, estiloEstadoCaso, formatearStatusActual } from '@/helpers/estadosCaso'
 import AppNavbar from '@/components/AppNavbar.vue'
 import AppFooter from '@/components/AppFooter.vue'
 import heroImage from '@/assets/ninas embarazadas -25.jpg'
@@ -551,7 +570,12 @@ const ZONAS_GUATEMALA = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 
 const ANOS_NACIMIENTO = Array.from({ length: 20 }, (_, i) => currentYear - 5 - i)
 
 const INSTITUCIONES  = ['Ministerio Público', 'Procuraduría General de la Nación', 'Otra']
-const STATUS_SISTEMA = ['Inscrita', 'No inscrita', 'Retirada', 'Mayor de 14 años', 'No existe registro']
+// Estado actual dentro del sistema educativo: mismas opciones que el filtro de
+// Seguimiento. Si el caso trae otro valor, se agrega para no perderlo al guardar.
+const STATUS_SISTEMA = computed(() => {
+  const actual = form.statusActual
+  return actual && !STATUS_ACTUAL.includes(actual) ? [...STATUS_ACTUAL, actual] : STATUS_ACTUAL
+})
 const SUBSISTEMAS    = ['Subsistema Escolar', 'Subsistema Extraescolar']
 const GRADOS = ['1ro', '2do', '3ro', '4to', '5to', '6to']
 // Se guarda el valor canónico (igual que la carga masiva y el filtro del
@@ -568,21 +592,16 @@ const SECTORES   = ['Oficial', 'Privado', 'Cooperativa', 'Municipal']
 const JORNADAS   = ['Matutina', 'Vespertina', 'Nocturna', 'Doble', 'Fin de semana']
 const AREAS      = ['Urbana', 'Rural']
 
-// Estados institucionales del caso (reemplazan a pendiente/faltante/completado)
-const ESTADOS_CASO = [
-  'Verificados en el SIRE',
-  'sin Verificar en el SIRE',
-  'Verificados en el Sistema de Quejas, Comentarios o Sugerencias',
-  'sin Quejas',
-]
-
-const ESTADO_CHIP_STYLES = {
-  'Verificados en el SIRE':          { backgroundColor: '#10233f', color: '#fff' },
-  'sin Verificar en el SIRE':        { backgroundColor: '#6d6d6d', color: '#fff' },
-  'Verificados en el Sistema de Quejas, Comentarios o Sugerencias': { backgroundColor: '#1F3864', color: '#fff' },
-  'sin Quejas':                      { backgroundColor: '#b0b0b0', color: '#fff' },
-}
-const estadoChipStyle = (estado) => ESTADO_CHIP_STYLES[estado] || { backgroundColor: '#e0e0e0', color: '#6d6d6d' }
+// Estados institucionales del caso: los mismos que el filtro de Seguimiento
+// (helpers/estadosCaso.js). Un caso anterior con un estado retirado del
+// catálogo ("sin Quejas") lo conserva como opción para poder editarse sin
+// cambiarlo; los casos nuevos ya no lo ofrecen.
+const opcionesEstado = computed(() =>
+  casoId.value && estadoOriginal.value && !ESTADOS_CASO.includes(estadoOriginal.value)
+    ? [...ESTADOS_CASO, estadoOriginal.value]
+    : ESTADOS_CASO
+)
+const estadoChipStyle = estiloEstadoCaso
 
 // Convierte "TOTONICAPAN" / "totonicapan" → "Totonicapan" (soporta nombres compuestos y con guion)
 const toTitleCase = (text = '') => {
@@ -729,7 +748,7 @@ const cargarCaso = async (id) => {
 
     // Step 3
     form.codigoPersonal       = historial.codigo_personal || ''
-    form.statusActual         = matchCanonical(historial.status_actual, STATUS_SISTEMA)
+    form.statusActual         = formatearStatusActual(historial.status_actual)
     form.subsistema           = historial.subsistema || ''
     form.grado                = historial.grado || ''
     form.nivel                = normalizarNivel(historial.nivel)
@@ -770,6 +789,9 @@ const cargarCaso = async (id) => {
     console.error('Error cargando caso:', err)
   } finally {
     cargandoCaso.value = false
+    // Casos anteriores pueden tener la DIDEDUC de otro departamento: se ajusta
+    // (y se avisa) para que al guardar quede la del centro educativo.
+    sincronizarDideduc()
   }
 }
 
@@ -802,13 +824,49 @@ const mostrarZonaEscuela = computed(() => esGuatemalaGuatemala(form.departamento
 watch(mostrarZonaNina,    (v) => { if (!v) form.zonaNina = '' })
 watch(mostrarZonaEscuela, (v) => { if (!v) form.zonaEscuela = '' })
 
-// Regla: municipio Ixcán → DIDEDUC Quiché Norte (el backend también la impone)
+// Regla: municipio Ixcán → DIDEDUC Quiché Norte (el backend también la impone).
+// Si ya hay centro educativo, manda la DIDEDUC de su departamento (abajo).
 watch(() => form.municipioNina, (id) => {
+  if (dideducesCentro.value.length) return
   const m = municipiosNina.value.find(x => x.id === id)
   if (m && normTxt(m.nombre) === 'ixcan') {
     const qn = departamentales.value.find(d => normTxt(d.nombre).includes('quiche norte'))
     if (qn) form.direccionDepartamental = qn.id
   }
+})
+
+// ── DIDEDUC según el centro educativo ─────────────────────────────────────────
+// Regla de negocio (el backend también la impone): la DIDEDUC del caso
+// corresponde al departamento al que pertenece el centro educativo.
+const esIxcanEscuela = computed(() =>
+  normTxt(municipiosEscuela.value.find(m => m.id === form.municipioEscuela)?.nombre) === 'ixcan')
+
+const dideducesCentro = computed(() => {
+  if (!form.departamentoEscuela) return []
+  const delDepto = departamentales.value.filter(d => Number(d.departamento_id) === Number(form.departamentoEscuela))
+  if (esIxcanEscuela.value) {
+    const qn = delDepto.find(d => normTxt(d.nombre).includes('quiche norte'))
+    if (qn) return [qn]
+  }
+  return delDepto
+})
+
+// Con centro elegido, el paso 1 solo ofrece las DIDEDUC de su departamento
+const opcionesDideduc = computed(() => dideducesCentro.value.length ? dideducesCentro.value : departamentales.value)
+
+const avisoDideduc = ref('')
+function sincronizarDideduc() {
+  const opciones = dideducesCentro.value
+  if (!opciones.length || opciones.some(d => d.id === Number(form.direccionDepartamental))) return
+  const anterior = departamentales.value.find(d => d.id === Number(form.direccionDepartamental))
+  form.direccionDepartamental = opciones.length === 1 ? opciones[0].id : ''
+  avisoDideduc.value = anterior
+    ? `La DIDEDUC "${anterior.nombre}" no corresponde al departamento del centro educativo; `
+      + (opciones.length === 1 ? `se cambió a "${opciones[0].nombre}".` : 'seleccione la DIDEDUC del centro en "Situación educativa".')
+    : ''
+}
+watch(() => [form.departamentoEscuela, form.municipioEscuela, departamentales.value], () => {
+  if (!cargandoCaso.value) sincronizarDideduc()
 })
 
 watch(() => form.departamentoEscuela, async (newDeptId) => {
@@ -853,6 +911,10 @@ async function submitForm() {
 
   if (!casoId.value && !form.estado) {
     errores.value = 'El estado del caso es obligatorio'
+    return
+  }
+  if (dideducesCentro.value.length > 1 && !dideducesCentro.value.some(d => d.id === Number(form.direccionDepartamental))) {
+    errores.value = 'Seleccione la DIDEDUC del centro educativo'
     return
   }
 
@@ -1055,6 +1117,11 @@ async function submitForm() {
 }
 .numero-auto { background-color: #f5f5f5; }
 .numero-auto input { color: #10233f; font-weight: 700; cursor: default; letter-spacing: 0.05em; }
+.aviso-dideduc {
+  display: flex; align-items: center; gap: 0.35rem;
+  margin: 0; font-size: 0.75rem; color: #7a4800;
+  background: #fff3e0; border: 1px solid #ffcc80; border-radius: 0.375rem; padding: 0.4rem 0.65rem;
+}
 .update-banner {
   display: flex; align-items: center; gap: 0.5rem;
   background: #fff8f8; border: 1px solid #ffcfcf; border-radius: 0.375rem;
